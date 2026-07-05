@@ -1,3 +1,4 @@
+import os
 import secrets
 from pydantic_settings import BaseSettings
 from pydantic import field_validator
@@ -8,11 +9,20 @@ def _generate_secret() -> str:
     return secrets.token_hex(32)
 
 
+def _build_database_url() -> str:
+    url = os.environ.get("DATABASE_URL", "postgresql+asyncpg://crimegpt:crimegpt_secret@localhost:5432/crimegpt")
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+    elif url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url
+
+
 class Settings(BaseSettings):
     postgres_user: str = "crimegpt"
     postgres_password: str = "crimegpt_secret"
     postgres_db: str = "crimegpt"
-    database_url: str = "postgresql+asyncpg://crimegpt:crimegpt_secret@localhost:5432/crimegpt"
+    database_url: str = _build_database_url()
 
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
@@ -29,7 +39,7 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:5173"
     upload_dir: str = "./data/uploads"
 
-    cors_origins: List[str] = ["http://localhost:5173", "http://localhost:3000"]
+    cors_origins: List[str] = ["http://localhost:5173", "http://localhost:3000", "https://frontend-neon-eta-6jw9gfiqa5.vercel.app"]
 
     min_password_length: int = 10
 
