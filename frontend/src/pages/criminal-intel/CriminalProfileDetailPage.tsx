@@ -5,7 +5,7 @@ import {
   ArrowLeft, MapPin, Phone, Car, Users,
   FileText, Clock, Fingerprint, Dna, Globe, Eye,
   User, BadgeAlert, ExternalLink, Image, ChevronDown, ChevronUp,
-  Upload, Plus, Loader2, Trash2
+  Upload, Plus, Loader2, Trash2, Pen, Save, X
 } from 'lucide-react'
 import api from '../../api/client'
 import toast from 'react-hot-toast'
@@ -79,6 +79,32 @@ export default function CriminalProfileDetailPage() {
   const faceInputRef = useRef<HTMLInputElement>(null)
   const fpInputRef = useRef<HTMLInputElement>(null)
   const [fpFingerType, setFpFingerType] = useState('right_thumb')
+  const [editing, setEditing] = useState(false)
+  const [editSaving, setEditSaving] = useState(false)
+  const [editForm, setEditForm] = useState({
+    full_name: '',
+    father_name: '',
+    date_of_birth: '',
+    gender: 'male',
+    nationality: '',
+    occupation: '',
+    height_cm: '',
+    weight_kg: '',
+    build: '',
+    complexion: '',
+    hair_color: '',
+    eye_color: '',
+    identifying_marks: '',
+    gang_name: '',
+    gang_role: '',
+    crime_categories: '',
+    modus_operandi: '',
+    wanted_status: 'not_wanted',
+    danger_level: 'low',
+    reward_amount: '',
+    notes: '',
+    station_id: '',
+  })
 
   const handleFaceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -177,6 +203,95 @@ export default function CriminalProfileDetailPage() {
     }
   }
 
+  const startEditing = () => {
+    if (!criminal) return
+    setEditForm({
+      full_name: criminal.full_name || '',
+      father_name: criminal.father_name || '',
+      date_of_birth: criminal.date_of_birth || '',
+      gender: criminal.gender || 'male',
+      nationality: criminal.nationality || '',
+      occupation: criminal.occupation || '',
+      height_cm: criminal.height_cm?.toString() || '',
+      weight_kg: criminal.weight_kg?.toString() || '',
+      build: criminal.build || '',
+      complexion: criminal.complexion || '',
+      hair_color: criminal.hair_color || '',
+      eye_color: criminal.eye_color || '',
+      identifying_marks: criminal.identifying_marks?.join(', ') || '',
+      gang_name: criminal.gang_name || '',
+      gang_role: criminal.gang_role || '',
+      crime_categories: criminal.crime_categories?.join(', ') || '',
+      modus_operandi: criminal.modus_operandi || '',
+      wanted_status: criminal.wanted_status || 'not_wanted',
+      danger_level: criminal.danger_level || 'low',
+      reward_amount: criminal.reward_amount?.toString() || '',
+      notes: criminal.notes || '',
+      station_id: '',
+    })
+    setEditing(true)
+  }
+
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    setEditForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
+  }
+
+  const handleEditSave = async () => {
+    if (!criminalId || !editForm.full_name.trim()) {
+      toast.error('Full name is required')
+      return
+    }
+    setEditSaving(true)
+    try {
+      const payload: Record<string, unknown> = {
+        full_name: editForm.full_name.trim(),
+        gender: editForm.gender,
+        nationality: editForm.nationality || 'Indian',
+        wanted_status: editForm.wanted_status,
+        danger_level: editForm.danger_level,
+      }
+      if (editForm.father_name) payload.father_name = editForm.father_name
+      else payload.father_name = null
+      if (editForm.date_of_birth) payload.date_of_birth = editForm.date_of_birth
+      else payload.date_of_birth = null
+      if (editForm.occupation) payload.occupation = editForm.occupation
+      else payload.occupation = null
+      if (editForm.height_cm) payload.height_cm = parseFloat(editForm.height_cm)
+      else payload.height_cm = null
+      if (editForm.weight_kg) payload.weight_kg = parseFloat(editForm.weight_kg)
+      else payload.weight_kg = null
+      if (editForm.build) payload.build = editForm.build
+      else payload.build = null
+      if (editForm.complexion) payload.complexion = editForm.complexion
+      else payload.complexion = null
+      if (editForm.hair_color) payload.hair_color = editForm.hair_color
+      else payload.hair_color = null
+      if (editForm.eye_color) payload.eye_color = editForm.eye_color
+      else payload.eye_color = null
+      payload.identifying_marks = editForm.identifying_marks ? editForm.identifying_marks.split(',').map(s => s.trim()).filter(Boolean) : []
+      if (editForm.gang_name) payload.gang_name = editForm.gang_name
+      else payload.gang_name = null
+      if (editForm.gang_role) payload.gang_role = editForm.gang_role
+      else payload.gang_role = null
+      payload.crime_categories = editForm.crime_categories ? editForm.crime_categories.split(',').map(s => s.trim()).filter(Boolean) : []
+      if (editForm.modus_operandi) payload.modus_operandi = editForm.modus_operandi
+      else payload.modus_operandi = null
+      if (editForm.reward_amount) payload.reward_amount = parseFloat(editForm.reward_amount)
+      else payload.reward_amount = null
+      if (editForm.notes) payload.notes = editForm.notes
+      else payload.notes = null
+
+      await api.put(`/api/criminal-intelligence/${criminalId}`, payload)
+      toast.success('Criminal profile updated successfully')
+      setEditing(false)
+      fetchCriminal()
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Failed to update profile')
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
   const getCriminalIdStr = (pkId: number): string => {
     return `CR-${String(pkId).padStart(4, '0')}`
   }
@@ -258,6 +373,13 @@ export default function CriminalProfileDetailPage() {
           </div>
         )}
         <button
+          onClick={startEditing}
+          className="p-2 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 text-blue-400 hover:text-blue-300 transition-colors"
+          title="Edit Criminal Profile"
+        >
+          <Pen className="w-5 h-5" />
+        </button>
+        <button
           onClick={handleDelete}
           className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 hover:text-red-300 transition-colors"
           title="Delete Criminal Record"
@@ -265,6 +387,148 @@ export default function CriminalProfileDetailPage() {
           <Trash2 className="w-5 h-5" />
         </button>
       </div>
+
+      {/* Edit Form */}
+      {editing && (
+        <div className="bg-dark-900/80 border border-blue-500/30 rounded-xl p-6 space-y-5">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-lg font-bold text-white">Edit Criminal Profile</h2>
+            <button onClick={() => setEditing(false)} className="p-1.5 rounded-lg hover:bg-dark-700 text-dark-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Personal Info */}
+          <div>
+            <h3 className="text-xs font-semibold text-purple-400 mb-3">Personal Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Full Name *</label>
+                <input name="full_name" value={editForm.full_name} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Father's Name</label>
+                <input name="father_name" value={editForm.father_name} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Date of Birth</label>
+                <input name="date_of_birth" type="date" value={editForm.date_of_birth} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Gender</label>
+                <select name="gender" value={editForm.gender} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none">
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Nationality</label>
+                <input name="nationality" value={editForm.nationality} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Occupation</label>
+                <input name="occupation" value={editForm.occupation} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Physical Description */}
+          <div>
+            <h3 className="text-xs font-semibold text-blue-400 mb-3">Physical Description</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Height (cm)</label>
+                <input name="height_cm" type="number" value={editForm.height_cm} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Weight (kg)</label>
+                <input name="weight_kg" type="number" value={editForm.weight_kg} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Build</label>
+                <input name="build" value={editForm.build} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Complexion</label>
+                <input name="complexion" value={editForm.complexion} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Hair Color</label>
+                <input name="hair_color" value={editForm.hair_color} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Eye Color</label>
+                <input name="eye_color" value={editForm.eye_color} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+              </div>
+            </div>
+            <div className="mt-3">
+              <label className="block text-xs text-dark-300 mb-1">Identifying Marks (comma-separated)</label>
+              <input name="identifying_marks" value={editForm.identifying_marks} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+            </div>
+          </div>
+
+          {/* Criminal Info */}
+          <div>
+            <h3 className="text-xs font-semibold text-red-400 mb-3">Criminal Information</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Gang Name</label>
+                <input name="gang_name" value={editForm.gang_name} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Gang Role</label>
+                <input name="gang_role" value={editForm.gang_role} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Crime Categories (comma-separated)</label>
+                <input name="crime_categories" value={editForm.crime_categories} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Reward Amount (₹)</label>
+                <input name="reward_amount" type="number" value={editForm.reward_amount} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Wanted Status</label>
+                <select name="wanted_status" value={editForm.wanted_status} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none">
+                  {['not_wanted', 'wanted', 'most_wanted', 'surrendered', 'arrested', 'absconding'].map(s => (
+                    <option key={s} value={s}>{s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">Danger Level</label>
+                <select name="danger_level" value={editForm.danger_level} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none">
+                  {['low', 'medium', 'high', 'extreme'].map(d => (
+                    <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="mt-3">
+              <label className="block text-xs text-dark-300 mb-1">Modus Operandi</label>
+              <textarea name="modus_operandi" value={editForm.modus_operandi} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none h-20 resize-none" />
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-xs text-dark-300 mb-1">Notes</label>
+            <textarea name="notes" value={editForm.notes} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none h-20 resize-none" />
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-2">
+            <button onClick={() => setEditing(false)} className="px-4 py-2 rounded-lg bg-dark-700 hover:bg-dark-600 text-dark-300 text-sm font-medium transition-colors">
+              Cancel
+            </button>
+            <button onClick={handleEditSave} disabled={editSaving} className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium flex items-center gap-2 disabled:opacity-50 transition-colors">
+              {editSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {editSaving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
