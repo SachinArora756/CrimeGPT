@@ -5,7 +5,7 @@ import {
   ArrowLeft, MapPin, Phone, Car, Users,
   FileText, Clock, Fingerprint, Dna, Globe, Eye,
   User, BadgeAlert, ExternalLink, Image, ChevronDown, ChevronUp,
-  Upload, Plus, Loader2
+  Upload, Plus, Loader2, Trash2
 } from 'lucide-react'
 import api from '../../api/client'
 import toast from 'react-hot-toast'
@@ -165,6 +165,18 @@ export default function CriminalProfileDetailPage() {
     }
   }
 
+  const handleDelete = async () => {
+    if (!criminalId) return
+    if (!window.confirm(`Are you sure you want to delete the criminal record for "${criminal?.full_name}"? This action cannot be undone.`)) return
+    try {
+      await api.delete(`/api/criminal-intelligence/${criminalId}`)
+      toast.success('Criminal record deleted successfully')
+      navigate('/criminal-intel/profiles')
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || 'Failed to delete criminal record')
+    }
+  }
+
   const getCriminalIdStr = (pkId: number): string => {
     return `CR-${String(pkId).padStart(4, '0')}`
   }
@@ -245,6 +257,13 @@ export default function CriminalProfileDetailPage() {
             <p className="text-lg font-bold text-amber-400">₹{criminal.reward_amount.toLocaleString()}</p>
           </div>
         )}
+        <button
+          onClick={handleDelete}
+          className="p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 hover:text-red-300 transition-colors"
+          title="Delete Criminal Record"
+        >
+          <Trash2 className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Quick Stats */}
