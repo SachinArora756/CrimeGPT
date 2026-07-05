@@ -1,0 +1,61 @@
+BHARATIYA NAGARIK SURAKSHA SANHITA (BNSS) 2023 - KEY PROCEDURES
+
+FIRST INFORMATION REPORT (FIR) - Section 173
+
+1. Every information relating to commission of a cognizable offence, if given orally, shall be reduced to writing.
+2. The substance shall be entered in a book kept by the officer in charge of the police station (Station Diary).
+3. A copy of the FIR shall be given free of cost to the informant.
+4. If the information discloses commission of a cognizable offence, the officer shall register the FIR.
+5. Zero FIR: Any police station can register FIR regardless of jurisdiction. Must transfer to appropriate station within 15 days.
+6. E-FIR: FIR can be registered through electronic communication. Physical copy must be obtained within 3 days.
+7. Mandatory upload to state/national database within 24 hours.
+
+ARREST PROCEDURES - Section 35
+
+1. Every police officer may arrest any person who has committed a cognizable offence.
+2. Person arrested shall be informed of grounds of arrest.
+3. Right to inform a person of their choice about arrest.
+4. Must be produced before magistrate within 24 hours.
+5. No arrest for offences punishable with less than 3 years without prior permission of officer not below DSP rank.
+6. Woman cannot be arrested after sunset and before sunrise except by a woman officer with prior permission of magistrate.
+
+INVESTIGATION - Section 175-190
+
+1. Investigation to be completed within 60 days (if imprisonment up to 3 years) or 90 days (if above 3 years).
+2. If not completed, preliminary chargesheet must be filed.
+3. Statements of witnesses to be recorded. Electronic recording permitted.
+4. All evidence to be collected, sealed, and preserved with chain of custody documentation.
+5. Forensic evidence must be sent to laboratory within 7 days of collection.
+
+CHARGESHEET - Section 193
+
+1. After completion of investigation, officer shall submit final report (chargesheet) to magistrate.
+2. Must include: names of parties, nature of information, names of persons found guilty, whether accused arrested or released on bail.
+3. All documents and statements recorded during investigation to be annexed.
+4. Supplementary chargesheet can be filed if further evidence collected.
+
+BAIL - Section 478-495
+
+1. Bailable offences: bail as matter of right.
+2. Non-bailable offences: bail at discretion of court.
+3. Default bail: If investigation not completed within stipulated time (60/90 days), accused entitled to bail.
+4. Anticipatory bail: May be granted by Sessions Court or High Court.
+5. Conditions may include surrender of passport, appearance at police station, etc.
+
+SEARCH AND SEIZURE - Section 185-190
+
+1. Search warrant to be issued by magistrate.
+2. Search to be conducted in presence of two independent witnesses from the locality.
+3. All seized items to be inventoried with description, quantity, and identifying marks.
+4. Receipt to be given to the person from whom items are seized.
+5. Digital evidence: Electronic devices to be seized with hash value computation and forensic imaging.
+6. Chain of custody must be maintained for all seized items.
+
+VICTIM RIGHTS - Section 360
+
+1. Right to be heard at any proceeding under this Sanhita.
+2. Right to engage an advocate of choice.
+3. Right to receive information about status of investigation.
+4. Victim compensation scheme.
+5. Protection from intimidation and threats.
+6. Mandatory victim impact assessment in serious offences.

@@ -1,0 +1,539 @@
+import { useState, useCallback, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useDropzone } from 'react-dropzone'
+import {
+  ArrowLeft, Upload, Loader2, CheckCircle, XCircle,
+  Microscope, Bookmark, Brain, Copy, Clock,
+  FileImage, Shield, Activity, Zap
+} from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import api from '../../api/client'
+import toast from 'react-hot-toast'
+
+interface ExecutionResult {
+  execution_id: string
+  tool_key: string
+  status: string
+  input_filename: string | null
+  output_data: Record<string, unknown> | null
+  ai_summary: string | null
+  confidence_score: number | null
+  execution_time_ms: number | null
+  created_at: string
+  completed_at: string | null
+  case_id: number | null
+  evidence_id: number | null
+}
+
+export default function ToolExecutionPage() {
+  const { toolKey, executionId } = useParams<{ toolKey?: string; executionId?: string }>()
+  const navigate = useNavigate()
+  const [file, setFile] = useState<File | null>(null)
+  const [filePreview, setFilePreview] = useState<string | null>(null)
+  const [executing, setExecuting] = useState(false)
+  const [result, setResult] = useState<ExecutionResult | null>(null)
+  const [progress, setProgress] = useState(0)
+  const [summarizing, setSummarizing] = useState(false)
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (executionId) {
+      api.get(`/api/forensic-toolkit/executions/${executionId}`)
+        .then(res => setResult(res.data))
+        .catch(() => toast.error('Execution not found'))
+    }
+  }, [executionId])
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      const f = acceptedFiles[0]
+      setFile(f)
+      setResult(null)
+      if (f.type.startsWith('image/')) {
+        setFilePreview(URL.createObjectURL(f))
+      } else {
+        setFilePreview(null)
+      }
+    }
+  }, [])
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    multiple: false,
+    maxSize: 50 * 1024 * 1024,
+  })
+
+  const executeTask = async () => {
+    if (!file || !toolKey) return
+    setExecuting(true)
+    setProgress(10)
+
+    const interval = setInterval(() => {
+      setProgress(p => Math.min(p + Math.random() * 15, 85))
+    }, 500)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('params', JSON.stringify({}))
+
+      const response = await api.post(`/api/forensic-toolkit/execute/${toolKey}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      setProgress(100)
+      setResult(response.data)
+      toast.success('Analysis complete')
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { detail?: string } } }
+      toast.error(err.response?.data?.detail || 'Execution failed')
+    } finally {
+      clearInterval(interval)
+      setExecuting(false)
+      setProgress(0)
+    }
+  }
+
+  const handleSummarize = async () => {
+    if (!result) return
+    setSummarizing(true)
+    try {
+      const response = await api.post(`/api/forensic-toolkit/executions/${result.execution_id}/summarize`)
+      setResult(prev => prev ? { ...prev, ai_summary: response.data.ai_summary } : null)
+      toast.success('AI summary generated')
+    } catch {
+      toast.error('Failed to generate summary')
+    } finally {
+      setSummarizing(false)
+    }
+  }
+
+  const handleBookmark = async () => {
+    if (!result) return
+    try {
+      await api.post('/api/forensic-toolkit/saved', {
+        execution_id: result.execution_id,
+        title: `${toolKey} - ${result.input_filename}`,
+        notes: '',
+      })
+      toast.success('Result saved to bookmarks')
+    } catch {
+      toast.error('Failed to save')
+    }
+  }
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text)
+    toast.success('Copied to clipboard')
+  }
+
+  const toggleExpand = (key: string) => {
+    setExpandedKeys(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  const sanitizeValue = (val: unknown): unknown => {
+    if (typeof val === 'string') {
+      if (/^\/(data|uploads|tmp|var|storage|mnt|app|home|root)\//.test(val)) {
+        const filename = val.split('/').pop() || 'file'
+        return `[Evidence File: ${filename}]`
+      }
+      return val
+    }
+    if (Array.isArray(val)) return val.map(sanitizeValue)
+    if (val && typeof val === 'object') {
+      const sanitized: Record<string, unknown> = {}
+      for (const [k, v] of Object.entries(val as Record<string, unknown>)) {
+        if (k === 'file_path' || k === 'image_path' || k === 'output_path') {
+          sanitized[k] = '[secured]'
+        } else {
+          sanitized[k] = sanitizeValue(v)
+        }
+      }
+      return sanitized
+    }
+    return val
+  }
+
+  const renderOutputValue = (key: string, value: unknown) => {
+    const isExpanded = expandedKeys.has(key)
+    const displayValue = sanitizeValue(value)
+
+    if (typeof displayValue === 'string') {
+      const isLong = displayValue.length > 200
+      return (
+        <div className="relative group">
+          <div className="bg-dark-900 rounded-lg p-3 border border-dark-700/30">
+            <p className="text-sm text-dark-200 whitespace-pre-wrap break-words font-mono">
+              {isLong && !isExpanded ? displayValue.slice(0, 200) + '...' : displayValue}
+            </p>
+            {isLong && (
+              <button
+                onClick={() => toggleExpand(key)}
+                className="mt-2 text-xs text-primary-400 hover:text-primary-300"
+              >
+                {isExpanded ? 'Show less' : 'Show all'}
+              </button>
+            )}
+          </div>
+          <button
+            onClick={() => copyToClipboard(String(displayValue))}
+            className="absolute top-2 right-2 p-1.5 rounded-md bg-dark-800 hover:bg-dark-700 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <Copy className="w-3 h-3 text-dark-400" />
+          </button>
+        </div>
+      )
+    }
+
+    if (Array.isArray(displayValue)) {
+      return (
+        <div className="space-y-1.5">
+          {(displayValue as unknown[]).slice(0, isExpanded ? undefined : 10).map((item, i) => (
+            <div key={i} className="px-3 py-2 bg-dark-900 rounded-lg border border-dark-700/30">
+              <p className="text-xs text-dark-200 font-mono">
+                {typeof item === 'object' ? JSON.stringify(item) : String(item)}
+              </p>
+            </div>
+          ))}
+          {(displayValue as unknown[]).length > 10 && (
+            <button
+              onClick={() => toggleExpand(key)}
+              className="text-xs text-primary-400 hover:text-primary-300 px-3"
+            >
+              {isExpanded ? 'Show less' : `Show all ${(displayValue as unknown[]).length} items`}
+            </button>
+          )}
+        </div>
+      )
+    }
+
+    if (typeof displayValue === 'object' && displayValue !== null) {
+      const json = JSON.stringify(displayValue, null, 2)
+      return (
+        <div className="relative group">
+          <pre className="bg-dark-900 rounded-lg p-3 border border-dark-700/30 text-xs text-dark-200 overflow-x-auto max-h-48 font-mono">
+            {json}
+          </pre>
+          <button
+            onClick={() => copyToClipboard(json)}
+            className="absolute top-2 right-2 p-1.5 rounded-md bg-dark-800 hover:bg-dark-700 opacity-0 group-hover:opacity-100 transition-opacity"
+          >
+            <Copy className="w-3 h-3 text-dark-400" />
+          </button>
+        </div>
+      )
+    }
+
+    return <p className="text-sm text-white px-3 py-2 bg-dark-900 rounded-lg border border-dark-700/30">{String(displayValue)}</p>
+  }
+
+  return (
+    <div className="space-y-6 p-6 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <button
+          onClick={() => navigate('/forensics/tools')}
+          className="p-2.5 rounded-xl bg-dark-800 border border-dark-700/50 hover:bg-dark-700 hover:border-dark-600 text-dark-300 hover:text-white transition-all"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div className="relative">
+          <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20 blur-md" />
+          <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-blue-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+            <Microscope className="w-6 h-6 text-white" />
+          </div>
+        </div>
+        <div>
+          <h1 className="text-xl font-bold text-white capitalize">{toolKey?.replace(/_/g, ' ')}</h1>
+          <p className="text-dark-400 text-xs">Upload evidence file and execute forensic analysis</p>
+        </div>
+        {result && (
+          <div className="ml-auto flex items-center gap-2">
+            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium ${
+              result.status === 'completed'
+                ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                : 'bg-red-500/10 text-red-400 border border-red-500/20'
+            }`}>
+              {result.status === 'completed' ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+              {result.status}
+            </span>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        {/* Left: Input Panel (2 cols) */}
+        <div className="lg:col-span-2 space-y-4">
+          {/* Dropzone */}
+          <div
+            {...getRootProps()}
+            className={`relative rounded-2xl border-2 border-dashed transition-all duration-300 cursor-pointer overflow-hidden ${
+              isDragActive ? 'border-primary-400 bg-primary-400/5 scale-[1.01]' :
+              file ? 'border-green-500/30 bg-green-500/5' :
+              'border-dark-600/50 hover:border-primary-500/30 hover:bg-dark-800/30'
+            }`}
+          >
+            <input {...getInputProps()} />
+            {filePreview ? (
+              <div className="relative">
+                <img src={filePreview} alt="Preview" className="w-full h-48 object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-dark-900/90 to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 p-4">
+                  <p className="text-sm text-white font-medium truncate">{file?.name}</p>
+                  <p className="text-[10px] text-dark-400 mt-0.5">{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : ''} — Click to replace</p>
+                </div>
+              </div>
+            ) : file ? (
+              <div className="p-8 text-center">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-3">
+                  <CheckCircle className="w-6 h-6 text-green-400" />
+                </div>
+                <p className="text-sm text-white font-medium">{file.name}</p>
+                <p className="text-xs text-dark-400 mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                <p className="text-[10px] text-dark-500 mt-2">Click or drop to replace</p>
+              </div>
+            ) : (
+              <div className="p-10 text-center">
+                <div className="w-14 h-14 mx-auto rounded-2xl bg-dark-800 border border-dark-700/50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Upload className="w-6 h-6 text-dark-400" />
+                </div>
+                <p className="text-sm text-dark-300 font-medium">Drop evidence file here</p>
+                <p className="text-xs text-dark-500 mt-1.5">or click to browse</p>
+                <div className="flex items-center justify-center gap-2 mt-4">
+                  <span className="text-[10px] px-2 py-1 rounded bg-dark-800 text-dark-500 border border-dark-700/50">Max 50MB</span>
+                  <span className="text-[10px] px-2 py-1 rounded bg-dark-800 text-dark-500 border border-dark-700/50">Images, Audio, PDF</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Execute Button */}
+          <button
+            onClick={executeTask}
+            disabled={!file || executing}
+            className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-medium text-sm disabled:opacity-30 disabled:hover:from-primary-600 transition-all shadow-lg shadow-primary-500/20 disabled:shadow-none"
+          >
+            {executing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Processing Analysis...</span>
+              </>
+            ) : (
+              <>
+                <Zap className="w-4 h-4" />
+                <span>Execute Analysis</span>
+              </>
+            )}
+          </button>
+
+          {/* Progress */}
+          <AnimatePresence>
+            {executing && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="rounded-xl bg-dark-800/80 border border-dark-700/50 p-4 overflow-hidden"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-primary-400 animate-pulse" />
+                    <span className="text-xs text-dark-300">Running forensic pipeline...</span>
+                  </div>
+                  <span className="text-xs font-mono text-primary-400">{Math.round(progress)}%</span>
+                </div>
+                <div className="w-full h-2 bg-dark-700 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-primary-600 to-primary-400 rounded-full"
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </div>
+                <div className="mt-3 space-y-1.5">
+                  {['Parsing file structure', 'Executing analysis algorithms', 'Processing results'].map((step, i) => (
+                    <div key={step} className="flex items-center gap-2">
+                      {progress > (i + 1) * 30 ? (
+                        <CheckCircle className="w-3 h-3 text-green-400" />
+                      ) : progress > i * 30 ? (
+                        <Loader2 className="w-3 h-3 text-primary-400 animate-spin" />
+                      ) : (
+                        <Clock className="w-3 h-3 text-dark-600" />
+                      )}
+                      <span className={`text-[11px] ${progress > i * 30 ? 'text-dark-300' : 'text-dark-600'}`}>
+                        {step}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Quick Stats */}
+          {result && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid grid-cols-3 gap-2"
+            >
+              <div className="rounded-xl bg-dark-800/80 border border-dark-700/50 p-3 text-center">
+                <Activity className="w-4 h-4 mx-auto text-purple-400 mb-1" />
+                <p className="text-xs font-bold text-white">
+                  {result.execution_time_ms ? `${(result.execution_time_ms / 1000).toFixed(1)}s` : '—'}
+                </p>
+                <p className="text-[9px] text-dark-500">Duration</p>
+              </div>
+              <div className="rounded-xl bg-dark-800/80 border border-dark-700/50 p-3 text-center">
+                <Shield className="w-4 h-4 mx-auto text-green-400 mb-1" />
+                <p className="text-xs font-bold text-white">
+                  {result.confidence_score != null ? `${Math.round(result.confidence_score * 100)}%` : '—'}
+                </p>
+                <p className="text-[9px] text-dark-500">Confidence</p>
+              </div>
+              <div className="rounded-xl bg-dark-800/80 border border-dark-700/50 p-3 text-center">
+                <FileImage className="w-4 h-4 mx-auto text-blue-400 mb-1" />
+                <p className="text-xs font-bold text-white truncate">{result.input_filename?.split('.').pop()?.toUpperCase() || '—'}</p>
+                <p className="text-[9px] text-dark-500">Format</p>
+              </div>
+            </motion.div>
+          )}
+        </div>
+
+        {/* Right: Results Panel (3 cols) */}
+        <div className="lg:col-span-3">
+          {result ? (
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="space-y-4"
+            >
+              {/* Result Header Card */}
+              <div className="rounded-xl bg-dark-800/80 border border-dark-700/50 p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                      result.status === 'completed' ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'
+                    }`}>
+                      {result.status === 'completed' ? (
+                        <CheckCircle className="w-5 h-5 text-green-400" />
+                      ) : (
+                        <XCircle className="w-5 h-5 text-red-400" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-white capitalize">{result.status}</p>
+                      <p className="text-[10px] text-dark-500">
+                        {result.completed_at ? new Date(result.completed_at).toLocaleString() : new Date(result.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleSummarize}
+                      disabled={summarizing}
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                      {summarizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <Brain className="w-3 h-3" />}
+                      AI Summary
+                    </button>
+                    <button
+                      onClick={handleBookmark}
+                      className="flex items-center gap-1.5 px-3 py-2 text-xs bg-dark-700 hover:bg-dark-600 text-dark-200 rounded-lg transition-colors border border-dark-600/50"
+                    >
+                      <Bookmark className="w-3 h-3" /> Save
+                    </button>
+                  </div>
+                </div>
+
+                {/* Metadata Row */}
+                <div className="flex items-center gap-4 text-[10px] text-dark-500 border-t border-dark-700/30 pt-3">
+                  <span>ID: {result.execution_id.slice(0, 8)}...</span>
+                  {result.case_id && <span>Case #{result.case_id}</span>}
+                  <span>File: {result.input_filename}</span>
+                </div>
+              </div>
+
+              {/* AI Summary */}
+              <AnimatePresence>
+                {result.ai_summary && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="rounded-xl bg-gradient-to-br from-purple-500/5 to-blue-500/5 border border-purple-500/20 p-5 overflow-hidden"
+                  >
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-7 h-7 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                        <Brain className="w-4 h-4 text-purple-400" />
+                      </div>
+                      <h4 className="text-xs font-bold text-purple-400">AI Analysis Summary</h4>
+                      <button
+                        onClick={() => copyToClipboard(result.ai_summary!)}
+                        className="ml-auto p-1.5 rounded-md hover:bg-dark-700 transition-colors"
+                      >
+                        <Copy className="w-3 h-3 text-dark-400" />
+                      </button>
+                    </div>
+                    <div className="text-sm text-dark-200 leading-relaxed prose prose-invert prose-sm max-w-none">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>{result.ai_summary}</ReactMarkdown>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Output Data */}
+              {result.output_data && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-primary-400" />
+                    <h4 className="text-sm font-bold text-white">Analysis Results</h4>
+                    <span className="text-[10px] text-dark-500 ml-auto">
+                      {Object.keys(result.output_data).length} fields
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    {Object.entries(result.output_data).map(([key, value]) => (
+                      <div key={key} className="rounded-xl bg-dark-800/80 border border-dark-700/50 overflow-hidden">
+                        <div className="px-4 py-2.5 border-b border-dark-700/30 flex items-center justify-between">
+                          <p className="text-[11px] text-dark-400 uppercase font-semibold tracking-wide">
+                            {key.replace(/_/g, ' ')}
+                          </p>
+                          {typeof value === 'string' && (
+                            <button
+                              onClick={() => copyToClipboard(String(value))}
+                              className="p-1 rounded hover:bg-dark-700 transition-colors"
+                            >
+                              <Copy className="w-3 h-3 text-dark-500" />
+                            </button>
+                          )}
+                        </div>
+                        <div className="p-3">
+                          {renderOutputValue(key, value)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            <div className="rounded-2xl bg-dark-800/50 border border-dark-700/30 p-16 text-center h-full flex flex-col items-center justify-center">
+              <div className="w-20 h-20 rounded-2xl bg-dark-800 border border-dark-700/50 flex items-center justify-center mb-5">
+                <Microscope className="w-9 h-9 text-dark-600" />
+              </div>
+              <p className="text-dark-400 text-sm font-medium">No results yet</p>
+              <p className="text-dark-500 text-xs mt-1.5 max-w-xs">
+                Upload an evidence file and execute analysis to view forensic results here
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

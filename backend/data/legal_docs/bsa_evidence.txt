@@ -1,0 +1,90 @@
+BHARATIYA SAKSHYA ADHINIYAM (BSA) 2023 - LAW OF EVIDENCE
+
+ELECTRONIC EVIDENCE - Section 61-65
+
+Section 61: Contents of electronic records may be proved by production of output.
+- Printout from computer
+- Data stored in optical/magnetic media
+- Computer-generated output
+
+Section 63: Admissibility of electronic records
+- Electronic records are admissible as evidence.
+- Must be accompanied by certificate under Section 63(4).
+- Certificate must identify the electronic record, describe manner of production, and give details of device.
+
+Section 65: Special provisions for electronic evidence
+- Hash value must be computed at time of seizure.
+- Chain of custody must be maintained.
+- Forensic examination report from government-approved laboratory.
+- Integrity of evidence must be demonstrable.
+
+DOCUMENTARY EVIDENCE - Section 57-60
+
+Section 57: Primary evidence
+- Document itself produced for inspection of court.
+- In case of electronic records, any output from computer is primary evidence.
+
+Section 58: Secondary evidence
+- Certified copies, copies made from original by mechanical process.
+- Oral accounts by person who examined the original.
+- Admissible when original lost, in possession of adverse party, or public document.
+
+WITNESS EXAMINATION - Section 137-155
+
+Section 137: Examination-in-chief
+- Examination of witness by party who calls them.
+- Leading questions not permitted except on undisputed matters.
+
+Section 138: Cross-examination
+- Examination by opposing party.
+- Leading questions permitted.
+- Must relate to relevant facts.
+
+Section 139: Re-examination
+- By party who called the witness.
+- Limited to matters raised in cross-examination.
+- No new matter without leave of court.
+
+ADMISSIONS AND CONFESSIONS - Section 15-23
+
+Section 15: Admission defined
+- Statement suggesting inference about fact in issue.
+- Relevant when made by party to proceeding.
+
+Section 21: Confession to police
+- Not admissible against accused.
+- Exception: Leading to discovery of fact (Section 22).
+
+Section 22: Discovery statements
+- Portion of confession leading to discovery of fact may be proved.
+- Only the portion distinctly relating to fact discovered.
+
+EXPERT EVIDENCE - Section 45
+
+Section 45: Expert opinion relevant
+- On foreign law, science, art, handwriting, finger impressions, electronic evidence.
+- Expert must have special skill through practice, observation, or study.
+- Court may summon expert.
+
+PRESUMPTIONS
+
+Section 79: Presumption about documents 30 years old
+- Document produced from proper custody and appearing genuine.
+
+Section 81: Presumption about electronic records
+- Electronic records in 5 years or more from proper custody.
+- Presumed genuine if signature/seal verified.
+
+Section 85A: Presumption about electronic agreements
+- Electronic agreements presumed genuine.
+- Court may presume electronic record with digital signature to be authentic.
+
+BURDEN OF PROOF - Section 101-106
+
+Section 101: On whom burden lies
+- Who asserts must prove.
+- Prosecution bears burden in criminal cases (beyond reasonable doubt).
+
+Section 105: Burden of proving exceptions
+- Burden on accused to prove circumstances bringing case within exceptions.
+- Standard: Preponderance of probability (not beyond reasonable doubt).

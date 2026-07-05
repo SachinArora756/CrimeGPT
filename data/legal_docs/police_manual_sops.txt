@@ -1,0 +1,220 @@
+POLICE INVESTIGATION MANUAL - STANDARD OPERATING PROCEDURES
+==============================================================
+
+CHAPTER I - CRIME SCENE MANAGEMENT
+
+Section 1 - Initial Response
+(1) Upon receiving information of a cognizable offence, the duty officer shall immediately dispatch a team to the crime scene.
+(2) The first responder shall: secure the scene perimeter, prevent contamination, note all persons present, record time of arrival.
+(3) A crime scene log shall be maintained recording all persons entering and exiting the scene.
+Procedure: Information received -> Team dispatched -> Scene secured -> Perimeter established -> Log maintained.
+
+Section 2 - Scene Preservation
+(1) The crime scene shall be cordoned off using barrier tape or physical barriers.
+(2) No person shall enter the inner cordon without the permission of the investigating officer.
+(3) All entry and exit shall be through a single designated path.
+(4) Weather conditions and their potential effect on evidence shall be recorded.
+(5) Fragile or perishable evidence shall be prioritized for collection.
+Requirements: Cordoning, single entry path, weather recording, prioritized collection.
+
+Section 3 - Scene Documentation
+(1) The scene shall be documented through: written notes, sketches/diagrams, photography, and videography.
+(2) Photographs shall be taken: overall views from multiple angles, mid-range contextual shots, close-up detail shots with and without scale.
+(3) Video recording shall capture a continuous walkthrough of the entire scene.
+(4) A scaled diagram shall be prepared showing relative positions of evidence, bodies, furniture, and other significant items.
+Requirements: Notes, sketches, photos (overview/mid/close-up), video walkthrough, scaled diagram.
+
+Section 4 - Evidence Search Patterns
+(1) Evidence search shall be conducted systematically using one of the following patterns:
+  - Strip/Line Search: Team walks in parallel lines across the scene
+  - Grid Search: Strip search repeated at 90 degrees
+  - Spiral Search: From outside inward or inside outward
+  - Zone/Quadrant Search: Area divided into sections, each searched independently
+(2) The search pattern shall be selected based on scene type, size, and terrain.
+(3) All items of potential evidentiary value shall be marked before collection.
+
+CHAPTER II - EVIDENCE COLLECTION AND HANDLING
+
+Section 5 - General Principles
+(1) Evidence shall be collected only by trained personnel wearing appropriate PPE.
+(2) Each item of evidence shall be individually packaged, sealed, and labeled.
+(3) Labels shall include: case number, exhibit number, description, date/time of collection, location found, collector's name and badge number.
+(4) Chain of custody shall be initiated at the point of collection.
+(5) Contamination prevention: new gloves for each item, tools cleaned between uses.
+Requirements: PPE, individual packaging, proper labeling, chain of custody from collection.
+
+Section 6 - Biological Evidence
+(1) Blood samples: use sterile cotton swabs, air dry before packaging, store at 4 degrees C.
+(2) DNA samples: use buccal swabs for reference, avoid contamination, store in paper not plastic.
+(3) Hair and fibres: use forceps, place in paper folds within sealed envelopes.
+(4) Body fluids: collect on sterile substrates, air dry, do not expose to heat or sunlight.
+(5) All biological evidence shall be submitted to FSL within 72 hours.
+Timeline: Submit to Forensic Science Laboratory within 72 hours.
+
+Section 7 - Digital Evidence
+(1) Electronic devices shall not be powered on/off at the scene unless by trained digital forensic examiner.
+(2) Mobile phones: if on, keep powered (to preserve volatile data); if off, keep off. Place in Faraday bag if available.
+(3) Computers: photograph screen, document running programs, do not shut down normally — pull power cord for desktops, keep laptops powered.
+(4) Storage media: handle by edges, protect from magnetic fields, static, and physical damage.
+(5) Document all passwords, PINs visible at scene.
+(6) Hash values (MD5/SHA-256) shall be computed for all digital evidence at the earliest opportunity.
+Requirements: Do not power on/off, Faraday bag for phones, hash values computed, forensic imaging.
+
+Section 8 - Firearm Evidence
+(1) Note position and direction of barrel before moving.
+(2) Do not insert anything into the barrel.
+(3) Unload safely if loaded, document number of rounds.
+(4) Package in rigid container to prevent accidental discharge.
+(5) Collect spent cartridges, note positions on diagram.
+(6) Record serial numbers, make, model, caliber.
+(7) Submit for ballistic analysis along with recovered projectiles.
+
+Section 9 - Fingerprint Evidence
+(1) Latent prints: develop using appropriate powders or chemical methods.
+(2) Patent prints (visible): photograph before any lifting attempt.
+(3) Plastic prints (impressions): photograph with oblique lighting.
+(4) Use of cyanoacrylate fuming for non-porous surfaces.
+(5) All lifted prints shall be compared against the database (AFIS).
+(6) Elimination prints of all persons legitimately present shall be collected.
+
+Section 10 - Chain of Custody
+(1) Chain of custody documentation shall be maintained from the moment evidence is collected until its production in court.
+(2) Every transfer of custody shall be recorded with: date, time, from whom, to whom, purpose of transfer.
+(3) Evidence shall be stored in a secure evidence room with restricted access.
+(4) Access to evidence room shall be logged.
+(5) Any break in the chain of custody may render evidence inadmissible under BSA Section 65.
+(6) Digital evidence chain shall also document hash value verification at each transfer.
+Requirements: Continuous documentation, logged access, hash verification for digital evidence.
+
+CHAPTER III - STATEMENT RECORDING
+
+Section 11 - Recording Statements Under Section 179 BNSS
+(1) Statements shall be recorded in the language of the witness and translated if necessary.
+(2) Audio-video recording shall be used wherever facilities are available (mandatory under BNSS Section 179(4)).
+(3) Questions shall be open-ended, non-leading, and non-suggestive.
+(4) The witness shall be cautioned that making false statements is punishable.
+(5) Vulnerable witnesses (children, persons with disabilities) shall be questioned in presence of appropriate support person.
+(6) Statement recording shall take place in a comfortable environment, preferably at the police station or witness's residence.
+Requirements: Witness language, audio-video recording, non-leading questions, vulnerable witness support.
+
+Section 12 - Recording Dying Declaration
+(1) A dying declaration is a statement made by a person who is about to die or is under expectation of death.
+(2) It is admissible without oath under BSA Section 26.
+(3) Where possible, it shall be recorded by a Magistrate.
+(4) If recorded by a police officer: the mental fitness of the declarant shall be certified by a doctor if available.
+(5) Questions and answers shall be recorded verbatim.
+(6) The declarant's thumb impression or signature shall be obtained if possible.
+(7) Time of commencement and conclusion of recording shall be noted.
+(8) The certificate of the doctor regarding fitness to make statement shall be attached.
+Requirements: Magistrate preferred, doctor certification of fitness, verbatim recording, time noted.
+
+Section 13 - Confession Before Magistrate (Section 183 BNSS)
+(1) The Magistrate shall explain to the accused that he is not bound to make a confession.
+(2) The accused shall be given time to reflect (minimum 24 hours between arrest and confession).
+(3) The Magistrate shall satisfy himself that the confession is voluntary.
+(4) Questions shall be put to ascertain voluntariness: any inducement, threat, promise, physical violence.
+(5) The confession shall be recorded in the words of the accused.
+(6) The Magistrate shall certify that it was made voluntarily.
+Requirements: Voluntariness ensured, 24-hour reflection, Magistrate certification.
+
+CHAPTER IV - ARREST AND CUSTODY PROCEDURES
+
+Section 14 - Pre-Arrest Checklist
+Before making an arrest, the officer shall consider:
+(1) Whether the offence is cognizable
+(2) Whether there is reasonable suspicion or credible information
+(3) Whether arrest is necessary (Section 35 BNSS criteria)
+(4) Whether a notice of appearance would suffice instead
+(5) Whether the arrested person falls under any special category (woman, juvenile, senior citizen)
+(6) Whether proper documentation (arrest memo, rights card) is ready
+Assessment: Necessity of arrest must be documented; non-arrest alternatives preferred for offences up to 7 years.
+
+Section 15 - Arrest Execution Procedure
+(1) Identify yourself clearly (name, rank, station)
+(2) Inform the person of the offence and grounds of arrest
+(3) Inform the person of their rights (legal counsel, inform family, medical examination)
+(4) Prepare arrest memo with witness attestation
+(5) Search the person and record personal belongings
+(6) Note any pre-existing injuries on the body
+(7) Allow the person to contact family/lawyer
+(8) Transport to police station safely
+(9) Entry in station diary
+(10) Medical examination at the earliest
+(11) Production before Magistrate within 24 hours
+Timeline: Medical examination at earliest; Magistrate production within 24 hours.
+
+Section 16 - Custody Rights of Accused
+(1) Access to legal counsel
+(2) Inform family of arrest and location of custody
+(3) Medical examination every 48 hours
+(4) No physical or mental torture
+(5) Access to basic necessities (food, water, hygiene, sleep)
+(6) Female accused: custody under female officer, search only by female officer
+(7) Juvenile: separate from adult accused, inform Juvenile Justice Board
+
+CHAPTER V - INVESTIGATION PLANNING
+
+Section 17 - Case Strategy
+(1) Upon registration of FIR, the investigating officer shall prepare an investigation plan covering:
+  - Evidence to be collected (physical, digital, documentary, testimonial)
+  - Witnesses to be examined
+  - Technical/scientific examination required
+  - Timeline for key steps
+  - Resources required
+(2) The investigation plan shall be reviewed and updated as new information emerges.
+(3) For serious offences (7+ years imprisonment), the plan shall be reviewed by the supervising officer.
+
+Section 18 - Investigative Steps Priority
+Priority order for standard investigation:
+(1) Secure and process crime scene
+(2) Record FIR and initial statements
+(3) Collect and preserve perishable evidence
+(4) Identify and examine witnesses
+(5) Collect medical/forensic evidence
+(6) Digital evidence preservation and analysis
+(7) Suspect identification and arrest (if warranted)
+(8) Post-arrest investigation (confessions, discoveries, TIP)
+(9) Corroborative evidence collection
+(10) Chargesheet preparation
+
+Section 19 - Coordination with Other Agencies
+(1) Forensic Science Laboratory (FSL): For analysis of physical evidence
+(2) Cyber Crime Cell: For digital evidence and electronic trail
+(3) Medico-Legal: For injury documentation, cause of death, sexual assault examination
+(4) Revenue/Land Records: For property disputes
+(5) Bank/Financial institutions: For financial fraud cases
+(6) Telecom providers: For CDR, IPDR, tower location data
+(7) Inter-state coordination: Through CCTNS portal
+Requirements: Document all agency requests and responses.
+
+CHAPTER VI - DOCUMENTATION AND REPORTING
+
+Section 20 - Case Diary Maintenance
+(1) Case diary shall be maintained daily during active investigation.
+(2) Each entry shall contain: date, time, actions taken, persons met, evidence collected, observations.
+(3) The case diary shall be written by the investigating officer personally.
+(4) It shall be submitted to the supervising officer for perusal weekly.
+(5) Court may summon case diary but it is NOT evidence — used only as aid for inquiry/trial.
+Requirements: Daily, personal, time-stamped, supervised weekly.
+
+Section 21 - Status Reports
+(1) Weekly status reports shall be submitted to the supervising officer.
+(2) Monthly reports shall be submitted to the Superintendent of Police.
+(3) Reports shall include: progress made, pending steps, expected timeline, difficulties encountered.
+(4) Cases pending beyond prescribed timelines shall be flagged for special review.
+
+Section 22 - Chargesheet Preparation
+The chargesheet (Section 193 BNSS) shall include:
+(1) Cover page with case particulars
+(2) FIR copy
+(3) Statement of complainant
+(4) Statements of witnesses (Section 179 BNSS)
+(5) Confession/admission statements (if before Magistrate)
+(6) Panchnamas (inquest, scene, seizure, arrest)
+(7) Medical/forensic/scientific reports
+(8) Electronic evidence with Section 63 BSA certificates
+(9) List of documents relied upon
+(10) List of witnesses to be examined
+(11) Previous conviction record of accused (if any)
+(12) Property list and custody chart
+Requirements: All above documents mandatory for a complete chargesheet.

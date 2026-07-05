@@ -1,0 +1,31 @@
+DNA ANALYSIS REPORT
+Laboratory: Central Forensic Science Laboratory, New Delhi
+Report No: CFSL/DNA/2026/4521
+Case Reference: FIR 189/2026
+
+Sample Details:
+- Sample ID: EV-DNA-001
+- Collection Date: 2026-06-22
+- Collected By: SI Pradeep Kumar
+- Chain of Custody: Maintained
+
+STR Profile Results:
+Locus          Allele 1    Allele 2
+D3S1358        15          17
+vWA            16          18
+D16S539        11          12
+CSF1PO         10          12
+TPOX           8           11
+D8S1179        13          14
+D21S11         29          30.2
+D18S51         14          16
+D5S818         11          12
+D13S317        8           11
+D7S820         10          11
+TH01           6           9.3
+FGA            21          24
+
+Amelogenin: X, Y (Male)
+
+Quality Score: 98.5%
+Interpretation: Full profile obtained.

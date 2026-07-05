@@ -9,7 +9,7 @@ class Evidence(Base):
     __tablename__ = "evidence"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    case_id: Mapped[int] = mapped_column(ForeignKey("cases.id"), index=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("cases.id", ondelete="CASCADE"), index=True)
     file_path: Mapped[str] = mapped_column(String(500))
     original_filename: Mapped[str] = mapped_column(String(255))
     file_type: Mapped[str] = mapped_column(String(50))
@@ -17,8 +17,12 @@ class Evidence(Base):
     ocr_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     analysis_results: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
-    uploaded_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    tags: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    chain_of_custody: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    uploaded_by: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     case = relationship("Case", foreign_keys=[case_id])
     uploader = relationship("User", foreign_keys=[uploaded_by])

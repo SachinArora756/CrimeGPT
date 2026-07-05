@@ -1,0 +1,11 @@
+﻿Digital Forensics - Mobile Device Extraction Report
+Device: Samsung Galaxy A54
+IMEI: 356789012345678
+Owner: Vikram alias Vicky
+Extraction Date: 2026-06-20
+Call Records: 847 entries (last 90 days)
+SMS Messages: 234 entries
+WhatsApp Messages: 12,456 messages across 67 chats
+UPI Transactions: 342 (total outflow Rs. 1.8 Crore)
+Frequent Contacts: +91-9334XXXX21 (Jamtara handler), +91-8876XXXX45 (Mohd Arif)
+Deleted Apps: Fake_UPI_v2.3.apk, SIM_Clone_Tool.apk

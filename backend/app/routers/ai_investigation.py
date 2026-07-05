@@ -1,0 +1,409 @@
+"""
+AI Investigation Copilot Router
+
+Provides endpoints for creating investigation sessions, uploading evidence,
+sending messages, and streaming live investigation progress via SSE.
+"""
+
+import os
+import uuid
+import json
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
+from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func, desc
+
+from app.database import get_db
+from app.services.auth_service import get_current_user, require_min_role
+from app.models.user import User, UserRole
+from app.models.ai_investigation import AIInvestigationSession, AIInvestigationMessage
+from app.schemas.ai_investigation import (
+    CreateSessionRequest,
+    SendMessageRequest,
+    MessageResponse,
+    SessionResponse,
+    SessionDetailResponse,
+    UploadResponse,
+)
+from app.services.ai_investigation_service import (
+    classify_evidence,
+    get_tools_for_classification,
+    run_investigation,
+    handle_followup_message,
+    EVIDENCE_DIR,
+)
+
+router = APIRouter()
+
+
+@router.post("/sessions", response_model=SessionResponse)
+async def create_session(
+    body: CreateSessionRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """Create a new AI investigation session."""
+    session_id = str(uuid.uuid4())
+    session = AIInvestigationSession(
+        session_id=session_id,
+        user_id=current_user.id,
+        case_id=body.case_id,
+        title=body.title or "New Investigation",
+    )
+    db.add(session)
+    await db.commit()
+    await db.refresh(session)
+
+    return SessionResponse(
+        session_id=session.session_id,
+        title=session.title,
+        case_id=session.case_id,
+        status=session.status,
+        created_at=session.created_at,
+        updated_at=session.updated_at,
+        message_count=0,
+    )
+
+
+@router.get("/sessions", response_model=list[SessionResponse])
+async def list_sessions(
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """List the current user's investigation sessions."""
+    stmt = (
+        select(AIInvestigationSession)
+        .where(
+            AIInvestigationSession.user_id == current_user.id,
+            AIInvestigationSession.status != "archived",
+        )
+        .order_by(desc(AIInvestigationSession.updated_at))
+        .offset(offset)
+        .limit(limit)
+    )
+    result = await db.execute(stmt)
+    sessions = result.scalars().all()
+
+    responses = []
+    for s in sessions:
+        count_stmt = select(func.count()).where(AIInvestigationMessage.session_id == s.id)
+        count_result = await db.execute(count_stmt)
+        msg_count = count_result.scalar() or 0
+
+        responses.append(SessionResponse(
+            session_id=s.session_id,
+            title=s.title,
+            case_id=s.case_id,
+            status=s.status,
+            created_at=s.created_at,
+            updated_at=s.updated_at,
+            message_count=msg_count,
+        ))
+
+    return responses
+
+
+@router.get("/sessions/{session_id}", response_model=SessionDetailResponse)
+async def get_session(
+    session_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """Get a session with all messages."""
+    stmt = select(AIInvestigationSession).where(
+        AIInvestigationSession.session_id == session_id,
+        AIInvestigationSession.user_id == current_user.id,
+    )
+    result = await db.execute(stmt)
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    msgs_stmt = (
+        select(AIInvestigationMessage)
+        .where(AIInvestigationMessage.session_id == session.id)
+        .order_by(AIInvestigationMessage.created_at)
+    )
+    msgs_result = await db.execute(msgs_stmt)
+    messages = msgs_result.scalars().all()
+
+    return SessionDetailResponse(
+        session_id=session.session_id,
+        title=session.title,
+        case_id=session.case_id,
+        status=session.status,
+        created_at=session.created_at,
+        updated_at=session.updated_at,
+        messages=[
+            MessageResponse(
+                message_id=m.message_id,
+                role=m.role,
+                content=m.content,
+                attachments=m.attachments if isinstance(m.attachments, list) else ([m.attachments] if m.attachments else None),
+                tool_executions=m.tool_executions if isinstance(m.tool_executions, list) else ([m.tool_executions] if m.tool_executions else None),
+                metadata=m.metadata_,
+                created_at=m.created_at,
+            )
+            for m in messages
+        ],
+    )
+
+
+@router.delete("/sessions/{session_id}")
+async def archive_session(
+    session_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """Archive (soft-delete) a session."""
+    stmt = select(AIInvestigationSession).where(
+        AIInvestigationSession.session_id == session_id,
+        AIInvestigationSession.user_id == current_user.id,
+    )
+    result = await db.execute(stmt)
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    session.status = "archived"
+    session.updated_at = datetime.utcnow()
+    await db.commit()
+    return {"status": "archived", "session_id": session_id}
+
+
+@router.post("/sessions/{session_id}/upload", response_model=UploadResponse)
+async def upload_evidence(
+    session_id: str,
+    file: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """Upload evidence to a session and classify it."""
+    stmt = select(AIInvestigationSession).where(
+        AIInvestigationSession.session_id == session_id,
+        AIInvestigationSession.user_id == current_user.id,
+    )
+    result = await db.execute(stmt)
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    upload_id = str(uuid.uuid4())
+    upload_dir = os.path.join(EVIDENCE_DIR, session_id, upload_id)
+    os.makedirs(upload_dir, exist_ok=True)
+
+    original_filename = file.filename or "uploaded_file"
+    safe_filename = "".join(c for c in original_filename if c.isalnum() or c in "._- ")[:255]
+    if not safe_filename:
+        safe_filename = "uploaded_file"
+
+    file_path = os.path.join(upload_dir, safe_filename)
+    content = await file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    classification = classify_evidence(file_path, original_filename)
+
+    message_id = str(uuid.uuid4())
+    msg = AIInvestigationMessage(
+        message_id=message_id,
+        session_id=session.id,
+        role="user",
+        content=f"Uploaded evidence: {original_filename}",
+        attachments=[{
+            "file_path": file_path,
+            "original_filename": original_filename,
+            "file_type": classification["type"],
+            "mime_type": classification["mime_type"],
+            "classification": classification,
+            "upload_id": upload_id,
+        }],
+    )
+    db.add(msg)
+    session.updated_at = datetime.utcnow()
+
+    if session.title == "New Investigation":
+        session.title = f"Investigation: {original_filename}"
+
+    await db.commit()
+
+    return UploadResponse(
+        file_path=file_path,
+        original_filename=original_filename,
+        file_type=classification["type"],
+        classification=classification,
+        message_id=message_id,
+    )
+
+
+@router.post("/sessions/{session_id}/investigate")
+async def investigate(
+    session_id: str,
+    message: str = Form(""),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """
+    Trigger investigation on the most recent upload in this session.
+    Returns SSE stream with live progress events.
+    """
+    stmt = select(AIInvestigationSession).where(
+        AIInvestigationSession.session_id == session_id,
+        AIInvestigationSession.user_id == current_user.id,
+    )
+    result = await db.execute(stmt)
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    last_upload_stmt = (
+        select(AIInvestigationMessage)
+        .where(
+            AIInvestigationMessage.session_id == session.id,
+            AIInvestigationMessage.role == "user",
+            AIInvestigationMessage.attachments.isnot(None),
+        )
+        .order_by(desc(AIInvestigationMessage.created_at))
+        .limit(1)
+    )
+    upload_result = await db.execute(last_upload_stmt)
+    upload_msg = upload_result.scalar_one_or_none()
+
+    if not upload_msg or not upload_msg.attachments:
+        raise HTTPException(status_code=400, detail="No evidence uploaded in this session yet")
+
+    attachments = upload_msg.attachments if isinstance(upload_msg.attachments, list) else [upload_msg.attachments]
+    attachment = attachments[0]
+    file_path = attachment["file_path"]
+    original_filename = attachment["original_filename"]
+
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Evidence file not found on disk")
+
+    async def sse_generator():
+        all_events = []
+        async for event in run_investigation(
+            file_path=file_path,
+            original_filename=original_filename,
+            user_message=message or None,
+            user_id=current_user.id,
+            case_id=session.case_id,
+            db=db,
+        ):
+            all_events.append(event)
+            event_name = event.get("event", "message")
+            data_json = json.dumps(event.get("data", {}), default=str)
+            yield f"event: {event_name}\ndata: {data_json}\n\n"
+
+        final_event = all_events[-1] if all_events else None
+        if final_event and final_event.get("event") == "complete":
+            complete_data = final_event["data"]
+            assistant_msg_id = str(uuid.uuid4())
+            assistant_msg = AIInvestigationMessage(
+                message_id=assistant_msg_id,
+                session_id=session.id,
+                role="assistant",
+                content=complete_data.get("report", ""),
+                tool_executions=complete_data.get("tool_results"),
+                metadata_={
+                    "classification": complete_data.get("classification"),
+                    "criminal_matches": complete_data.get("criminal_matches"),
+                },
+            )
+            db.add(assistant_msg)
+            session.updated_at = datetime.utcnow()
+            await db.commit()
+
+    return StreamingResponse(
+        sse_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+@router.post("/sessions/{session_id}/message")
+async def send_message(
+    session_id: str,
+    body: SendMessageRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """Send a follow-up message in an existing session."""
+    stmt = select(AIInvestigationSession).where(
+        AIInvestigationSession.session_id == session_id,
+        AIInvestigationSession.user_id == current_user.id,
+    )
+    result = await db.execute(stmt)
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    if not body.message.strip():
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+
+    user_msg_id = str(uuid.uuid4())
+    user_msg = AIInvestigationMessage(
+        message_id=user_msg_id,
+        session_id=session.id,
+        role="user",
+        content=body.message,
+    )
+    db.add(user_msg)
+    await db.flush()
+
+    msgs_stmt = (
+        select(AIInvestigationMessage)
+        .where(AIInvestigationMessage.session_id == session.id)
+        .order_by(AIInvestigationMessage.created_at)
+    )
+    msgs_result = await db.execute(msgs_stmt)
+    all_messages = msgs_result.scalars().all()
+
+    history = [
+        {
+            "role": m.role,
+            "content": m.content,
+            "tool_executions": m.tool_executions,
+        }
+        for m in all_messages
+    ]
+
+    response_text = await handle_followup_message(
+        session_messages=history,
+        user_message=body.message,
+        attachments=None,
+    )
+
+    assistant_msg_id = str(uuid.uuid4())
+    assistant_msg = AIInvestigationMessage(
+        message_id=assistant_msg_id,
+        session_id=session.id,
+        role="assistant",
+        content=response_text,
+    )
+    db.add(assistant_msg)
+    session.updated_at = datetime.utcnow()
+    await db.commit()
+
+    return {
+        "user_message": {
+            "message_id": user_msg_id,
+            "role": "user",
+            "content": body.message,
+            "created_at": datetime.utcnow().isoformat(),
+        },
+        "assistant_message": {
+            "message_id": assistant_msg_id,
+            "role": "assistant",
+            "content": response_text,
+            "created_at": datetime.utcnow().isoformat(),
+        },
+    }

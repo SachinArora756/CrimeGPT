@@ -1,5 +1,7 @@
+# === Web framework ===
 fastapi==0.115.0
 uvicorn[standard]==0.30.6
+slowapi==0.1.9
 sqlalchemy[asyncio]==2.0.35
 asyncpg==0.29.0
 alembic==1.13.2
@@ -7,26 +9,70 @@ pydantic==2.9.2
 pydantic-settings==2.5.2
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
 python-multipart==0.0.9
 python-dotenv==1.0.1
 email-validator==2.2.0
 
-langchain==0.3.1
-langchain-google-genai==2.0.0
-langchain-community==0.3.1
-langgraph==0.2.28
+# === LangChain ecosystem (coordinated 0.3.x set) ===
+langchain==0.3.14
+langchain-core==0.3.29
+langchain-text-splitters==0.3.3
+langchain-google-genai==2.0.8
+langchain-community==0.3.12
+langgraph==0.2.60
+langgraph-checkpoint==2.0.4
+langgraph-sdk==0.1.42
+langsmith==0.1.147
 
-qdrant-client==1.11.3
-sentence-transformers==3.1.1
+# === Vector DB ===
+qdrant-client==1.12.1
 
+# === Embeddings & ML ===
+sentence-transformers==3.3.1
+transformers==4.46.3
+# torch and torchvision installed separately in Dockerfile (CPU-only wheel)
+tokenizers==0.20.3
+
+# === Pinned shared deps to prevent resolver backtracking ===
+numpy==1.26.4
+protobuf==5.28.3
+grpcio==1.68.1
+grpcio-tools==1.68.1
+scipy==1.14.1
+scikit-learn==1.5.2
+huggingface-hub==0.26.5
+
+# === OCR & Vision ===
 pytesseract==0.3.10
+easyocr==1.7.2
 Pillow==10.4.0
 opencv-python-headless==4.10.0.84
-ultralytics==8.3.2
+ultralytics==8.3.50
 
-openai-whisper==20231117
+# === Audio transcription ===
+faster-whisper==1.1.1
+ctranslate2==4.5.0
+onnxruntime==1.20.1
+
+# === Document processing ===
 python-docx==1.1.2
 reportlab==4.2.2
+PyMuPDF==1.24.4
 
+# === Face Recognition ===
+insightface>=0.7.3
+
+# === Image Similarity (CLIP) ===
+open-clip-torch>=2.24.0
+
+# === HTTP & async ===
 httpx==0.27.2
 aiofiles==24.1.0
+
+# === Google AI SDK (pinned for langchain-google-genai 2.0.8) ===
+google-generativeai==0.8.3
+filetype==1.2.0
+
+# === SSE Streaming ===
+sse-starlette>=1.6.0

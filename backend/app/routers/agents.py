@@ -1,18 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models.user import User
 from app.services.auth_service import get_current_user
-from app.services.case_service import get_case_by_id
+from app.services.authorization import authorize_case_access
+from app.utils.rate_limiter import limiter
 
 router = APIRouter()
 
 
 class IntakeRequest(BaseModel):
-    complaint_text: str
-    language: str = "en"
+    complaint_text: str = Field(min_length=10, max_length=50000)
+    language: str = Field(default="en", max_length=10)
 
 
 class IntakeResponse(BaseModel):
@@ -26,8 +27,8 @@ class IntakeResponse(BaseModel):
 
 
 class InvestigationRequest(BaseModel):
-    case_id: int
-    context: str | None = None
+    case_id: str = Field(min_length=1)
+    context: str | None = Field(default=None, max_length=5000)
 
 
 class InvestigationResponse(BaseModel):
@@ -38,8 +39,8 @@ class InvestigationResponse(BaseModel):
 
 
 class LegalQueryRequest(BaseModel):
-    query: str
-    case_id: int | None = None
+    query: str = Field(min_length=3, max_length=2000)
+    case_id: str | None = Field(default=None, min_length=1)
 
 
 class LegalQueryResponse(BaseModel):
@@ -49,42 +50,62 @@ class LegalQueryResponse(BaseModel):
 
 
 @router.post("/intake", response_model=IntakeResponse)
+@limiter.limit("10/minute")
 async def process_intake(
-    request: IntakeRequest,
+    request_obj: IntakeRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     from app.ai.agents.case_intake import extract_case_data
+    from app.middleware.security import sanitize_input
 
-    result = await extract_case_data(request.complaint_text, request.language)
+    sanitized = sanitize_input(request_obj.complaint_text)
+    try:
+        result = await extract_case_data(sanitized, request_obj.language)
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="AI service temporarily unavailable")
     return IntakeResponse(**result)
 
 
 @router.post("/investigate", response_model=InvestigationResponse)
+@limiter.limit("10/minute")
 async def run_investigation(
-    request: InvestigationRequest,
+    request_obj: InvestigationRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    case = await get_case_by_id(db, request.case_id)
-    if not case:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Case not found")
+    case = await authorize_case_access(db, request_obj.case_id, current_user)
 
     from app.ai.agents.investigation import investigate_case
 
-    result = await investigate_case(case, request.context)
+    try:
+        result = await investigate_case(case, request_obj.context)
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="AI service temporarily unavailable")
     return InvestigationResponse(**result)
 
 
 @router.post("/legal-query", response_model=LegalQueryResponse)
+@limiter.limit("20/minute")
 async def query_legal(
-    request: LegalQueryRequest,
+    request_obj: LegalQueryRequest,
+    request: Request,
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    from app.ai.agents.legal_rag import query_legal_provisions
+    if request_obj.case_id:
+        await authorize_case_access(db, request_obj.case_id, current_user)
 
-    result = await query_legal_provisions(request.query, request.case_id)
+    from app.ai.agents.legal_rag import query_legal_provisions
+    from app.middleware.security import sanitize_input
+
+    sanitized = sanitize_input(request_obj.query)
+    try:
+        result = await query_legal_provisions(sanitized, request_obj.case_id)
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="AI service temporarily unavailable")
     return LegalQueryResponse(**result)
 
 
@@ -98,5 +119,4 @@ async def transcribe_audio(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    from fastapi import UploadFile, File
     return TranscribeResponse(text="", language="en")

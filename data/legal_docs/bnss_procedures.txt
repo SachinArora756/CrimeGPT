@@ -1,0 +1,218 @@
+BHARATIYA NAGARIK SURAKSHA SANHITA (BNSS) 2023
+=================================================
+(Act No. 46 of 2023, replaces Code of Criminal Procedure 1973)
+
+CHAPTER I - PRELIMINARY
+
+Section 1 - Short Title, Commencement, and Application
+This Act may be called the Bharatiya Nagarik Suraksha Sanhita, 2023. It shall come into force on 1st July 2024.
+
+Section 2 - Definitions
+(1) "Bail" means release of a person from custody with or without sureties.
+(2) "Bailable offence" means an offence shown as bailable in the First Schedule.
+(3) "Cognizable offence" means an offence for which a police officer may arrest without warrant.
+(4) "Complaint" means any allegation made orally or in writing to a Magistrate.
+(5) "Electronic communication" includes communication through any electronic means including social media.
+(6) "Investigation" includes all proceedings for collection of evidence conducted by a police officer.
+(7) "Non-cognizable offence" means an offence for which a police officer has no authority to arrest without warrant.
+(8) "Victim" means a person who has suffered any loss or injury caused by reason of the act or omission for which the accused person has been charged.
+
+CHAPTER IV - INFORMATION TO THE POLICE AND THEIR POWERS TO INVESTIGATE
+
+Section 173 - Information in Cognizable Cases (FIR Registration)
+(1) Every information relating to the commission of a cognizable offence, if given orally to an officer in charge of a police station, shall be reduced to writing by him or under his direction, and be read over to the informant; and every such information shall be signed by the person giving it.
+(2) A copy of the information as recorded shall be given forthwith, free of cost, to the informant.
+(3) Any person aggrieved by a refusal to record information may send the substance in writing to the Superintendent of Police who shall investigate or direct investigation.
+(4) If the information discloses a cognizable offence, the officer in charge shall register a case.
+(5) ZERO FIR: If the information relates to commission of a cognizable offence beyond jurisdiction, the officer shall register and transfer to the jurisdictional police station.
+(6) E-FIR: The information may also be given by electronic communication and shall be signed within three days.
+(7) MANDATORY UPLOAD: Every information so recorded shall be uploaded on the designated police portal within twenty-four hours.
+Procedure: Information received -> Reduced to writing -> Signed by informant -> Copy given free -> Registered in Station Diary -> FIR number assigned -> Uploaded to portal within 24 hours.
+
+Section 174 - Information in Non-Cognizable Cases
+(1) When information is given of the commission of a non-cognizable offence, he shall enter the substance in the prescribed form and refer the informant to the Magistrate.
+(2) No police officer shall investigate a non-cognizable case without the order of a Magistrate.
+Procedure: Information received -> Entered in register -> Informant referred to Magistrate -> Investigation only with Magistrate's order.
+
+Section 175 - Investigation of Cognizable Cases
+(1) Every officer in charge of a police station may, without the order of a Magistrate, investigate any cognizable case.
+(2) No proceeding of a police officer shall be called in question on the ground that the case was one which such officer was not empowered to investigate.
+(3) The investigation shall be completed without unnecessary delay: within sixty days for offences punishable with imprisonment up to three years, and ninety days for other offences.
+Timeline: 60 days (offences up to 3 years) or 90 days (other offences).
+
+Section 176 - Powers of Investigation
+The investigation shall include: (a) proceeding to the spot, (b) ascertainment of facts and circumstances, (c) discovery and arrest of suspected offender, (d) collection of evidence.
+
+Section 178 - Investigation Procedure
+The investigation of an offence shall include: proceeding to the spot; ascertainment of the facts and circumstances; discovery and arrest of the suspected offender; collection of evidence relating to the commission of an offence which may consist of the examination of persons and the search of places.
+
+Section 179 - Examination of Witnesses by Police
+(1) Any police officer making an investigation may examine orally any person supposed to be acquainted with the facts and circumstances of the case.
+(2) Such person shall be bound to answer all questions, other than questions the answers to which would expose him to a criminal charge.
+(3) The police officer may reduce into writing any statement made to him.
+(4) Such statement shall be recorded using audio-video electronic means, preferably.
+Requirement: Statements should be recorded using audio-video electronic means.
+
+Section 180 - Statements to Police Not to Be Used as Evidence
+No statement made by any person to a police officer in the course of investigation shall be signed by the person making it; nor shall such statement be used for any purpose at any trial.
+Exception: May be used to contradict the witness under Section 145 of BSA.
+
+Section 183 - Diary of Proceedings in Investigation (Case Diary)
+(1) Every police officer making an investigation shall day by day enter his proceedings in a diary, setting forth:
+- the time at which the information reached him
+- the time at which he began and closed his investigation
+- the place or places visited by him
+- a statement of the circumstances ascertained through his investigation
+(2) Any Criminal Court may send for the police diaries and use them to aid inquiry or trial.
+Requirements: Daily entries, time-stamped, location tracked, circumstances recorded.
+
+Section 185 - Search by Police Officer (Search Procedures)
+(1) Whenever an officer in charge of a police station has reasonable grounds for believing that anything necessary for investigation may be found in any place, and cannot be otherwise obtained without undue delay, such officer may search for such thing after recording in writing the grounds of his belief.
+(2) A police officer proceeding under sub-section (1) shall, if practicable, conduct the search in person.
+(3) The search shall be conducted in the presence of two or more independent and respectable inhabitants of the locality.
+(4) A list of all things seized shall be prepared and signed by witnesses.
+(5) The entire search process shall be video-graphed through any electronic device.
+Requirements: Written grounds -> Personal search if possible -> Two independent witnesses -> Seizure list -> Mandatory video recording.
+
+Section 186 - Seizure of Property
+(1) The officer or other person executing a search warrant shall, after seizure of anything under such warrant, prepare a list of all things seized and of the places in which they are respectively found.
+(2) Such list shall be signed by two witnesses.
+(3) A copy of the list shall be given to the occupant of the place searched.
+
+Section 187 - Search Warrants
+(1) Where any Court has reason to believe that a person will not produce the required document or thing, the Court may issue a search warrant.
+(2) The Court shall specify the particular place to be searched and the thing to be searched for.
+
+Section 193 - Report of Police Officer on Completion of Investigation (Chargesheet)
+(1) Every investigation shall be completed without unnecessary delay.
+(2) As soon as investigation is completed, the officer shall forward to a Magistrate a report stating:
+  (a) the names of the parties
+  (b) the nature of the information
+  (c) the names of persons acquainted with circumstances
+  (d) whether any offence appears to have been committed and by whom
+  (e) whether the accused has been arrested
+  (f) whether released on bond with or without sureties
+  (g) whether forwarded in custody
+(3) The police report shall be filed within ninety days for offences of ten years or more, and sixty days for other offences.
+(4) If investigation not completed, a status report shall be filed with the Magistrate.
+Timeline: Chargesheet within 60 days (offences below 10 years) or 90 days (offences of 10+ years).
+
+Section 194 - Cases to Be Sent to Magistrate When Evidence Is Sufficient
+If there is sufficient evidence or reasonable ground of suspicion, the officer shall forward the accused under custody to a Magistrate empowered to take cognizance of the offence.
+
+Section 195 - Release When Evidence Deficient
+If the evidence is not sufficient, such officer shall release the accused on executing a bond.
+
+CHAPTER V - ARREST PROCEDURES
+
+Section 35 - Arrest by Police Officer Without Warrant
+(1) Any police officer may, without warrant, arrest any person:
+  - who has been concerned in any cognizable offence
+  - against whom reasonable complaint has been made
+  - against whom credible information has been received
+  - against whom reasonable suspicion exists
+(2) Where arrest is not required, the officer shall issue a notice of appearance.
+(3) Where such notice is issued and the person fails to comply, the officer may arrest.
+(4) Every police officer while making an arrest shall:
+  (a) bear visible identification of name, designation, and name-tag
+  (b) prepare a memorandum of arrest attested by at least one witness (family member or respectable local person)
+  (c) have it countersigned by the arrested person
+  (d) inform the person of his right to have someone informed of his arrest
+(5) MANDATORY: Production before nearest Magistrate within twenty-four hours.
+Timeline: Production before Magistrate within 24 hours mandatory.
+
+Section 36 - Arrest Memo Requirements
+The police officer making an arrest shall prepare an arrest memo containing:
+(a) Name, designation, and station of arresting officer
+(b) Date, time, and place of arrest
+(c) Offence for which arrest is made
+(d) Grounds of arrest
+(e) Fact that rights were informed
+(f) Name of person informed about the arrest
+(g) Details of attesting witness
+(h) Any injuries found on arrested person at time of arrest
+Requirement: All fields mandatory for valid arrest memo.
+
+Section 37 - Production Before Magistrate
+Every person arrested and detained shall be produced before the nearest Magistrate within twenty-four hours excluding journey time.
+
+Section 38 - Health and Safety of Arrested Person
+(1) Duty of custodian to take reasonable care of health and safety of accused.
+(2) A woman arrested shall be searched only by another woman with strict regard to decency.
+
+Section 39 - Rights of Arrested Person
+(1) Right to be informed of full particulars of offence and grounds of arrest.
+(2) Right to consult and be defended by a legal practitioner of choice.
+(3) Right to inform a nominated person of the arrest.
+(4) Right to be informed about entitlement to bail.
+
+Section 40 - Procedure of Arrest and Duties of Officer Making Arrest
+(1) In making an arrest the police officer shall actually touch or confine the body of the person to be arrested unless there be a submission to the custody by word or action.
+(2) If a woman is to be arrested, unless the circumstances indicate to the contrary, her submission to custody on an oral intimation of arrest shall be presumed.
+(3) No woman shall be arrested after sunset and before sunrise except in exceptional circumstances with prior permission of the Magistrate.
+Restriction: No arrest of women between sunset and sunrise except with Magistrate's permission.
+
+CHAPTER VI - BAIL AND BONDS
+
+Section 478 - Bail in Non-Bailable Offences
+(1) Person accused of non-bailable offence may be released on bail.
+(2) Not to be released if reasonable grounds for believing guilty of offence punishable with death or life imprisonment.
+(3) Magistrate may refuse bail if offence punishable with seven years or more.
+Criteria: Nature of offence, severity of punishment, likelihood of fleeing, criminal antecedents.
+
+Section 479 - Maximum Period of Detention (Default Bail)
+(1) Where a person has undergone detention for one-half of the maximum period of imprisonment for that offence, he shall be released on personal bond.
+(2) No person shall be detained beyond maximum period of imprisonment for that offence.
+DEFAULT BAIL: If chargesheet not filed within prescribed time, accused entitled to default bail.
+
+Section 480 - Bail in Bailable Offences
+When any person accused of a bailable offence is arrested and prepared to give bail, such person shall be released on bail.
+Rule: Bail as a matter of right in bailable offences.
+
+Section 482 - Anticipatory Bail
+(1) Any person who has reason to believe he may be arrested for a non-bailable offence may apply to the High Court or Court of Session for anticipatory bail.
+(2) Such Court may direct that in the event of arrest, he shall be released on bail.
+
+CHAPTER VII - PROCESSES TO COMPEL APPEARANCE
+
+Section 61 - Summons
+A Court may issue a summons to any person requiring attendance and to produce any document or thing specified.
+
+Section 62 - Service of Summons
+(1) Summons served by police officer or Court officer.
+(2) Served personally by delivering duplicate.
+(3) Service may also be effected through electronic means including registered email.
+
+CHAPTER VIII - PROVISIONS FOR VICTIMS
+
+Section 360 - Victim's Right to Participate
+(1) The victim shall have the right to be heard at any proceeding regarding bail, discharge, release, parole, conviction or sentence.
+(2) The victim shall be entitled to receive notice of any proceeding.
+(3) The victim shall have the right to file an appeal against acquittal or conviction for lesser offence.
+
+Section 361 - Victim Compensation
+(1) State Government shall prepare scheme for compensation to victims who have suffered loss or injury.
+(2) Court may recommend compensation from the scheme.
+
+Section 362 - Witness Protection
+(1) State Government shall prepare Witness Protection Scheme.
+(2) Competent authority shall provide protection from intimidation or threat.
+
+CHAPTER IX - MISCELLANEOUS
+
+Section 530 - Trial in Absentia
+Where a person has absconded and no immediate prospect of arresting him, and proclamation has been published, the Court may proceed with trial in his absence.
+
+Section 531 - Audio-Video Recording
+(1) All proceedings including examination of complainant and witnesses shall be recorded through audio-video electronic means.
+(2) Evidence of victim in sexual offences shall be recorded through audio-video electronic means in presence of woman advocate or officer.
+Requirement: Audio-video recording of all proceedings is mandatory under BNSS.
+
+Section 532 - Use of Electronic Communication
+All summons, warrants, notices, and documents under this Sanhita may be served, issued, or communicated through electronic means.
+
+Section 533 - Forensic Investigation
+(1) In respect of offences punishable with imprisonment of seven years or more, the investigating officer shall cause a forensic expert to visit the crime scene for collection and analysis of forensic evidence.
+(2) Such visit shall be made within twenty-four hours of registration of information.
+(3) Where forensic facility is not available within the jurisdiction, the facility of any agency of the Central or State Government may be availed.
+Timeline: Forensic expert visit within 24 hours for offences of 7+ years imprisonment.

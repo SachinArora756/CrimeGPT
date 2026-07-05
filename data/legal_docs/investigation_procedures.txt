@@ -1,0 +1,222 @@
+DETAILED INVESTIGATION PROCEDURES AND GUIDELINES
+===================================================
+
+CHAPTER I - FORENSIC INVESTIGATION PROCEDURES
+
+Section 1 - Forensic Science Laboratory (FSL) Submission
+(1) All physical evidence shall be submitted to the FSL with a proper forwarding letter.
+(2) The forwarding letter shall contain: case number, FIR details, description of exhibits, specific questions to be answered by the expert.
+(3) Each exhibit shall be packed separately, sealed with the IO's seal, and labeled.
+(4) Biological samples shall be maintained at appropriate temperature during transport.
+(5) A receipt shall be obtained from FSL for all exhibits submitted.
+(6) FSL reports shall be obtained within the prescribed timeline and attached to chargesheet.
+Timeline: Follow up within 15 days; escalate if report not received within 30 days.
+
+Section 2 - DNA Evidence Procedures
+(1) DNA samples shall be collected by trained personnel only.
+(2) Reference samples: buccal swabs from suspect and victim (with consent/court order).
+(3) Crime scene samples: blood, semen, hair roots, skin cells, saliva.
+(4) Avoid cross-contamination: change gloves between samples, use sterile equipment.
+(5) Storage: refrigerate at 2-8 degrees C, never freeze liquid blood samples.
+(6) Submit to DNA laboratory within 72 hours of collection.
+(7) DNA profiling results shall be matched against National DNA Database (once operational).
+Requirements: Trained personnel, sterile collection, refrigerated storage, 72-hour submission.
+
+Section 3 - Ballistic Analysis Procedures
+(1) Firearm recovery: note exact position, photograph in situ, handle with care.
+(2) Test firing: 3-5 rounds for comparison purposes.
+(3) Submit: recovered firearm, spent cartridges from scene, bullet/projectile from victim/scene.
+(4) Ballistic expert will determine: match between firearm and bullet/cartridge, range of firing, direction of firing.
+(5) Serial number restoration if obliterated.
+(6) Gunshot residue (GSR) samples from suspect's hands within 6 hours of incident.
+Timeline: GSR collection within 6 hours; firearm submission within 24 hours.
+
+Section 4 - Toxicology Procedures
+(1) In cases of suspected poisoning: collect vomit, blood, urine, viscera during post-mortem.
+(2) Preserve in appropriate containers (fluoride for blood alcohol, plain for drugs).
+(3) Control samples from same batch of containers.
+(4) Submit with specific questions regarding suspected substance.
+(5) Chemical examiner's report is essential for poison cases.
+Timeline: Viscera to be preserved and sent to Chemical Examiner within 24 hours of post-mortem.
+
+Section 5 - Post-Mortem and Medico-Legal Procedures
+(1) In cases of unnatural death: inquest by police officer (Section 194 BNSS).
+(2) Body to be sent for post-mortem examination with proper identification.
+(3) Two constables shall escort the body; IO shall attend post-mortem if possible.
+(4) Post-mortem request shall specify: cause of death required, specific questions, injuries to be documented.
+(5) Videography of post-mortem mandatory for offences of 7+ years.
+(6) Additional samples (viscera, blood, swabs) as directed by doctor.
+(7) Post-mortem report to be collected personally and discrepancies clarified immediately.
+Requirements: Inquest report, identification, escort, specific questions, videography for serious cases.
+
+CHAPTER II - DIGITAL EVIDENCE AND CYBER INVESTIGATION
+
+Section 6 - Electronic Device Seizure Protocol
+(1) Document device state (on/off, screen content, running programs).
+(2) Photograph the device in situ with visible serial numbers.
+(3) Mobile phones: if ON, enable airplane mode first; place in Faraday bag if available.
+(4) Computers: record volatile data if trained; otherwise note screen and pull power.
+(5) Record all accessories (chargers, cables, memory cards).
+(6) Complete seizure memo with device details (make, model, IMEI, serial number).
+(7) Seal with IO's seal; have two witnesses sign.
+(8) DO NOT attempt to access, browse, or unlock devices without forensic tools.
+Requirements: Document state, photograph, Faraday bag for phones, proper seizure memo, DO NOT access.
+
+Section 7 - Digital Forensic Imaging
+(1) Forensic imaging shall be conducted by trained cyber forensic examiner.
+(2) Write-blocker shall be used when connecting storage media.
+(3) Bit-by-bit forensic image shall be created of all storage media.
+(4) Hash values (MD5 and SHA-256) of original and image shall be computed and compared.
+(5) All subsequent examination shall be performed on the forensic copy, NEVER on the original.
+(6) Hash value verification report shall be prepared as per BSA Section 65.
+(7) Chain of custody for digital evidence shall include hash verification at each transfer.
+Requirements: Write-blocker, bit-by-bit image, hash verification, examine copy only.
+
+Section 8 - Call Detail Records (CDR) and IP Data
+(1) CDR requisition to telecom provider under proper legal authority.
+(2) Include: target numbers, date range (not exceeding case-relevant period), purpose.
+(3) Tower dump requests: specify tower IDs and time window.
+(4) IPDR (IP Detail Records) for internet activity.
+(5) Analysis shall include: call patterns, tower locations, movement mapping.
+(6) CDR analysis report with charts and timelines for chargesheet.
+(7) BSA Section 63 certificate required from telecom provider for court admissibility.
+Requirements: Proper authority, limited scope, Section 63 BSA certificate for admissibility.
+
+Section 9 - Social Media and Online Evidence
+(1) Screenshots with URL visible and timestamp (use system clock showing time).
+(2) Source code/page info for authentication.
+(3) Request to platform for account data (through proper legal channels/MLAT if foreign platform).
+(4) Hash screenshots immediately.
+(5) Section 63 BSA certificate for all electronic evidence produced.
+(6) URL archival (Wayback Machine, archive.today) for web pages that may be deleted.
+(7) Email headers preserved for IP trail.
+Requirements: Screenshots with timestamp, source code, hash, Section 63 certificate.
+
+Section 10 - CCTV Footage Collection
+(1) Identify all CCTV cameras in relevant area (scene, approach routes, suspect routes).
+(2) Issue notice to camera owners for preservation of footage.
+(3) Collect within 48-72 hours before automatic overwriting.
+(4) Collect in original format (do not accept converted/compressed versions if possible).
+(5) Note camera time vs actual time (offset calculation).
+(6) Hash value of collected footage.
+(7) Prepare frame-by-frame analysis of relevant portions.
+(8) Section 63 BSA certificate from the camera operator/owner.
+Timeline: Collect within 48-72 hours; most systems overwrite within 7-30 days.
+
+CHAPTER III - SPECIAL INVESTIGATION PROCEDURES
+
+Section 11 - Investigation of Sexual Offences
+(1) Female officer shall record statement of victim if available.
+(2) Statement to be recorded at residence of victim or place of victim's choice.
+(3) Audio-video recording mandatory (BNSS Section 531).
+(4) Medical examination within 24 hours by registered medical practitioner; consent of victim required (or guardian if minor).
+(5) MLC (Medico Legal Certificate) in prescribed format.
+(6) DNA evidence collection during medical examination.
+(7) Victim's clothes and suspect's clothes collected separately in paper bags.
+(8) One-stop centre referral for counseling and legal aid.
+(9) Statements of all persons at scene/aware of incident.
+(10) Electronic evidence: messages, calls, social media interactions.
+(11) Section 164 CrPC/183 BNSS statement before Magistrate as soon as possible.
+Requirements: Female officer, victim's location, audio-video, medical within 24 hours, DNA, Magistrate statement.
+
+Section 12 - Investigation of Economic Offences
+(1) Secure financial documents immediately (bank statements, ledgers, vouchers).
+(2) Account freezing order from competent authority if necessary.
+(3) Engage Chartered Accountant for audit trail.
+(4) Collect digital evidence (accounting software data, email correspondence).
+(5) Analysis of fund flow through multiple accounts.
+(6) Property identification and attachment proceedings if applicable.
+(7) Coordination with ED, SFIO, Income Tax as applicable.
+(8) Expert evidence for complex financial instruments.
+Requirements: Document preservation, account freeze, CA audit, fund flow, property attachment.
+
+Section 13 - Homicide Investigation Special Steps
+(1) Scene of Crime Officer (SOCO) mandatory for homicide scenes.
+(2) 360-degree videography of scene.
+(3) Blood spatter analysis documentation.
+(4) Identification of victim (if unknown): photographs, fingerprints, dental records, DNA.
+(5) Last seen alive evidence.
+(6) Motive investigation: financial, personal enmity, passion, professional.
+(7) Weapon recovery and matching.
+(8) Alibi verification of suspects.
+(9) CCTV and electronic trail mapping.
+(10) Post-mortem with full toxicology.
+(11) Circumstantial evidence chain construction.
+Requirements: SOCO, videography, identification, motive, weapon, alibi, electronic trail.
+
+Section 14 - Investigation of Kidnapping/Missing Persons
+(1) Immediate registration of FIR without waiting 24 hours (for minors: immediate).
+(2) Flash message to all police stations in district.
+(3) Check CCTV on all routes from last known location.
+(4) CDR analysis of victim's phone (last tower, last calls).
+(5) Social media check for online contacts.
+(6) Passport and border check alerts.
+(7) Check with known offenders in area.
+(8) Broadcast on police wireless.
+(9) For children: check with CWC, Child Helpline, known traffickers.
+(10) Ransom call tracing if applicable (coordinate with technical cell).
+Requirements: Immediate FIR, flash message, CCTV, CDR, alerts, no 24-hour waiting period.
+
+CHAPTER IV - WITNESS PROTECTION AND VICTIM RIGHTS
+
+Section 15 - Witness Protection Measures
+Categories of protection (based on threat assessment):
+Category A (highest): Personal security, relocation, identity change
+Category B: Secure housing, regular escort, identity protection in records
+Category C: Court protection (screen, video link testimony, in-camera proceedings)
+(1) Application to competent authority with threat assessment report.
+(2) Identity of protected witness sealed in court records.
+(3) Video-link testimony allowed under BNSS Section 530.
+(4) Witness deposition outside court hours if necessary.
+(5) Travel expenses and loss of income compensation.
+
+Section 16 - Victim Rights During Investigation
+(1) Right to be informed of progress of investigation (periodic updates).
+(2) Right to be heard before closure/final report.
+(3) Right to file protest petition if dissatisfied with investigation.
+(4) Right to victim compensation (interim and final).
+(5) Right to legal representation at State expense.
+(6) Right to medical treatment at State expense.
+(7) Right to privacy and dignity.
+(8) Right not to be re-victimized during investigation.
+(9) Special rights for child victims (POCSO Act procedures).
+
+Section 17 - Juvenile Justice Procedures
+(1) Person below 18 years is a juvenile/child in conflict with law.
+(2) No arrest: only apprehension and production before Juvenile Justice Board.
+(3) No handcuffing of juveniles.
+(4) No detention in police station: sent to observation home.
+(5) Age determination: matriculation certificate, birth certificate, ossification test.
+(6) Social investigation report by Probation Officer.
+(7) Maximum detention: 3 years in special home.
+(8) Exception: juveniles aged 16-18 for heinous offences may be tried as adults after JJB assessment.
+Requirements: No arrest/handcuffing, JJB production, observation home, age verification.
+
+CHAPTER V - CASE CLOSURE AND FILING PROCEDURES
+
+Section 18 - Final Report Types
+(1) Chargesheet (Section 193 BNSS): When evidence sufficient to prosecute.
+(2) Closure Report (FR - Final Report): When offence not made out or evidence insufficient.
+  Types of closure:
+  - False case: FIR found to be false
+  - Mistake of fact: Civil nature or no offence disclosed
+  - Insufficient evidence: Unable to collect sufficient evidence
+  - Undetected: Offender not identified
+  - Non-cognizable: Case found to be non-cognizable
+(3) The closure report must be submitted to Magistrate who may accept or reject.
+(4) Complainant has right to oppose closure and request further investigation.
+(5) Magistrate may order further investigation even after closure.
+
+Section 19 - Supplementary Chargesheet
+(1) After filing initial chargesheet, if further evidence is obtained, a supplementary chargesheet may be filed.
+(2) Additional accused may be added through supplementary chargesheet.
+(3) Additional evidence/witnesses discovered after filing.
+(4) No time limit for supplementary chargesheet but should be filed before commencement of trial.
+
+Section 20 - Evidence Preservation Post-Chargesheet
+(1) Physical evidence retained in malkhana (evidence room) until case disposal.
+(2) Periodic verification of evidence integrity.
+(3) After final disposal: non-objectionable property returned to owner; objectionable property destroyed under court order.
+(4) Digital evidence preserved in original format with hash verification.
+(5) Photographs and video recordings preserved permanently in case record.
+Requirements: Malkhana storage, periodic verification, hash-based integrity for digital evidence.

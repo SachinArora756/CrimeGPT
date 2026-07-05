@@ -1,0 +1,212 @@
+BHARATIYA SAKSHYA ADHINIYAM (BSA) 2023
+=========================================
+(Act No. 47 of 2023, replaces Indian Evidence Act 1872)
+
+CHAPTER I - PRELIMINARY
+
+Section 1 - Short Title, Commencement, and Application
+This Act may be called the Bharatiya Sakshya Adhiniyam, 2023. It extends to the whole of India. It shall come into force on 1st July 2024.
+
+Section 2 - Definitions
+(1) "Court" includes all Judges and Magistrates, and all persons, except arbitrators, legally authorised to take evidence.
+(2) "Document" means any matter expressed or described upon any substance by means of letters, figures or marks, or by more than one of those means, intended to be used for the purpose of recording that matter. It includes electronic and digital records.
+(3) "Electronic record" means data, record or data generated, image or sound stored, received or sent in an electronic form or micro film or computer generated micro fiche.
+(4) "Evidence" means and includes all statements which the Court permits or requires to be made before it by witnesses, and all documents and electronic records produced for inspection by the Court.
+(5) "Fact" means and includes any thing, state of things, or relation of things, capable of being perceived by the senses, and any mental condition of which any person is conscious.
+(6) "Oral evidence" means all statements which the Court permits or requires to be made before it by witnesses.
+
+CHAPTER II - OF THE RELEVANCY OF FACTS
+
+Section 4 - Relevancy of Facts Forming Part of Same Transaction
+Facts which, though not in issue, are so connected with a fact in issue as to form part of the same transaction, are relevant, whether they occurred at the same time and place or at different times and places.
+
+Section 5 - Facts Which Are the Occasion, Cause or Effect of Relevant Facts
+Facts which are the occasion, cause or effect, immediate or otherwise, of relevant facts, or facts in issue, or which constitute the state of things under which they happened, or which afforded an opportunity for their occurrence or transaction, are relevant.
+
+Section 6 - Motive, Preparation and Previous or Subsequent Conduct
+Any fact is relevant which shows or constitutes a motive or preparation for any fact in issue or relevant fact. The conduct of any party, or of any agent to any party, to any suit or proceeding, in reference to such suit or proceeding, or in reference to any fact in issue therein or relevant thereto, is relevant.
+
+Section 14 - Facts Showing Existence of State of Mind
+Facts showing the existence of any state of mind, such as intention, knowledge, good faith, negligence, rashness, ill-will or good-will towards any particular person, or showing the existence of any state of body or bodily feeling, are relevant when the existence of any such state of mind or body or bodily feeling is in issue or relevant.
+
+CHAPTER III - ADMISSIONS AND CONFESSIONS
+
+Section 15 - Admission Defined
+An admission is a statement, oral or documentary or contained in electronic form, which suggests any inference as to any fact in issue or relevant fact, and which is made by any of the persons mentioned in section 16.
+
+Section 18 - Admission by Party to Proceeding
+Statements made by a party to the proceeding, or by an agent to any such party, are admissions.
+
+Section 20 - Confession
+A confession is an admission made at any time by a person accused of an offence, stating or suggesting the inference that he committed that offence.
+
+Section 21 - Confession Caused by Inducement, Threat or Promise
+A confession made by an accused person is irrelevant if it appears to the Court that it has been obtained by any inducement, threat or promise.
+
+Section 22 - Confession to Police Officer
+No confession made to a police officer shall be proved as against a person accused of any offence.
+
+Section 23 - Confession by Accused While in Police Custody
+No confession made by any person whilst he is in the custody of a police officer, unless it be made in the immediate presence of a Magistrate, shall be proved as against such person.
+Rule: Confessions to police or in police custody are inadmissible unless made before a Magistrate.
+
+Section 24 - Consideration of Proved Confession Affecting Person Making It
+When more persons than one are being tried jointly for the same offence, and a confession made by one of such persons affecting himself and some other of such persons is proved, the Court may take into consideration such confession as against such other person as well as against the person who makes such confession.
+
+Section 25 - How Much of Information Received from Accused May Be Proved
+When any fact is deposed to as discovered in consequence of information received from a person accused of any offence, in the custody of a police officer, so much of such information, whether it amounts to a confession or not, as relates distinctly to the fact thereby discovered, may be proved.
+Rule: Only the discovery portion of an accused's statement to police is admissible (Section 27 old Evidence Act equivalent).
+
+CHAPTER IV - OF ORAL EVIDENCE
+
+Section 137 - Examination of Witnesses
+Witnesses shall be first examined-in-chief, then (if the adverse party so desires) cross-examined, then (if the party calling him so desires) re-examined. The examination and cross-examination must relate to relevant facts but the cross-examination need not be confined to the facts to which the witness testified on his examination-in-chief.
+
+Section 138 - Order of Examinations
+Witnesses shall be first examined-in-chief, then cross-examined, then re-examined.
+
+Section 139 - Cross-Examination of Person Called to Produce a Document
+A person summoned to produce a document does not become a witness by the mere fact that he produces it, and cannot be cross-examined unless and until he is called as a witness.
+
+Section 142 - Leading Questions
+Any question suggesting the answer which the person putting it wishes or expects to receive is called a leading question. Leading questions must not, if objected to by the adverse party, be asked in an examination-in-chief or in a re-examination, except with the permission of the Court.
+
+Section 145 - Cross-Examination as to Previous Statements in Writing
+A witness may be cross-examined as to previous statements made by him in writing or reduced into writing, and if such writing is shown to him, the witness may be asked whether he made such statement.
+Use: This is how police statements (Section 180 BNSS) can be used - to contradict a witness.
+
+Section 148 - Court May Forbid Certain Questions
+The Court may forbid any questions or inquiries which it regards as indecent or scandalous, although such questions or inquiries may have some bearing on the questions before the Court, unless they relate to facts in issue, or to matters necessary to be known in order to determine whether or not the facts in issue existed.
+
+Section 150 - Questions Intended to Insult or Annoy
+The Court shall forbid any question which appears to it to be intended to insult or annoy, or which, though proper in itself, appears to the Court needlessly offensive in form.
+
+Section 155 - Impeaching Credit of Witness
+The credit of a witness may be impeached in the following ways: by the evidence of persons who testify that they believe him to be unworthy of credit; by proof that the witness has been bribed, or has accepted the offer of a bribe; by proof of former statements inconsistent with any part of his evidence.
+
+CHAPTER V - DOCUMENTARY EVIDENCE
+
+Section 57 - Primary Evidence
+Primary evidence means the document itself produced for the inspection of the Court. Where a document is executed in several parts, each part is primary evidence of the document. Where a document is executed in counterpart, each counterpart being executed by one or some of the parties only, each counterpart is primary evidence as against the parties executing it.
+
+Section 58 - Secondary Evidence
+Secondary evidence means and includes: certified copies given under the provisions of any law; copies made from the original by mechanical processes; copies made from or compared with the original; counterparts of documents; oral accounts of the contents of a document given by some person who has himself seen it.
+
+Section 59 - Proof of Documents by Primary Evidence
+Documents must be proved by primary evidence except in the cases hereinafter mentioned.
+
+Section 60 - Cases in Which Secondary Evidence May Be Given
+Secondary evidence may be given of the existence, condition or contents of a document in the following cases: when the original is shown or appears to be in the possession of the adverse party; when the existence, condition, or contents of the original have been proved by the admission of the party against whom it is proved; when the original has been destroyed or lost; when the original is of such a nature as not to be easily movable; when the original is a public document.
+
+CHAPTER VI - ELECTRONIC EVIDENCE
+
+Section 61 - Admissibility of Electronic Records
+The contents of electronic records may be proved in accordance with the provisions of section 63.
+
+Section 62 - Admissibility of Electronic or Digital Record
+(1) Any information contained in an electronic record which is printed on paper, stored, recorded or copied in optical or magnetic media or semiconductor memory which is produced by a computer or any communication device or otherwise stored, recorded or copied in any electronic form shall be deemed to be a document and shall be admissible in any proceedings without further proof or production of the original.
+(2) The conditions set out in section 63 shall be satisfied in relation to the information and computer or communication device in question.
+Rule: Electronic records are documents and admissible without production of original if conditions met.
+
+Section 63 - Conditions for Admissibility of Electronic Records
+The computer output shall be accompanied by a certificate identifying the electronic record and describing the manner in which it was produced, giving the particulars of the device involved in the production, and dealing with any of the matters to which the conditions mentioned in this section relate. The certificate shall be signed by a person occupying a responsible official position in relation to the operation of the relevant device or the management of the relevant activities.
+Requirements for certificate:
+(a) Identify the electronic record containing the statement
+(b) Describe the manner in which the electronic record was produced
+(c) Give particulars of the device involved
+(d) State any conditions that may be relevant
+(e) Signed by responsible person with official position
+Rule: Electronic evidence requires a Section 63 certificate for admissibility.
+
+Section 64 - Special Provisions as to Evidence Relating to Electronic Record
+Any person who has knowledge of facts may give a Section 63 certificate. The certificate shall do all that is necessary to identify the electronic record and must be contemporary or as near as practicable.
+
+Section 65 - Preservation and Production of Electronic Records
+(1) The electronic record shall be preserved in its original form with proper hash value.
+(2) The integrity of the electronic record shall be maintained through its chain of custody.
+(3) Hash value means a mathematical algorithm which maps data of arbitrary size to a fixed-size value (such as SHA-256) which verifies the integrity of the record.
+Requirements: Original form preserved, hash value maintained, chain of custody documented.
+
+CHAPTER VII - OF EXPERT OPINIONS
+
+Section 45 - Opinions of Experts
+When the Court has to form an opinion upon a point of foreign law, or of science, or art, or as to identity of handwriting or finger impressions, the opinions upon that point of persons specially skilled in such foreign law, science or art, or in questions as to identity of handwriting or finger impressions are relevant facts. Such persons are called experts.
+
+Section 46 - Expert's Opinion as to Electronic Records
+When in a proceeding, the Court has to form an opinion relating to any information transmitted or stored in any computer resource or any other electronic or digital form, the opinion of the Examiner of Electronic Evidence referred to in section 79A of the Information Technology Act, 2000 is a relevant fact.
+Rule: For electronic evidence, opinion of Examiner of Electronic Evidence is relevant.
+
+Section 47 - Facts Bearing upon Opinions of Experts
+Facts not otherwise relevant are relevant if they support or are inconsistent with the opinions of experts, when such opinions are relevant.
+
+CHAPTER VIII - BURDEN OF PROOF
+
+Section 101 - Burden of Proof
+Whoever desires any Court to give judgment as to any legal right or liability dependent on the existence of facts which he asserts, must prove that those facts exist. When a person is bound to prove the existence of any fact, it is said that the burden of proof lies on that person.
+
+Section 102 - On Whom Burden of Proof Lies
+The burden of proof in a suit or proceeding lies on that person who would fail if no evidence at all were given on either side.
+
+Section 103 - Burden of Proof as to Particular Fact
+The burden of proof as to any particular fact lies on that person who wishes the Court to believe in its existence, unless it is provided by any law that the proof of that fact shall lie on any particular person.
+
+Section 104 - Burden of Proving Fact Especially Within Knowledge
+When any fact is especially within the knowledge of any person, the burden of proving that fact is upon him.
+
+Section 105 - Burden of Proving Exception
+When a person is accused of any offence, the burden of proving the existence of circumstances bringing the case within any of the General Exceptions in the Bharatiya Nyaya Sanhita, or within any special exception or proviso contained in any other part of the same Sanhita, or in any law defining the offence, is upon him, and the Court shall presume the absence of such circumstances.
+Rule: Prosecution proves the case, accused proves exceptions/defences.
+
+CHAPTER IX - OF PRESUMPTIONS
+
+Section 79 - Presumption as to Documents Thirty Years Old
+The Court may presume that every document or electronic record purporting to be thirty years old is genuine, provided it is produced from proper custody.
+
+Section 81 - Presumption as to Maps, Plans and Documents Made by Authority of Government
+The Court shall presume that maps or plans purporting to be made by the authority of the Central or State Government were so made.
+
+Section 85 - Presumption as to Electronic Records
+The Court may presume that any electronic record which is stated to have been produced by any device or process, and which is produced to the Court in the course of a proceeding, is a genuine record.
+
+Section 85A - Presumption as to Electronic Agreements
+The Court shall presume that every electronic record purporting to be an agreement containing the electronic or digital signature of the parties was so concluded by affixing the electronic or digital signature of the parties.
+
+Section 85B - Presumption as to Electronic Records and Digital Signatures
+In any proceedings involving a secure electronic record, the Court shall presume that the secure electronic record has not been altered since the specific point of time to which the secure status relates. In any proceedings involving a secure digital signature, the Court shall presume that the secure digital signature is affixed by the subscriber with the intention of signing or approving the electronic record.
+
+Section 85C - Presumption as to Digital Signature Certificates
+The Court shall presume that the information listed in a Digital Signature Certificate is correct.
+
+CHAPTER X - ESTOPPEL
+
+Section 115 - Estoppel
+When one person has, by his declaration, act or omission, intentionally caused or permitted another person to believe a thing to be true and to act upon such belief, neither he nor his representative shall be allowed, in any suit or proceeding between himself and such person or his representative, to deny the truth of that thing.
+
+CHAPTER XI - OF WITNESSES
+
+Section 118 - Who May Testify
+All persons shall be competent to testify unless the Court considers that they are prevented from understanding the questions put to them, or from giving rational answers to those questions, by tender years, extreme old age, disease, whether of body or mind, or any other cause of the same kind.
+Rule: Even a child can testify if the Court is satisfied they understand the questions.
+
+Section 119 - Dumb Witnesses
+A witness who is unable to speak may give his evidence in any other manner in which he can make it intelligible, as by writing or by signs.
+
+Section 120 - Parties to Civil Suit and Their Wives or Husbands
+In civil proceedings, the parties to the suit, and the husband or wife of any party, shall be competent witnesses.
+
+Section 122 - Communications During Marriage
+No person who is or has been married shall be compelled to disclose any communication made to him during marriage by any person to whom he is or has been married; nor shall he be permitted to disclose any such communication, unless the person who made it, or his representative in interest, consents.
+
+Section 126 - Professional Communications
+No barrister, attorney, pleader or vakil shall at any time be permitted, unless with his client's express consent, to disclose any communication made to him in the course and for the purpose of his employment as such barrister, pleader, attorney or vakil, by or on behalf of his client.
+
+Section 129 - Confidential Communications with Legal Advisers
+No one shall be compelled to disclose to the Court any confidential communication which has taken place between him and his legal professional adviser.
+
+CHAPTER XII - IMPROPER ADMISSION AND REJECTION OF EVIDENCE
+
+Section 136 - Judge's Power to Put Questions or Order Production
+The Judge may, in order to discover or to obtain proper proof of relevant facts, ask any question he pleases, in any form, at any time, of any witness, or of the parties, about any fact relevant or irrelevant; and may order the production of any document or thing.
+
+Section 167 - No New Trial for Improper Admission or Rejection of Evidence
+The improper admission or rejection of evidence shall not be ground of itself for a new trial or reversal of any decision in any case, if it shall appear to the Court before which such objection is raised that, independently of the evidence objected to and admitted, there was sufficient evidence to justify the decision, or that, if the rejected evidence had been received, it ought not to have varied the decision.

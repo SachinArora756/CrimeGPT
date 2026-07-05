@@ -1,0 +1,133 @@
+CONSTITUTION OF INDIA - PROVISIONS RELEVANT TO CRIMINAL JUSTICE
+=================================================================
+
+PART III - FUNDAMENTAL RIGHTS
+
+Article 14 - Equality Before Law
+The State shall not deny to any person equality before the law or the equal protection of the laws within the territory of India. This is applicable to criminal proceedings - all accused persons are equal before the law regardless of status.
+Application: No discrimination in criminal proceedings based on religion, race, caste, sex, or place of birth.
+
+Article 15 - Prohibition of Discrimination
+(1) The State shall not discriminate against any citizen on grounds only of religion, race, caste, sex, place of birth or any of them.
+(3) Nothing shall prevent the State from making special provisions for women and children.
+Application: Special criminal provisions for women and children are constitutionally valid (e.g., stricter punishments for crimes against women).
+
+Article 19 - Protection of Certain Rights Regarding Freedom of Speech, etc.
+(1) All citizens shall have the right to (a) freedom of speech and expression; (b) assemble peaceably; (c) form associations; (d) move freely throughout India; (e) reside and settle in any part of India; (f) practise any profession.
+(2) Reasonable restrictions can be imposed in the interests of sovereignty and integrity of India, security of State, public order, decency or morality, contempt of court, defamation, or incitement to an offence.
+Application: Defines boundaries of free speech relevant to offences like sedition, defamation, hate speech.
+
+Article 20 - Protection in Respect of Conviction for Offences
+(1) No person shall be convicted of any offence except for violation of a law in force at the time of the commission of the act charged as an offence, nor be subjected to a penalty greater than that which might have been inflicted under the law in force at the time of the commission of the offence.
+(2) No person shall be prosecuted and punished for the same offence more than once (Double Jeopardy).
+(3) No person accused of any offence shall be compelled to be a witness against himself (Right Against Self-Incrimination).
+Application: Fundamental protections - no ex post facto laws, no double jeopardy, no self-incrimination. Critical for confession admissibility and re-trial questions.
+
+Article 21 - Protection of Life and Personal Liberty
+No person shall be deprived of his life or personal liberty except according to procedure established by law.
+Application: This is the most important article for criminal justice. Includes:
+- Right to fair trial
+- Right to speedy trial
+- Right to legal aid
+- Right against custodial torture
+- Right to humane conditions in prison
+- Right to privacy (Puttaswamy judgment)
+- Right against solitary confinement
+- Right to bail (Arnesh Kumar guidelines)
+- Right against handcuffing (Prem Shankar Shukla)
+
+Article 21A - Right to Education
+The State shall provide free and compulsory education to all children of the age of six to fourteen years.
+Application: Relevant in cases involving child labour, child trafficking, and juvenile justice.
+
+Article 22 - Protection Against Arrest and Detention
+(1) No person who is arrested shall be detained in custody without being informed, as soon as may be, of the grounds for such arrest, nor shall he be denied the right to consult, and to be defended by, a legal practitioner of his choice.
+(2) Every person who is arrested and detained in custody shall be produced before the nearest magistrate within a period of twenty-four hours of such arrest excluding the time necessary for the journey from the place of arrest to the court of the magistrate and no such person shall be detained in custody beyond the said period without the authority of a magistrate.
+(3) Nothing in clauses (1) and (2) shall apply to any person who for the time being is an enemy alien, or to any person who is arrested or detained under any law providing for preventive detention.
+(4) No law providing for preventive detention shall authorise the detention of a person for a longer period than three months unless an Advisory Board has reported before the expiration of the said period of three months that there is sufficient cause for such detention.
+Application: Constitutional basis for the 24-hour production rule in BNSS Section 37. Also governs preventive detention (NSA, UAPA).
+
+Article 23 - Prohibition of Traffic in Human Beings and Forced Labour
+(1) Traffic in human beings and begar and other similar forms of forced labour are prohibited and any contravention of this provision shall be an offence punishable in accordance with law.
+Application: Constitutional basis for anti-trafficking laws and forced labour offences.
+
+Article 24 - Prohibition of Employment of Children in Factories, etc.
+No child below the age of fourteen years shall be employed to work in any factory or mine or engaged in any other hazardous employment.
+Application: Constitutional basis for child labour offences.
+
+PART IV - DIRECTIVE PRINCIPLES OF STATE POLICY
+
+Article 38 - State to Secure a Social Order for Promotion of Welfare of People
+(1) The State shall strive to promote the welfare of the people by securing and protecting as effectively as it may a social order in which justice, social, economic and political, shall inform all the institutions of the national life.
+(2) The State shall, in particular, strive to minimise the inequalities in income, and endeavour to eliminate inequalities in status, facilities and opportunities.
+Application: Informs sentencing policy and rehabilitation approach in criminal justice.
+
+Article 39 - Certain Principles of Policy to Be Followed by the State
+The State shall direct its policy towards securing:
+(a) that the citizens, men and women equally, have the right to an adequate means of livelihood
+(e) that the health and strength of workers, men and women, and the tender age of children are not abused
+(f) that children are given opportunities and facilities to develop in a healthy manner and in conditions of freedom and dignity and that childhood and youth are protected against exploitation and against moral and material abandonment
+Application: Basis for victim compensation schemes and child protection laws.
+
+Article 39A - Equal Justice and Free Legal Aid
+The State shall secure that the operation of the legal system promotes justice, on a basis of equal opportunity, and shall, in particular, provide free legal aid, by suitable legislation or schemes or in any other way, to ensure that opportunities for securing justice are not denied to any citizen by reason of economic or other disabilities.
+Application: Constitutional mandate for free legal aid to accused persons who cannot afford lawyers. Basis for Legal Services Authority.
+
+Article 41 - Right to Work, to Education and to Public Assistance
+The State shall, within the limits of its economic capacity and development, make effective provision for securing the right to work, to education and to public assistance in cases of unemployment, old age, sickness and disablement.
+Application: Relevant to rehabilitation of offenders and victim support.
+
+Article 46 - Promotion of Educational and Economic Interests of Scheduled Castes, Scheduled Tribes and Other Weaker Sections
+The State shall promote with special care the educational and economic interests of the weaker sections of the people, and, in particular, of the Scheduled Castes and the Scheduled Tribes, and shall protect them from social injustice and all forms of exploitation.
+Application: Basis for SC/ST Atrocities Prevention Act and special criminal protections.
+
+PART IV-A - FUNDAMENTAL DUTIES
+
+Article 51A - Fundamental Duties of Citizens
+It shall be the duty of every citizen of India:
+(a) to abide by the Constitution and respect its ideals and institutions, the National Flag and the National Anthem
+(e) to promote harmony and the spirit of common brotherhood amongst all the people of India transcending religious, linguistic and regional or sectional diversities; to renounce practices derogatory to the dignity of women
+(j) to strive towards excellence in all spheres of individual and collective activity so that the nation constantly rises to higher levels of endeavour and achievement
+Application: Can be used as aggravating factor in hate crimes, crimes against women.
+
+PART V - THE UNION - CHAPTER IV - THE UNION JUDICIARY
+
+Article 32 - Remedies for Enforcement of Fundamental Rights
+(1) The right to move the Supreme Court by appropriate proceedings for the enforcement of rights conferred by Part III is guaranteed.
+(2) The Supreme Court shall have power to issue directions or orders or writs, including writs in the nature of habeas corpus, mandamus, prohibition, quo warranto and certiorari.
+Application: Habeas corpus - most important writ in criminal law. Used to challenge illegal detention, custodial violence, disappearance. SC can directly hear matters of fundamental rights violation in criminal cases.
+
+PART VI - THE STATES - CHAPTER V - THE HIGH COURTS
+
+Article 226 - Power of High Courts to Issue Certain Writs
+(1) Every High Court shall have power to issue to any person or authority, including the Government, directions, orders or writs, including writs in the nature of habeas corpus, mandamus, prohibition, quo warranto and certiorari.
+Application: High Courts frequently exercise writ jurisdiction in criminal matters - bail, quashing of FIR (Section 482 CrPC equivalent), habeas corpus against illegal detention.
+
+PART XXI - TEMPORARY, TRANSITIONAL AND SPECIAL PROVISIONS
+
+Article 370 - Special Provisions with Respect to the State of Jammu and Kashmir
+(Abrogated in 2019) Previously provided special status. Now all central criminal laws apply uniformly.
+
+SPECIAL CONSTITUTIONAL PROVISIONS RELEVANT TO INVESTIGATION
+
+Right to Silence (Article 20(3))
+The accused cannot be compelled to be a witness against himself. This means:
+- No forced confessions
+- No compulsion to answer during custodial interrogation
+- No adverse inference from silence of accused
+- But does not extend to: production of documents, finger printing, DNA sampling, appearing in identification parade
+
+Custodial Rights (Articles 21 and 22)
+The Supreme Court in D.K. Basu v. State of West Bengal (1997) laid down mandatory guidelines:
+- Police personnel carrying out arrest must bear accurate, visible identification
+- Arrest memo must be prepared at time of arrest
+- One friend/relative must be informed
+- Arrestee must be informed of right to inform
+- Entry in diary at place of detention
+- Medical examination within 48 hours
+- Copies of documents given to Magistrate
+- Arrestee may meet lawyer during interrogation (not throughout)
+Application: These are now codified in BNSS Section 35-39.
+
+Fair Trial (Article 21)
+Includes: right to know charges, right to cross-examine, right to examine defense witnesses, right against coerced confession, right to appeal, right to speedy trial (Hussainara Khatoon case - undertrial prisoners cannot be detained longer than maximum sentence).

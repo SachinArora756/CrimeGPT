@@ -1,0 +1,19 @@
+﻿Section 1 - Procedures for Crime Scene Investigation
+
+The investigating officer must follow these steps when arriving at a crime scene. First, secure the perimeter of the crime scene with police tape. Ensure no unauthorized person enters the area. Document the initial state of the scene by taking photographs from multiple angles. Record the time of arrival and conditions at the scene.
+
+Section 2 - Evidence Collection Protocol
+
+All evidence must be collected using proper tools and protective equipment. Use gloves at all times. Each piece of evidence must be placed in a separate evidence bag and labeled with the case number, date, time, location found, and collecting officer name. Chain of custody must be maintained at all times.
+
+Section 3 - Witness Statements
+
+Witnesses must be interviewed individually at the scene whenever possible. Record the full name, address, and contact information of each witness. Use open-ended questions to avoid leading the witness. Document both what they saw and heard. Note their demeanor and any signs of intoxication or distress.
+
+Section 4 - Documentation and Reporting
+
+A detailed First Information Report must be filed within 24 hours of the incident. The report must include the location, time, nature of offence, description of suspects, list of evidence collected, and witness information. All reports must be typed and submitted to the station house officer.
+
+Section 5 - Digital Evidence Handling
+
+Digital evidence such as mobile phones, laptops, and CCTV footage must be handled with extreme care. Never power on or interact with digital devices at the scene. Photograph devices in their found state before collection. Use Faraday bags for mobile devices to prevent remote wiping.

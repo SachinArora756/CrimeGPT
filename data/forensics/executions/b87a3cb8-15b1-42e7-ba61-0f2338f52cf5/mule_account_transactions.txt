@@ -1,0 +1,13 @@
+?Transaction Log - Mule Account Analysis
+Bank: Payments Bank XYZ
+Account: 91XXXXXXXX4523
+Period: May 2026 - June 2026
+---
+2026-05-12 | CR | Rs.45,000 | UPI/Ref/334521234
+2026-05-12 | DB | Rs.44,500 | NEFT/Transfer/ACC-8834
+2026-05-15 | CR | Rs.78,000 | UPI/Ref/445623891
+2026-05-15 | DB | Rs.77,000 | NEFT/Transfer/ACC-9921
+2026-06-01 | CR | Rs.1,20,000 | UPI/Ref/556734012
+2026-06-01 | DB | Rs.1,19,000 | NEFT/Transfer/ACC-7712
+Total Inflow: Rs.18,45,000 | Total Outflow: Rs.18,32,000
+Pattern: Immediate outward transfer within minutes of credit

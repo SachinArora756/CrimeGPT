@@ -1,0 +1,458 @@
+[
+  {
+    "tool": "digital_hash",
+    "file": "test_investigation.pdf",
+    "status": "completed",
+    "execution_id": "a1db4712-c907-4626-88ac-b873bb55a980",
+    "confidence": 1.0,
+    "runtime_ms": 37,
+    "output_keys": [
+      "sha256",
+      "md5",
+      "sha1",
+      "file_size_bytes",
+      "computed_at"
+    ],
+    "output_summary": "SHA256=2aabd8fa77defb30...",
+    "error": null
+  },
+  {
+    "tool": "digital_metadata",
+    "file": "test_investigation.pdf",
+    "status": "completed",
+    "execution_id": "11bbb052-2c28-4f26-b5f0-cc12b801a4a3",
+    "confidence": 1.0,
+    "runtime_ms": 12,
+    "output_keys": [
+      "filename",
+      "extension",
+      "mime_type",
+      "file_size_bytes",
+      "file_size_readable",
+      "created_at",
+      "modified_at",
+      "accessed_at"
+    ],
+    "output_summary": "application/pdf 3.3 KB",
+    "error": null
+  },
+  {
+    "tool": "digital_file_identify",
+    "file": "test_investigation.pdf",
+    "status": "completed",
+    "execution_id": "58a923ce-a484-4320-8a5e-08d5df404b1b",
+    "confidence": 0.9,
+    "runtime_ms": 7,
+    "output_keys": [
+      "detected_type",
+      "magic_bytes_hex",
+      "extension",
+      "mime_type_by_extension",
+      "file_size_bytes",
+      "header_printable"
+    ],
+    "output_summary": "Type=PDF Document",
+    "error": null
+  },
+  {
+    "tool": "digital_file_identify",
+    "file": "test_corrupt.jpg",
+    "status": "completed",
+    "execution_id": "c79cad03-fe9f-4d34-a301-d85f8edae25c",
+    "confidence": 0.3,
+    "runtime_ms": 6,
+    "output_keys": [
+      "detected_type",
+      "magic_bytes_hex",
+      "extension",
+      "mime_type_by_extension",
+      "file_size_bytes",
+      "header_printable"
+    ],
+    "output_summary": "Type=Unknown",
+    "error": null
+  },
+  {
+    "tool": "image_ocr",
+    "file": "test_ocr_document.png",
+    "status": "completed",
+    "execution_id": "1d518c74-d433-4dcb-9068-53ddf94bc892",
+    "confidence": 0.732,
+    "runtime_ms": 1007,
+    "output_keys": [
+      "text",
+      "char_count",
+      "line_count",
+      "language"
+    ],
+    "output_summary": "Chars=233, Lines=17",
+    "error": null
+  },
+  {
+    "tool": "document_ocr",
+    "file": "test_ocr_document.png",
+    "status": "completed",
+    "execution_id": "724b808e-17ac-4627-a128-eb3bc560d4f6",
+    "confidence": 0.8,
+    "runtime_ms": 165,
+    "output_keys": [
+      "text",
+      "char_count"
+    ],
+    "output_summary": "Chars=233, Pages=0",
+    "error": null
+  },
+  {
+    "tool": "document_pdf_parse",
+    "file": "test_investigation.pdf",
+    "status": "completed",
+    "execution_id": "5157052b-55f4-4361-8948-461dd5b9176a",
+    "confidence": 0.95,
+    "runtime_ms": 1967,
+    "output_keys": [
+      "text",
+      "page_count",
+      "total_pages_in_document",
+      "char_count",
+      "pages",
+      "tables_found",
+      "tables",
+      "embedded_images",
+      "images",
+      "metadata"
+    ],
+    "output_summary": "Chars=526, Pages=1, Tables=0",
+    "error": null
+  },
+  {
+    "tool": "document_summarize",
+    "file": "test_investigation.pdf",
+    "status": "failed",
+    "execution_id": "4406f09d-588d-495c-b360-de85b8ecd049",
+    "confidence": null,
+    "runtime_ms": 1086,
+    "output_keys": [
+      "error",
+      "summary",
+      "text_preview"
+    ],
+    "output_summary": "ERROR: AI summarization failed: 400 API key not valid. Please pass a valid API key. [reason: \"API_KEY_INVAL",
+    "error": "AI summarization failed: 400 API key not valid. Please pass a valid API key. [reason: \"API_KEY_INVALID\"\ndomain: \"googleapis.com\"\nmetadata {\n  key: \"service\"\n  value: \"generativelanguage.googleapis.com\"\n}\n, locale: \"en-US\"\nmessage: \"API key not valid. Please pass a valid API key.\"\n]"
+  },
+  {
+    "tool": "image_exif",
+    "file": "test_exif_image.jpg",
+    "status": "completed",
+    "execution_id": "a3d46d7a-5e39-45f0-99b3-dc3b783c5b67",
+    "confidence": null,
+    "runtime_ms": 10,
+    "output_keys": [
+      "image_info",
+      "exif_available",
+      "exif_data",
+      "note"
+    ],
+    "output_summary": "EXIF=False, Tags=0",
+    "error": null
+  },
+  {
+    "tool": "image_object_detect",
+    "file": "test_crime_scene.jpg",
+    "status": "completed",
+    "execution_id": "76ee9f2e-6bff-40fe-9d65-490916dc2fe1",
+    "confidence": null,
+    "runtime_ms": 21075,
+    "output_keys": [
+      "objects_detected",
+      "objects",
+      "model_used"
+    ],
+    "output_summary": "Objects=0",
+    "error": null
+  },
+  {
+    "tool": "image_object_detect",
+    "file": "test_vehicle_plate.jpg",
+    "status": "completed",
+    "execution_id": "ede19769-c669-47cb-a926-0a6d74231035",
+    "confidence": null,
+    "runtime_ms": 7316,
+    "output_keys": [
+      "objects_detected",
+      "objects",
+      "model_used"
+    ],
+    "output_summary": "Objects=0",
+    "error": null
+  },
+  {
+    "tool": "image_similarity",
+    "file": "test_similar_1.jpg",
+    "status": "EXCEPTION",
+    "error": "HTTPConnectionPool(host='localhost', port=8000): Read timed out. (read timeout=120)",
+    "runtime_ms": 120038
+  },
+  {
+    "tool": "face_detect",
+    "file": "test_face_single.jpg",
+    "status": "EXCEPTION",
+    "error": "HTTPConnectionPool(host='localhost', port=8000): Read timed out. (read timeout=120)",
+    "runtime_ms": 120039
+  },
+  {
+    "tool": "face_detect",
+    "file": "test_faces_multiple.jpg",
+    "status": "EXCEPTION",
+    "error": "HTTPConnectionPool(host='localhost', port=8000): Read timed out. (read timeout=120)",
+    "runtime_ms": 120114
+  },
+  {
+    "tool": "face_recognize",
+    "file": "test_face_single.jpg",
+    "status": "EXCEPTION",
+    "error": "HTTPConnectionPool(host='localhost', port=8000): Read timed out. (read timeout=120)",
+    "runtime_ms": 120099
+  },
+  {
+    "tool": "fingerprint_match",
+    "file": "test_fingerprint.png",
+    "status": "completed",
+    "execution_id": "4d90c889-62ce-4ea7-90e3-eff0966319b7",
+    "confidence": null,
+    "runtime_ms": 100,
+    "output_keys": [
+      "minutiae_extracted",
+      "quality_assessment",
+      "quality_score",
+      "template_generated",
+      "matches_found",
+      "matches",
+      "database_searched",
+      "database_records_searched",
+      "threshold_used",
+      "method",
+      "execution_time_ms",
+      "input_template_summary"
+    ],
+    "output_summary": "Minutiae=115, Matches=0",
+    "error": null
+  },
+  {
+    "tool": "dna_search",
+    "file": "test_dna_report.txt",
+    "status": "completed",
+    "execution_id": "914bd076-8758-4011-a6a2-50989ae2a04c",
+    "confidence": null,
+    "runtime_ms": 13,
+    "output_keys": [
+      "report_parsed",
+      "extracted_profile",
+      "text_preview",
+      "matches_found",
+      "matches",
+      "database_searched",
+      "database_records_searched",
+      "threshold_used",
+      "method",
+      "execution_time_ms"
+    ],
+    "output_summary": "Parsed=True, Loci=13",
+    "error": null
+  },
+  {
+    "tool": "vehicle_detect",
+    "file": "test_vehicle_plate.jpg",
+    "status": "completed",
+    "execution_id": "ad4fc384-95fd-4c64-aad7-7068e481fde4",
+    "confidence": null,
+    "runtime_ms": 517,
+    "output_keys": [
+      "vehicles_detected",
+      "vehicles",
+      "model_used"
+    ],
+    "output_summary": "Vehicles=0",
+    "error": null
+  },
+  {
+    "tool": "license_plate_ocr",
+    "file": "test_vehicle_plate.jpg",
+    "status": "completed",
+    "execution_id": "faf2f96b-f8c0-4cdb-85a9-845ebbc69c47",
+    "confidence": null,
+    "runtime_ms": 443,
+    "output_keys": [
+      "plates_detected",
+      "plates",
+      "method"
+    ],
+    "output_summary": "Plates=0, Text=[]",
+    "error": null
+  },
+  {
+    "tool": "license_plate_ocr",
+    "file": "test_plate_closeup.jpg",
+    "status": "completed",
+    "execution_id": "37281c06-ec5a-4cc6-818a-c1b560f5640c",
+    "confidence": 0.6,
+    "runtime_ms": 551,
+    "output_keys": [
+      "plates_detected",
+      "plates",
+      "method"
+    ],
+    "output_summary": "Plates=2, Text=['MH12AB123', 'MH12AB123']",
+    "error": null
+  },
+  {
+    "tool": "weapon_detect",
+    "file": "test_crime_scene.jpg",
+    "status": "completed",
+    "execution_id": "396ae69c-c949-4867-b248-dceffb8baa94",
+    "confidence": null,
+    "runtime_ms": 302,
+    "output_keys": [
+      "weapons_detected",
+      "weapons",
+      "all_objects_detected",
+      "model_used"
+    ],
+    "output_summary": "Weapons=0",
+    "error": null
+  },
+  {
+    "tool": "audio_transcribe",
+    "file": "test_audio_silence.wav",
+    "status": "failed",
+    "execution_id": "581df821-ec99-4de7-b0a1-6c2384d75ce7",
+    "confidence": null,
+    "runtime_ms": 73,
+    "output_keys": [
+      "error",
+      "text"
+    ],
+    "output_summary": "ERROR: faster-whisper not installed. Install with: pip install faster-whisper",
+    "error": "faster-whisper not installed. Install with: pip install faster-whisper"
+  },
+  {
+    "tool": "crime_scene_analysis",
+    "file": "test_crime_scene.jpg",
+    "status": "EXCEPTION",
+    "error": "HTTPConnectionPool(host='localhost', port=8000): Read timed out. (read timeout=120)",
+    "runtime_ms": 120095
+  },
+  {
+    "tool": "image_ocr",
+    "file": "test_corrupt.jpg",
+    "status": "failed",
+    "execution_id": "88f0854c-f5fb-449f-b058-947a75633f5b",
+    "confidence": null,
+    "runtime_ms": 22,
+    "output_keys": [
+      "error",
+      "text"
+    ],
+    "output_summary": "ERROR: OCR failed: cannot identify image file '/app/data/forensics/executions/88f0854c-f5fb-449f-b058-947a7",
+    "error": "OCR failed: cannot identify image file '/app/data/forensics/executions/88f0854c-f5fb-449f-b058-947a75633f5b/test_corrupt.jpg'",
+    "test_type": "error_handling"
+  },
+  {
+    "tool": "face_detect",
+    "file": "test_corrupt.jpg",
+    "status": "failed",
+    "execution_id": "15bfcdcd-5fdb-4810-b048-ae70c868cfd6",
+    "confidence": null,
+    "runtime_ms": 2,
+    "output_keys": [
+      "error"
+    ],
+    "output_summary": "ERROR: Could not read image file",
+    "error": "Could not read image file",
+    "test_type": "error_handling"
+  },
+  {
+    "tool": "image_ocr",
+    "file": "test_empty.txt",
+    "status": "failed",
+    "execution_id": "3cf8ac88-5fd6-463b-a956-062faf923c6a",
+    "confidence": null,
+    "runtime_ms": 9,
+    "output_keys": [
+      "error",
+      "text"
+    ],
+    "output_summary": "ERROR: OCR failed: cannot identify image file '/app/data/forensics/executions/3cf8ac88-5fd6-463b-a956-062fa",
+    "error": "OCR failed: cannot identify image file '/app/data/forensics/executions/3cf8ac88-5fd6-463b-a956-062faf923c6a/test_empty.txt'",
+    "test_type": "error_handling"
+  },
+  {
+    "tool": "document_pdf_parse",
+    "file": "test_corrupt.jpg",
+    "status": "failed",
+    "execution_id": "b3f48ce9-072f-4ab3-9105-c9d0c4e1068b",
+    "confidence": null,
+    "runtime_ms": 70,
+    "output_keys": [
+      "error"
+    ],
+    "output_summary": "ERROR: PDF parsing failed: code=7: unknown image file format",
+    "error": "PDF parsing failed: code=7: unknown image file format",
+    "test_type": "error_handling"
+  },
+  {
+    "tool": "license_plate_ocr",
+    "file": "test_fingerprint.png",
+    "status": "completed",
+    "execution_id": "afcaa988-b9a3-4014-81f4-26d154d8001a",
+    "confidence": null,
+    "runtime_ms": 359,
+    "output_keys": [
+      "plates_detected",
+      "plates",
+      "method"
+    ],
+    "output_summary": "Plates=0, Text=[]",
+    "error": null,
+    "test_type": "error_handling"
+  },
+  {
+    "tool": "fingerprint_match",
+    "file": "test_ocr_document.png",
+    "status": "completed",
+    "execution_id": "c502d174-2ace-4817-a17d-bf690dacdb24",
+    "confidence": null,
+    "runtime_ms": 21,
+    "output_keys": [
+      "minutiae_extracted",
+      "quality_assessment",
+      "quality_score",
+      "template_generated",
+      "matches_found",
+      "matches",
+      "database_searched",
+      "database_records_searched",
+      "threshold_used",
+      "method",
+      "execution_time_ms",
+      "input_template_summary"
+    ],
+    "output_summary": "Minutiae=448, Matches=0",
+    "error": null,
+    "test_type": "error_handling"
+  },
+  {
+    "tool": "dna_search",
+    "file": "test_empty.txt",
+    "status": "failed",
+    "execution_id": "35bab602-a74b-4a4a-ba91-85a9b1819132",
+    "confidence": null,
+    "runtime_ms": 2,
+    "output_keys": [
+      "error",
+      "matches"
+    ],
+    "output_summary": "ERROR: Could not extract text from the DNA report file.",
+    "error": "Could not extract text from the DNA report file.",
+    "test_type": "error_handling"
+  }
+]

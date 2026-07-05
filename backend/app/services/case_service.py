@@ -5,7 +5,9 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.case import Case, CaseStatus
+from app.models.user import User
 from app.schemas.case import CaseCreate, CaseUpdate
+from app.services.authorization import filter_cases_for_user
 
 
 def generate_fir_number(station_id: str | None = None) -> str:
@@ -16,10 +18,18 @@ def generate_fir_number(station_id: str | None = None) -> str:
 
 
 async def create_case(db: AsyncSession, case_data: CaseCreate, officer_id: int) -> Case:
-    fir_number = generate_fir_number(case_data.station_id)
+    station_id = case_data.station_id or None
+    if not station_id:
+        officer_result = await db.execute(select(User).where(User.id == officer_id))
+        officer = officer_result.scalar_one_or_none()
+        if officer:
+            station_id = officer.station_id
+
+    fir_number = generate_fir_number(station_id)
 
     case = Case(
         fir_number=fir_number,
+        title=case_data.title,
         complainant_name=case_data.complainant_name,
         complainant_contact=case_data.complainant_contact,
         complainant_address=case_data.complainant_address,
@@ -29,8 +39,11 @@ async def create_case(db: AsyncSession, case_data: CaseCreate, officer_id: int) 
         incident_location=case_data.incident_location,
         description=case_data.description,
         offense_type=case_data.offense_type,
-        station_id=case_data.station_id,
+        station_id=station_id,
+        priority=getattr(case_data, "priority", "medium") or "medium",
         assigned_officer_id=officer_id,
+        created_by_id=officer_id,
+        assigned_by_id=officer_id,
         status=CaseStatus.REGISTERED,
     )
     db.add(case)
@@ -45,17 +58,24 @@ async def get_case_by_id(db: AsyncSession, case_id: int) -> Case | None:
 
 
 async def get_cases(
-    db: AsyncSession, page: int = 1, per_page: int = 20, status: CaseStatus | None = None, search: str | None = None
+    db: AsyncSession, page: int = 1, per_page: int = 20,
+    status: CaseStatus | None = None, search: str | None = None,
+    current_user: User | None = None,
 ):
     query = select(Case)
+
+    if current_user:
+        query = filter_cases_for_user(query, current_user)
 
     if status:
         query = query.where(Case.status == status)
     if search:
+        safe_search = search.replace("%", r"\%").replace("_", r"\_")
+        pattern = f"%{safe_search}%"
         query = query.where(
-            Case.complainant_name.ilike(f"%{search}%")
-            | Case.fir_number.ilike(f"%{search}%")
-            | Case.description.ilike(f"%{search}%")
+            Case.complainant_name.ilike(pattern, escape="\\")
+            | Case.fir_number.ilike(pattern, escape="\\")
+            | Case.description.ilike(pattern, escape="\\")
         )
 
     count_query = select(func.count()).select_from(query.subquery())

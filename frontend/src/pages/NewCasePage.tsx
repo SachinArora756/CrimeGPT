@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Mic, MicOff, Brain, Send } from 'lucide-react'
@@ -65,7 +65,7 @@ export default function NewCasePage() {
       }
       const response = await api.post('/api/cases/', payload)
       toast.success(`Case created: ${response.data.fir_number}`)
-      navigate(`/cases/${response.data.id}`)
+      navigate(`/cases/${response.data.public_id}`)
     } catch (err: unknown) {
       const error = err as { response?: { data?: { detail?: string } } }
       toast.error(error.response?.data?.detail || 'Failed to create case')
@@ -74,12 +74,41 @@ export default function NewCasePage() {
     }
   }
 
+  const recognitionRef = useRef<{ stop: () => void } | null>(null)
+
   const toggleRecording = () => {
-    setRecording(!recording)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      toast.error('Speech recognition not supported in this browser')
+      return
+    }
+
     if (!recording) {
-      toast('Voice recording started (simulated)', { icon: '🎤' })
+      const recognition = new SpeechRecognition()
+      recognition.lang = 'en-IN'
+      recognition.continuous = true
+      recognition.interimResults = true
+      recognition.onresult = (event: { results: { length: number; [i: number]: { [j: number]: { transcript: string } } } }) => {
+        let transcript = ''
+        for (let i = 0; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript
+        }
+        setComplaintText(transcript)
+      }
+      recognition.onerror = () => {
+        setRecording(false)
+        toast.error('Voice recognition error')
+      }
+      recognition.onend = () => setRecording(false)
+      recognition.start()
+      recognitionRef.current = recognition
+      setRecording(true)
+      toast.success('Listening... speak your complaint')
     } else {
-      toast('Recording stopped', { icon: '⏹️' })
+      if (recognitionRef.current) recognitionRef.current.stop()
+      setRecording(false)
+      toast.success('Recording stopped')
     }
   }
 

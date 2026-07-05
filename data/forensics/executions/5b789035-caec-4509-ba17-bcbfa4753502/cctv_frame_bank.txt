@@ -1,0 +1,8 @@
+?CCTV Camera Recording - SBI Connaught Place Branch
+Timestamp: 2026-07-01 10:44:23 to 10:52:17
+Camera ID: CAM-03-LOBBY
+Resolution: 1920x1080
+Format: H.264
+Three suspects entered through main entrance at 10:44:56
+Suspect 1 proceeded to counter, Suspect 2 covered rear exit
+Suspect 3 remained at door as lookout

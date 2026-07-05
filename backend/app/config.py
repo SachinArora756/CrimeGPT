@@ -1,5 +1,11 @@
+import secrets
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from typing import List
+
+
+def _generate_secret() -> str:
+    return secrets.token_hex(32)
 
 
 class Settings(BaseSettings):
@@ -11,7 +17,7 @@ class Settings(BaseSettings):
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
 
-    jwt_secret_key: str = "your-super-secret-key-change-in-production"
+    jwt_secret_key: str = ""
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
@@ -24,6 +30,15 @@ class Settings(BaseSettings):
     upload_dir: str = "./data/uploads"
 
     cors_origins: List[str] = ["http://localhost:5173", "http://localhost:3000"]
+
+    min_password_length: int = 10
+
+    @field_validator("jwt_secret_key", mode="before")
+    @classmethod
+    def ensure_jwt_secret(cls, v: str) -> str:
+        if not v or v == "your-super-secret-key-change-in-production":
+            return _generate_secret()
+        return v
 
     class Config:
         env_file = ".env"

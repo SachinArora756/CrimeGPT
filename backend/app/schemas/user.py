@@ -1,21 +1,11 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 from app.models.user import UserRole
 
 
-class UserCreate(BaseModel):
-    username: str = Field(min_length=3, max_length=50)
-    email: EmailStr
-    password: str = Field(min_length=6)
-    full_name: str = Field(min_length=2, max_length=100)
-    role: UserRole = UserRole.CONSTABLE
-    station_id: str | None = None
-    badge_number: str | None = None
-
-
 class UserLogin(BaseModel):
-    username: str
-    password: str
+    username: str = Field(min_length=1, max_length=50)
+    password: str = Field(min_length=1, max_length=128)
 
 
 class UserResponse(BaseModel):
@@ -25,8 +15,10 @@ class UserResponse(BaseModel):
     full_name: str
     role: UserRole
     station_id: str | None
+    department: str | None
     badge_number: str | None
     is_active: bool
+    force_password_change: bool = False
     created_at: datetime
 
     class Config:
@@ -37,8 +29,20 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+    force_password_change: bool = False
     user: UserResponse
 
 
 class TokenRefresh(BaseModel):
     refresh_token: str
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=10, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def password_complexity(cls, v: str) -> str:
+        from app.schemas.admin import validate_password_strength
+        return validate_password_strength(v)
