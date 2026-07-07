@@ -5,7 +5,8 @@ import { useDropzone } from 'react-dropzone'
 import {
   ArrowLeft, Upload, Loader2, CheckCircle, XCircle,
   Microscope, Bookmark, Brain, Copy, Clock,
-  FileImage, Shield, Activity, Zap
+  FileImage, Shield, Activity, Zap, AlertTriangle,
+  User, Fingerprint, Skull
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -231,6 +232,410 @@ export default function ToolExecutionPage() {
     }
 
     return <p className="text-sm text-white px-3 py-2 bg-dark-900 rounded-lg border border-dark-700/30">{String(displayValue)}</p>
+  }
+
+  const BIOMETRIC_TOOLS = ['face_recognize', 'fingerprint_match', 'dna_search']
+
+  const getDangerColor = (level: string) => {
+    switch (level?.toLowerCase()) {
+      case 'extreme': return 'text-red-400 bg-red-500/10 border-red-500/30'
+      case 'high': return 'text-orange-400 bg-orange-500/10 border-orange-500/30'
+      case 'medium': return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30'
+      default: return 'text-green-400 bg-green-500/10 border-green-500/30'
+    }
+  }
+
+  const getWantedColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'most_wanted': return 'text-red-400 bg-red-500/10 border-red-500/30'
+      case 'wanted': case 'absconding': return 'text-orange-400 bg-orange-500/10 border-orange-500/30'
+      case 'arrested': return 'text-blue-400 bg-blue-500/10 border-blue-500/30'
+      case 'surrendered': return 'text-green-400 bg-green-500/10 border-green-500/30'
+      default: return 'text-dark-400 bg-dark-700/50 border-dark-600/30'
+    }
+  }
+
+  const TOOL_STYLES: Record<string, { border: string; gradient: string; iconBg: string; iconText: string; scoreText: string }> = {
+    face_recognize: {
+      border: 'border-red-500/30',
+      gradient: 'bg-gradient-to-r from-red-500/5 to-transparent',
+      iconBg: 'bg-red-500/10',
+      iconText: 'text-red-400',
+      scoreText: 'text-red-400',
+    },
+    fingerprint_match: {
+      border: 'border-purple-500/30',
+      gradient: 'bg-gradient-to-r from-purple-500/5 to-transparent',
+      iconBg: 'bg-purple-500/10',
+      iconText: 'text-purple-400',
+      scoreText: 'text-purple-400',
+    },
+    dna_search: {
+      border: 'border-green-500/30',
+      gradient: 'bg-gradient-to-r from-green-500/5 to-transparent',
+      iconBg: 'bg-green-500/10',
+      iconText: 'text-green-400',
+      scoreText: 'text-green-400',
+    },
+  }
+
+  const renderCriminalProfileCard = (match: Record<string, unknown>, index: number) => {
+    const profile = match.criminal_profile as Record<string, string | number | string[] | null | undefined> | undefined
+    const similarity = (match.similarity as number) * 100
+
+    const styles = TOOL_STYLES[toolKey || ''] || TOOL_STYLES.face_recognize
+
+    return (
+      <div key={index} className={`rounded-xl bg-dark-800/80 border ${styles.border} overflow-hidden`}>
+        {/* Match Header */}
+        <div className={`px-4 py-3 ${styles.gradient} border-b border-dark-700/30`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-9 h-9 rounded-lg ${styles.iconBg} flex items-center justify-center`}>
+                <Skull className={`w-5 h-5 ${styles.iconText}`} />
+              </div>
+              <div>
+                <h5 className="text-sm font-bold text-white">
+                  {String(match.criminal_name || profile?.profile_full_name || 'Unknown')}
+                </h5>
+                <p className="text-[10px] text-dark-400">ID: {String(match.criminal_id || 'N/A')}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`text-lg font-bold ${styles.scoreText}`}>
+                {similarity.toFixed(1)}%
+              </span>
+              <span className="text-[10px] text-dark-500">match</span>
+            </div>
+          </div>
+
+          {/* Status badges */}
+          <div className="flex items-center gap-2 mt-2">
+            {!!match.wanted_status && String(match.wanted_status) !== 'not_wanted' && (
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${getWantedColor(String(match.wanted_status))}`}>
+                <AlertTriangle className="w-3 h-3" />
+                {String(match.wanted_status).replace(/_/g, ' ').toUpperCase()}
+              </span>
+            )}
+            {!!(match.danger_level || profile?.danger_level) && (
+              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border ${getDangerColor(String(match.danger_level || profile?.danger_level))}`}>
+                {'Danger: '}{String(match.danger_level || profile?.danger_level).toUpperCase()}
+              </span>
+            )}
+            {!!profile?.reward_amount && Number(profile.reward_amount) > 0 && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border text-yellow-400 bg-yellow-500/10 border-yellow-500/30">
+                {'Reward: ₹'}{Number(profile.reward_amount).toLocaleString()}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Profile Details */}
+        {profile && (
+          <div className="p-4 space-y-4">
+            {/* Personal Information */}
+            <div>
+              <h6 className="text-[10px] text-dark-500 uppercase font-semibold tracking-wide mb-2">Personal Information</h6>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                {profile.father_name && (
+                  <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                    <p className="text-[9px] text-dark-500">Father's Name</p>
+                    <p className="text-xs text-white">{String(profile.father_name)}</p>
+                  </div>
+                )}
+                {profile.gender && (
+                  <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                    <p className="text-[9px] text-dark-500">Gender</p>
+                    <p className="text-xs text-white capitalize">{String(profile.gender)}</p>
+                  </div>
+                )}
+                {profile.date_of_birth && (
+                  <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                    <p className="text-[9px] text-dark-500">Date of Birth</p>
+                    <p className="text-xs text-white">{String(profile.date_of_birth)}</p>
+                  </div>
+                )}
+                {profile.nationality && (
+                  <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                    <p className="text-[9px] text-dark-500">Nationality</p>
+                    <p className="text-xs text-white">{String(profile.nationality)}</p>
+                  </div>
+                )}
+                {profile.occupation && (
+                  <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                    <p className="text-[9px] text-dark-500">Occupation</p>
+                    <p className="text-xs text-white">{String(profile.occupation)}</p>
+                  </div>
+                )}
+                {profile.education && (
+                  <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                    <p className="text-[9px] text-dark-500">Education</p>
+                    <p className="text-xs text-white">{String(profile.education)}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Physical Description */}
+            {(profile.height_cm || profile.weight_kg || profile.complexion || profile.build) && (
+              <div>
+                <h6 className="text-[10px] text-dark-500 uppercase font-semibold tracking-wide mb-2">Physical Description</h6>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {profile.height_cm && (
+                    <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                      <p className="text-[9px] text-dark-500">Height</p>
+                      <p className="text-xs text-white">{String(profile.height_cm)} cm</p>
+                    </div>
+                  )}
+                  {profile.weight_kg && (
+                    <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                      <p className="text-[9px] text-dark-500">Weight</p>
+                      <p className="text-xs text-white">{String(profile.weight_kg)} kg</p>
+                    </div>
+                  )}
+                  {profile.build && (
+                    <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                      <p className="text-[9px] text-dark-500">Build</p>
+                      <p className="text-xs text-white capitalize">{String(profile.build)}</p>
+                    </div>
+                  )}
+                  {profile.complexion && (
+                    <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                      <p className="text-[9px] text-dark-500">Complexion</p>
+                      <p className="text-xs text-white capitalize">{String(profile.complexion)}</p>
+                    </div>
+                  )}
+                  {profile.hair_color && (
+                    <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                      <p className="text-[9px] text-dark-500">Hair Color</p>
+                      <p className="text-xs text-white capitalize">{String(profile.hair_color)}</p>
+                    </div>
+                  )}
+                  {profile.eye_color && (
+                    <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                      <p className="text-[9px] text-dark-500">Eye Color</p>
+                      <p className="text-xs text-white capitalize">{String(profile.eye_color)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Identifying Marks */}
+            {profile.identifying_marks && (Array.isArray(profile.identifying_marks) ? (profile.identifying_marks as unknown[]).length > 0 : true) && (
+              <div>
+                <h6 className="text-[10px] text-dark-500 uppercase font-semibold tracking-wide mb-2">Identifying Marks</h6>
+                <div className="flex flex-wrap gap-1.5">
+                  {(Array.isArray(profile.identifying_marks)
+                    ? (profile.identifying_marks as string[])
+                    : [String(profile.identifying_marks)]
+                  ).map((mark, i) => (
+                    <span key={i} className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-400">
+                      {mark}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Criminal History */}
+            {(profile.total_arrests || profile.total_firs || profile.total_convictions) && (
+              <div>
+                <h6 className="text-[10px] text-dark-500 uppercase font-semibold tracking-wide mb-2">Criminal History</h6>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="px-2.5 py-2 bg-dark-900 rounded-lg text-center">
+                    <p className="text-lg font-bold text-red-400">{String(profile.total_arrests || 0)}</p>
+                    <p className="text-[9px] text-dark-500">Arrests</p>
+                  </div>
+                  <div className="px-2.5 py-2 bg-dark-900 rounded-lg text-center">
+                    <p className="text-lg font-bold text-orange-400">{String(profile.total_firs || 0)}</p>
+                    <p className="text-[9px] text-dark-500">FIRs</p>
+                  </div>
+                  <div className="px-2.5 py-2 bg-dark-900 rounded-lg text-center">
+                    <p className="text-lg font-bold text-yellow-400">{String(profile.total_convictions || 0)}</p>
+                    <p className="text-[9px] text-dark-500">Convictions</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Crime Categories */}
+            {profile.crime_categories && (Array.isArray(profile.crime_categories) ? (profile.crime_categories as unknown[]).length > 0 : true) && (
+              <div>
+                <h6 className="text-[10px] text-dark-500 uppercase font-semibold tracking-wide mb-2">Crime Categories</h6>
+                <div className="flex flex-wrap gap-1.5">
+                  {(Array.isArray(profile.crime_categories)
+                    ? (profile.crime_categories as string[])
+                    : [String(profile.crime_categories)]
+                  ).map((cat, i) => (
+                    <span key={i} className="px-2.5 py-1 rounded-lg bg-red-500/10 border border-red-500/20 text-[10px] text-red-400">
+                      {cat}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Modus Operandi */}
+            {profile.modus_operandi && (
+              <div>
+                <h6 className="text-[10px] text-dark-500 uppercase font-semibold tracking-wide mb-2">Modus Operandi</h6>
+                <p className="text-xs text-dark-200 bg-dark-900 rounded-lg px-3 py-2 leading-relaxed">
+                  {String(profile.modus_operandi)}
+                </p>
+              </div>
+            )}
+
+            {/* Gang Information */}
+            {(profile.gang_name || profile.gang_role) && (
+              <div>
+                <h6 className="text-[10px] text-dark-500 uppercase font-semibold tracking-wide mb-2">Gang Information</h6>
+                <div className="grid grid-cols-2 gap-2">
+                  {profile.gang_name && (
+                    <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                      <p className="text-[9px] text-dark-500">Gang Name</p>
+                      <p className="text-xs text-white">{String(profile.gang_name)}</p>
+                    </div>
+                  )}
+                  {profile.gang_role && (
+                    <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                      <p className="text-[9px] text-dark-500">Role</p>
+                      <p className="text-xs text-white capitalize">{String(profile.gang_role)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Known Weapons */}
+            {profile.known_weapons && (Array.isArray(profile.known_weapons) ? (profile.known_weapons as unknown[]).length > 0 : true) && (
+              <div>
+                <h6 className="text-[10px] text-dark-500 uppercase font-semibold tracking-wide mb-2">Known Weapons</h6>
+                <div className="flex flex-wrap gap-1.5">
+                  {(Array.isArray(profile.known_weapons)
+                    ? (profile.known_weapons as string[])
+                    : [String(profile.known_weapons)]
+                  ).map((weapon, i) => (
+                    <span key={i} className="px-2.5 py-1 rounded-lg bg-orange-500/10 border border-orange-500/20 text-[10px] text-orange-400">
+                      {weapon}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Additional Info */}
+            {(profile.bail_status || profile.last_known_activity || profile.first_offense_date) && (
+              <div>
+                <h6 className="text-[10px] text-dark-500 uppercase font-semibold tracking-wide mb-2">Additional Information</h6>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {profile.bail_status && (
+                    <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                      <p className="text-[9px] text-dark-500">Bail Status</p>
+                      <p className="text-xs text-white capitalize">{String(profile.bail_status)}</p>
+                    </div>
+                  )}
+                  {profile.first_offense_date && (
+                    <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                      <p className="text-[9px] text-dark-500">First Offense</p>
+                      <p className="text-xs text-white">{String(profile.first_offense_date)}</p>
+                    </div>
+                  )}
+                  {profile.last_known_activity && (
+                    <div className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                      <p className="text-[9px] text-dark-500">Last Activity</p>
+                      <p className="text-xs text-white">{String(profile.last_known_activity)}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Fallback: show raw match data if no profile */}
+        {!profile && (
+          <div className="p-3">
+            <div className="grid grid-cols-2 gap-2">
+              {Object.entries(match).filter(([k]) => k !== 'criminal_profile' && k !== 'criminal_name' && k !== 'similarity').map(([k, v]) => (
+                <div key={k} className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                  <p className="text-[9px] text-dark-500">{k.replace(/_/g, ' ')}</p>
+                  <p className="text-xs text-white">{String(v)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const renderBiometricResults = () => {
+    if (!result?.output_data || !toolKey || !BIOMETRIC_TOOLS.includes(toolKey)) return null
+
+    const output = result.output_data as Record<string, unknown>
+    const matches = output.matches as Record<string, unknown>[] | undefined
+
+    return (
+      <div className="space-y-4">
+        {/* Match Summary Header */}
+        <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-dark-800 to-dark-800/50 border border-dark-700/50">
+          <div className="w-10 h-10 rounded-xl bg-primary-500/10 flex items-center justify-center">
+            {toolKey === 'face_recognize' && <User className="w-5 h-5 text-red-400" />}
+            {toolKey === 'fingerprint_match' && <Fingerprint className="w-5 h-5 text-purple-400" />}
+            {toolKey === 'dna_search' && <Shield className="w-5 h-5 text-green-400" />}
+          </div>
+          <div>
+            <p className="text-sm font-bold text-white">
+              {matches && matches.length > 0 ? `${matches.length} Match${matches.length > 1 ? 'es' : ''} Found` : 'No Matches Found'}
+            </p>
+            <p className="text-[10px] text-dark-400">
+              Searched {String(output.database_records_searched || 0)} records in {String(output.database_searched || 'criminal database')}
+            </p>
+          </div>
+          {result.confidence_score && (
+            <div className="ml-auto text-right">
+              <p className="text-lg font-bold text-primary-400">{(result.confidence_score * 100).toFixed(1)}%</p>
+              <p className="text-[9px] text-dark-500">Top Match</p>
+            </div>
+          )}
+        </div>
+
+        {/* Match Cards */}
+        {matches && matches.length > 0 && (
+          <div className="space-y-3">
+            {matches.map((match, i) => renderCriminalProfileCard(match, i))}
+          </div>
+        )}
+
+        {(!matches || matches.length === 0) && (
+          <div className="rounded-xl bg-dark-800/50 border border-dark-700/30 p-8 text-center">
+            <Shield className="w-10 h-10 text-dark-600 mx-auto mb-3" />
+            <p className="text-sm text-dark-400">No matches found in the criminal database</p>
+            <p className="text-[10px] text-dark-500 mt-1">The uploaded evidence did not match any existing records</p>
+          </div>
+        )}
+
+        {/* Other output fields (method, execution time, etc.) */}
+        <div className="space-y-2">
+          <h4 className="text-[11px] text-dark-500 uppercase font-semibold tracking-wide">Technical Details</h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {Object.entries(output)
+              .filter(([key]) => !['matches', 'faces', 'input_template_summary', 'extracted_profile', 'text_preview'].includes(key))
+              .map(([key, value]) => {
+                if (typeof value === 'object' && value !== null) return null
+                return (
+                  <div key={key} className="px-2.5 py-1.5 bg-dark-900 rounded-lg">
+                    <p className="text-[9px] text-dark-500">{key.replace(/_/g, ' ')}</p>
+                    <p className="text-xs text-white truncate">{String(value)}</p>
+                  </div>
+                )
+              })
+              .filter(Boolean)}
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -496,28 +901,34 @@ export default function ToolExecutionPage() {
                       {Object.keys(result.output_data).length} fields
                     </span>
                   </div>
-                  <div className="space-y-3">
-                    {Object.entries(result.output_data).map(([key, value]) => (
-                      <div key={key} className="rounded-xl bg-dark-800/80 border border-dark-700/50 overflow-hidden">
-                        <div className="px-4 py-2.5 border-b border-dark-700/30 flex items-center justify-between">
-                          <p className="text-[11px] text-dark-400 uppercase font-semibold tracking-wide">
-                            {key.replace(/_/g, ' ')}
-                          </p>
-                          {typeof value === 'string' && (
-                            <button
-                              onClick={() => copyToClipboard(String(value))}
-                              className="p-1 rounded hover:bg-dark-700 transition-colors"
-                            >
-                              <Copy className="w-3 h-3 text-dark-500" />
-                            </button>
-                          )}
+
+                  {/* Tool-specific biometric rendering */}
+                  {toolKey && BIOMETRIC_TOOLS.includes(toolKey) ? (
+                    renderBiometricResults()
+                  ) : (
+                    <div className="space-y-3">
+                      {Object.entries(result.output_data).map(([key, value]) => (
+                        <div key={key} className="rounded-xl bg-dark-800/80 border border-dark-700/50 overflow-hidden">
+                          <div className="px-4 py-2.5 border-b border-dark-700/30 flex items-center justify-between">
+                            <p className="text-[11px] text-dark-400 uppercase font-semibold tracking-wide">
+                              {key.replace(/_/g, ' ')}
+                            </p>
+                            {typeof value === 'string' && (
+                              <button
+                                onClick={() => copyToClipboard(String(value))}
+                                className="p-1 rounded hover:bg-dark-700 transition-colors"
+                              >
+                                <Copy className="w-3 h-3 text-dark-500" />
+                              </button>
+                            )}
+                          </div>
+                          <div className="p-3">
+                            {renderOutputValue(key, value)}
+                          </div>
                         </div>
-                        <div className="p-3">
-                          {renderOutputValue(key, value)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </motion.div>
