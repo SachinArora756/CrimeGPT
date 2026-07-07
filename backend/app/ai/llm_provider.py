@@ -10,8 +10,8 @@ import os
 from app.config import settings
 
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-OPENROUTER_TEXT_MODEL = "google/gemini-2.5-flash-preview-05-20"
-OPENROUTER_VISION_MODEL = "google/gemini-2.0-flash-001"
+OPENROUTER_TEXT_MODEL = "google/gemini-2.5-flash"
+OPENROUTER_VISION_MODEL = "google/gemini-2.5-flash"
 
 
 def _has_gemini_key() -> bool:
@@ -41,6 +41,7 @@ def get_llm(temperature: float = 0.3):
             openai_api_key=settings.openrouter_api_key,
             openai_api_base=OPENROUTER_BASE_URL,
             temperature=temperature,
+            max_tokens=4096,
             default_headers={
                 "HTTP-Referer": "https://crimegpt.app",
                 "X-Title": "CrimeGPT",
