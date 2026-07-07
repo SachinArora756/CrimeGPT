@@ -299,15 +299,12 @@ async def generate_investigation_report(
     user_message: str | None,
     original_filename: str,
 ) -> str:
-    """Generate investigation report using Gemini."""
+    """Generate investigation report using LLM (Gemini or OpenRouter fallback)."""
     try:
-        import google.generativeai as genai
+        from app.ai.llm_provider import has_any_llm_key, generate_text
 
-        if not settings.gemini_api_key:
+        if not has_any_llm_key():
             return _build_fallback_report(classification, tool_results, criminal_matches, original_filename)
-
-        genai.configure(api_key=settings.gemini_api_key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
 
         tool_summaries = []
         for r in tool_results:
@@ -352,11 +349,11 @@ CRITICAL RULES:
 - Be concise but thorough
 - Use bullet points for clarity"""
 
-        response = await asyncio.to_thread(model.generate_content, prompt)
-        return response.text
+        text = await asyncio.to_thread(generate_text, prompt, 0.3, 2048)
+        return text
 
     except Exception as e:
-        logger.error(f"Gemini report generation failed: {e}")
+        logger.error(f"LLM report generation failed: {e}")
         return _build_fallback_report(classification, tool_results, criminal_matches, original_filename)
 
 
@@ -501,13 +498,10 @@ async def handle_followup_message(
 ) -> str:
     """Handle a follow-up question using conversation history."""
     try:
-        import google.generativeai as genai
+        from app.ai.llm_provider import has_any_llm_key, generate_text
 
-        if not settings.gemini_api_key:
-            return "AI analysis unavailable. Please ensure the Gemini API key is configured."
-
-        genai.configure(api_key=settings.gemini_api_key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        if not has_any_llm_key():
+            return "AI analysis unavailable. Please ensure GEMINI_API_KEY or OPENROUTER_API_KEY is configured."
 
         context_parts = []
         for msg in session_messages[-10:]:
@@ -529,8 +523,8 @@ Respond based on the evidence and tool results from the conversation history.
 CRITICAL: Never fabricate evidence. Only reference actual tool outputs from the conversation.
 Be concise, professional, and actionable."""
 
-        response = await asyncio.to_thread(model.generate_content, prompt)
-        return response.text
+        text = await asyncio.to_thread(generate_text, prompt, 0.3, 2048)
+        return text
 
     except Exception as e:
         logger.error(f"Follow-up generation failed: {e}")

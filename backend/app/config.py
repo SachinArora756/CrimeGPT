@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 7
 
     gemini_api_key: str = ""
+    openrouter_api_key: str = ""
 
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000

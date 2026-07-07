@@ -1,8 +1,7 @@
 from typing import TypedDict, Annotated, Literal
 from langgraph.graph import StateGraph, END
-from langchain_google_genai import ChatGoogleGenerativeAI
 
-from app.config import settings
+from app.ai.llm_provider import get_llm as _get_llm
 
 
 class AgentState(TypedDict):
@@ -19,11 +18,7 @@ class AgentState(TypedDict):
 
 
 def get_llm():
-    return ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        google_api_key=settings.gemini_api_key,
-        temperature=0.3,
-    )
+    return _get_llm()
 
 
 def route_task(state: AgentState) -> Literal["case_intake", "investigation", "legal_rag", "document_gen", "evidence_analysis", "case_diary", "end"]:

@@ -1124,16 +1124,12 @@ async def generate_investigation_report(
         "legal_references": legal_references,
     }
 
-    # Generate AI summary using Gemini
+    # Generate AI summary
     ai_summary = None
     try:
-        from app.config import settings
-        import google.generativeai as genai
+        from app.ai.llm_provider import has_any_llm_key, generate_text
 
-        if settings.gemini_api_key:
-            genai.configure(api_key=settings.gemini_api_key)
-            model = genai.GenerativeModel("gemini-2.0-flash")
-
+        if has_any_llm_key():
             report_json = json.dumps(report_data, indent=2, default=str)[:8000]
 
             prompt = (
@@ -1165,8 +1161,7 @@ async def generate_investigation_report(
             )
 
             import asyncio
-            response = await asyncio.to_thread(model.generate_content, prompt)
-            ai_summary = response.text
+            ai_summary = await asyncio.to_thread(generate_text, prompt, 0.3, 2048)
     except Exception as e:
         ai_summary = f"AI report generation unavailable: {str(e)}"
 

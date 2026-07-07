@@ -166,17 +166,13 @@ def _format_provisions(provisions: list[dict]) -> str:
 
 
 async def _call_llm(case_summary: str, provisions_text: str) -> str:
-    if not settings.gemini_api_key:
+    from app.ai.llm_provider import has_any_llm_key, get_llm
+
+    if not has_any_llm_key():
         return _fallback_response(provisions_text)
 
     try:
-        from langchain_google_genai import ChatGoogleGenerativeAI
-
-        llm = ChatGoogleGenerativeAI(
-            model="gemini-2.5-flash",
-            google_api_key=settings.gemini_api_key,
-            temperature=0.1,
-        )
+        llm = get_llm(temperature=0.1)
 
         prompt = LEGAL_REASONING_PROMPT.format(
             case_summary=case_summary[:4000],

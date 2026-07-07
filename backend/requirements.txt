@@ -66,6 +66,10 @@ insightface>=0.7.3
 # === Image Similarity (CLIP) ===
 open-clip-torch>=2.24.0
 
+# === OpenRouter (OpenAI-compatible fallback) ===
+openai>=1.12.0
+langchain-openai>=0.3.0
+
 # === HTTP & async ===
 httpx==0.27.2
 aiofiles==24.1.0

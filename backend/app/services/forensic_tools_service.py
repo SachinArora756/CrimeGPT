@@ -438,32 +438,20 @@ async def run_object_detection(file_path: str, params: dict) -> tuple[dict, floa
             return None
 
     def _detect_gemini():
-        import os
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key or len(api_key) < 10:
+        from app.ai.llm_provider import has_any_llm_key, generate_vision
+        if not has_any_llm_key():
             return None
         try:
-            import google.generativeai as genai
-            from PIL import Image
-
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-2.0-flash")
-            img = Image.open(file_path)
-
-            response = model.generate_content(
-                [
-                    img,
-                    "List every distinct object visible in this image. For each object provide:\n"
-                    "OBJECT: <name> | <description>\n"
-                    "Be thorough — include vehicles, people, animals, furniture, signs, text, "
-                    "tools, electronics, clothing items, etc. One line per object.",
-                ],
-                generation_config=genai.types.GenerationConfig(temperature=0.1, max_output_tokens=500),
+            prompt = (
+                "List every distinct object visible in this image. For each object provide:\n"
+                "OBJECT: <name> | <description>\n"
+                "Be thorough — include vehicles, people, animals, furniture, signs, text, "
+                "tools, electronics, clothing items, etc. One line per object."
             )
-            img.close()
+            response_text = generate_vision(file_path, prompt, temperature=0.1, max_tokens=500)
 
             objects = []
-            for line in response.text.strip().split("\n"):
+            for line in response_text.strip().split("\n"):
                 line = line.strip()
                 if line.startswith("OBJECT:"):
                     parts = [p.strip() for p in line[7:].split("|")]
@@ -1019,11 +1007,16 @@ async def run_document_summarize(file_path: str, params: dict) -> tuple[dict, fl
         return {"error": "Could not extract text from the file for summarization", "summary": ""}, None
 
     try:
-        from app.config import settings
-        import google.generativeai as genai
+        from app.ai.llm_provider import has_any_llm_key, generate_text
 
-        genai.configure(api_key=settings.gemini_api_key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        if not has_any_llm_key():
+            return {
+                "error": "No LLM API key configured",
+                "summary": "",
+                "text_preview": text[:2000],
+                "original_char_count": len(text),
+                "summarized_from": os.path.basename(file_path),
+            }, None
 
         prompt = (
             "You are a forensic document analyst for a police investigation system. "
@@ -1034,8 +1027,7 @@ async def run_document_summarize(file_path: str, params: dict) -> tuple[dict, fl
             "3) Potential investigative relevance"
         )
 
-        response = await asyncio.to_thread(model.generate_content, prompt)
-        summary = response.text
+        summary = await asyncio.to_thread(generate_text, prompt, 0.3, 2048)
 
         return {
             "summary": summary,
@@ -1044,7 +1036,7 @@ async def run_document_summarize(file_path: str, params: dict) -> tuple[dict, fl
         }, 0.8
     except ImportError:
         return {
-            "error": "google-generativeai not installed",
+            "error": "Required LLM packages not installed",
             "summary": "",
             "text_preview": text[:2000],
         }, None
@@ -1735,34 +1727,22 @@ async def run_vehicle_detect(file_path: str, params: dict) -> tuple[dict, float 
             return None
 
     def _detect_gemini():
-        import os
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key or len(api_key) < 10:
+        from app.ai.llm_provider import has_any_llm_key, generate_vision
+        if not has_any_llm_key():
             return None
         try:
-            import google.generativeai as genai
-            from PIL import Image
-
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-2.0-flash")
-            img = Image.open(file_path)
-
-            response = model.generate_content(
-                [
-                    img,
-                    "Analyze this image for vehicles. For each vehicle visible, identify:\n"
-                    "1. Type (car, motorcycle, bus, truck, auto-rickshaw, van, SUV, bicycle)\n"
-                    "2. Color\n"
-                    "3. Approximate make/model if identifiable\n"
-                    "Respond in this exact format per vehicle (one per line): VEHICLE: <type> | <color> | <make_model>\n"
-                    "If no vehicle is visible, respond: NO_VEHICLE_FOUND\n"
-                    "Do not add any other text.",
-                ],
-                generation_config=genai.types.GenerationConfig(temperature=0.1, max_output_tokens=300),
+            prompt = (
+                "Analyze this image for vehicles. For each vehicle visible, identify:\n"
+                "1. Type (car, motorcycle, bus, truck, auto-rickshaw, van, SUV, bicycle)\n"
+                "2. Color\n"
+                "3. Approximate make/model if identifiable\n"
+                "Respond in this exact format per vehicle (one per line): VEHICLE: <type> | <color> | <make_model>\n"
+                "If no vehicle is visible, respond: NO_VEHICLE_FOUND\n"
+                "Do not add any other text."
             )
-            img.close()
+            response_text = generate_vision(file_path, prompt, temperature=0.1, max_tokens=300)
 
-            text = response.text.strip()
+            text = response_text.strip()
             if "NO_VEHICLE_FOUND" in text:
                 return {"vehicles_detected": 0, "vehicles": [], "method": "gemini_vision"}, None
 
@@ -1806,37 +1786,21 @@ async def run_license_plate_ocr(file_path: str, params: dict) -> tuple[dict, flo
     """Detect license plate using Gemini Vision (primary) with Tesseract fallback."""
 
     def _plate_ocr_gemini():
-        """Use Gemini Vision API to read license plates — far more accurate than Tesseract on natural photos."""
-        import os
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key or len(api_key) < 10:
+        """Use Vision API to read license plates — far more accurate than Tesseract on natural photos."""
+        from app.ai.llm_provider import has_any_llm_key, generate_vision
+        if not has_any_llm_key():
             return None
 
         try:
-            import google.generativeai as genai
-            from PIL import Image
-
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-2.0-flash")
-
-            img = Image.open(file_path)
-            response = model.generate_content(
-                [
-                    img,
-                    "You are a license plate detection system. Look at this image and find ALL vehicle license plates visible. "
-                    "For each plate found, extract the exact text on it. "
-                    "Respond ONLY in this exact format (one plate per line): PLATE: <plate_text>\n"
-                    "If no license plate is visible, respond with exactly: NO_PLATE_FOUND\n"
-                    "Do not add any other text, explanation, or commentary.",
-                ],
-                generation_config=genai.types.GenerationConfig(
-                    temperature=0.1,
-                    max_output_tokens=200,
-                ),
+            prompt = (
+                "You are a license plate detection system. Look at this image and find ALL vehicle license plates visible. "
+                "For each plate found, extract the exact text on it. "
+                "Respond ONLY in this exact format (one plate per line): PLATE: <plate_text>\n"
+                "If no license plate is visible, respond with exactly: NO_PLATE_FOUND\n"
+                "Do not add any other text, explanation, or commentary."
             )
-            img.close()
+            response_text = generate_vision(file_path, prompt, temperature=0.1, max_tokens=200).strip()
 
-            response_text = response.text.strip()
             if "NO_PLATE_FOUND" in response_text:
                 return {"plates_detected": 0, "plates": [], "method": "gemini_vision"}, None
 
@@ -1864,7 +1828,7 @@ async def run_license_plate_ocr(file_path: str, params: dict) -> tuple[dict, flo
                 "method": "gemini_vision",
             }, 0.95 if plates else None
 
-        except Exception as e:
+        except Exception:
             return None
 
     def _plate_ocr_easyocr():
@@ -2050,33 +2014,20 @@ async def run_weapon_detect(file_path: str, params: dict) -> tuple[dict, float |
             return None
 
     def _detect_gemini():
-        import os
-        api_key = os.environ.get("GEMINI_API_KEY")
-        if not api_key or len(api_key) < 10:
+        from app.ai.llm_provider import has_any_llm_key, generate_vision
+        if not has_any_llm_key():
             return None
         try:
-            import google.generativeai as genai
-            from PIL import Image
-
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-2.0-flash")
-            img = Image.open(file_path)
-
-            response = model.generate_content(
-                [
-                    img,
-                    "You are a weapon detection system for law enforcement. Analyze this image carefully.\n"
-                    "Identify ANY weapons or potentially dangerous objects: guns, pistols, rifles, shotguns, "
-                    "knives, machetes, swords, axes, baseball bats, brass knuckles, explosives, etc.\n"
-                    "For each weapon found respond: WEAPON: <type> | <description>\n"
-                    "If NO weapons are visible, respond exactly: NO_WEAPON_FOUND\n"
-                    "Do not add any other text. Be accurate — do not hallucinate weapons that aren't there.",
-                ],
-                generation_config=genai.types.GenerationConfig(temperature=0.1, max_output_tokens=300),
+            prompt = (
+                "You are a weapon detection system for law enforcement. Analyze this image carefully.\n"
+                "Identify ANY weapons or potentially dangerous objects: guns, pistols, rifles, shotguns, "
+                "knives, machetes, swords, axes, baseball bats, brass knuckles, explosives, etc.\n"
+                "For each weapon found respond: WEAPON: <type> | <description>\n"
+                "If NO weapons are visible, respond exactly: NO_WEAPON_FOUND\n"
+                "Do not add any other text. Be accurate — do not hallucinate weapons that aren't there."
             )
-            img.close()
+            text = generate_vision(file_path, prompt, temperature=0.1, max_tokens=300).strip()
 
-            text = response.text.strip()
             if "NO_WEAPON_FOUND" in text:
                 return {
                     "weapons_detected": 0,
@@ -2267,16 +2218,12 @@ async def run_crime_scene_analysis(file_path: str, params: dict) -> tuple[dict, 
     except Exception:
         dimensions = {"width": 0, "height": 0}
 
-    # Generate comprehensive AI summary using Gemini
+    # Generate comprehensive AI summary
     ai_report = None
     try:
-        from app.config import settings
-        import google.generativeai as genai
+        from app.ai.llm_provider import has_any_llm_key, generate_vision_base64
 
-        if settings.gemini_api_key:
-            genai.configure(api_key=settings.gemini_api_key)
-            model = genai.GenerativeModel("gemini-2.0-flash")
-
+        if has_any_llm_key():
             import base64
             with open(file_path, "rb") as f:
                 image_data = base64.b64encode(f.read()).decode("utf-8")
@@ -2309,11 +2256,9 @@ async def run_crime_scene_analysis(file_path: str, params: dict) -> tuple[dict, 
                 "Be professional, factual, and thorough."
             )
 
-            response = await asyncio.to_thread(
-                model.generate_content,
-                [prompt, {"mime_type": mime_type, "data": image_data}],
+            ai_report = await asyncio.to_thread(
+                generate_vision_base64, image_data, mime_type, prompt, 0.3, 2048
             )
-            ai_report = response.text
 
     except Exception as e:
         ai_report = f"AI analysis unavailable: {str(e)}"
@@ -2328,7 +2273,7 @@ async def run_crime_scene_analysis(file_path: str, params: dict) -> tuple[dict, 
         "pipeline_results": pipeline_results,
         "ai_report": ai_report,
         "image_dimensions": dimensions,
-        "model_used": "YOLOv8n + InsightFace + pytesseract + Gemini 2.0 Flash",
+        "model_used": "YOLOv8n + InsightFace + pytesseract + AI Vision",
         "analyzed_at": datetime.utcnow().isoformat(),
         "threat_assessment": pipeline_results["weapons"]["threat_level"],
         "persons_count": pipeline_results["faces"]["count"],
@@ -2342,16 +2287,12 @@ async def run_crime_scene_analysis(file_path: str, params: dict) -> tuple[dict, 
 # ---------------------------------------------------------------------------
 
 async def generate_execution_summary(output_data: dict, tool_key: str, filename: str) -> str:
-    """Generate an AI summary of tool execution results using Gemini."""
+    """Generate an AI summary of tool execution results."""
     try:
-        from app.config import settings
-        import google.generativeai as genai
+        from app.ai.llm_provider import has_any_llm_key, generate_text
 
-        if not settings.gemini_api_key:
-            return "AI summary unavailable: Gemini API key not configured."
-
-        genai.configure(api_key=settings.gemini_api_key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        if not has_any_llm_key():
+            return "AI summary unavailable: No LLM API key configured."
 
         output_str = json.dumps(output_data, indent=2, default=str)[:5000]
 
@@ -2364,8 +2305,7 @@ async def generate_execution_summary(output_data: dict, tool_key: str, filename:
             "Focus on what is most relevant for an investigation."
         )
 
-        response = await asyncio.to_thread(model.generate_content, prompt)
-        return response.text
+        return await asyncio.to_thread(generate_text, prompt, 0.3, 1024)
     except Exception as e:
         return f"Summary generation unavailable: {str(e)}"
 
