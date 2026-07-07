@@ -231,25 +231,25 @@ def _query_all_dna_profiles_sync() -> list[dict]:
     return results
 
 
-def _enrich_matches_with_profiles(matches: list[dict]) -> list[dict]:
+async def _enrich_matches_with_profiles(matches: list[dict]) -> list[dict]:
     """Fetch full criminal profiles for matched criminal_ids and merge into match dicts."""
     if not matches:
         return matches
 
-    import sqlalchemy
-    from sqlalchemy import create_engine, text
+    import asyncpg
 
     criminal_ids = list({m.get("criminal_id", "") for m in matches if m.get("criminal_id")})
     if not criminal_ids:
         return matches
 
-    engine = create_engine(_get_sync_db_url(), pool_pre_ping=True)
+    from app.config import settings
+    db_url = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
     profiles_map: dict[str, dict] = {}
 
     try:
-        with engine.connect() as conn:
-            placeholders = ",".join(f"'{cid}'" for cid in criminal_ids)
-            query = text(f"""
+        conn = await asyncpg.connect(db_url)
+        try:
+            rows = await conn.fetch("""
                 SELECT criminal_id, full_name, father_name, gender, nationality,
                        date_of_birth, height_cm, weight_kg, build, complexion,
                        hair_color, eye_color, identifying_marks, crime_categories,
@@ -259,45 +259,44 @@ def _enrich_matches_with_profiles(matches: list[dict]) -> list[dict]:
                        education, reward_amount, bail_status, wanted_status,
                        danger_level, nicknames
                 FROM criminal_profiles
-                WHERE criminal_id IN ({placeholders}) AND is_active = true
-            """)
-            rows = conn.execute(query).fetchall()
+                WHERE criminal_id = ANY($1) AND is_active = true
+            """, criminal_ids)
             for row in rows:
-                profiles_map[row[0]] = {
-                    "profile_full_name": row[1],
-                    "father_name": row[2],
-                    "gender": row[3],
-                    "nationality": row[4],
-                    "date_of_birth": str(row[5]) if row[5] else None,
-                    "height_cm": row[6],
-                    "weight_kg": row[7],
-                    "build": row[8],
-                    "complexion": row[9],
-                    "hair_color": row[10],
-                    "eye_color": row[11],
-                    "identifying_marks": row[12],
-                    "crime_categories": row[13],
-                    "modus_operandi": row[14],
-                    "gang_name": row[15],
-                    "gang_role": row[16],
-                    "known_weapons": row[17],
-                    "total_arrests": row[18],
-                    "total_convictions": row[19],
-                    "total_firs": row[20],
-                    "first_offense_date": str(row[21]) if row[21] else None,
-                    "last_known_activity": str(row[22]) if row[22] else None,
-                    "occupation": row[23],
-                    "education": row[24],
-                    "reward_amount": row[25],
-                    "bail_status": row[26],
-                    "wanted_status": row[27],
-                    "danger_level": row[28],
-                    "nicknames": row[29],
+                profiles_map[row["criminal_id"]] = {
+                    "profile_full_name": row["full_name"],
+                    "father_name": row["father_name"],
+                    "gender": row["gender"],
+                    "nationality": row["nationality"],
+                    "date_of_birth": str(row["date_of_birth"]) if row["date_of_birth"] else None,
+                    "height_cm": float(row["height_cm"]) if row["height_cm"] else None,
+                    "weight_kg": float(row["weight_kg"]) if row["weight_kg"] else None,
+                    "build": row["build"],
+                    "complexion": row["complexion"],
+                    "hair_color": row["hair_color"],
+                    "eye_color": row["eye_color"],
+                    "identifying_marks": row["identifying_marks"],
+                    "crime_categories": row["crime_categories"],
+                    "modus_operandi": row["modus_operandi"],
+                    "gang_name": row["gang_name"],
+                    "gang_role": row["gang_role"],
+                    "known_weapons": row["known_weapons"],
+                    "total_arrests": row["total_arrests"],
+                    "total_convictions": row["total_convictions"],
+                    "total_firs": row["total_firs"],
+                    "first_offense_date": str(row["first_offense_date"]) if row["first_offense_date"] else None,
+                    "last_known_activity": str(row["last_known_activity"]) if row["last_known_activity"] else None,
+                    "occupation": row["occupation"],
+                    "education": row["education"],
+                    "reward_amount": float(row["reward_amount"]) if row["reward_amount"] else None,
+                    "bail_status": row["bail_status"],
+                    "wanted_status": row["wanted_status"],
+                    "danger_level": row["danger_level"],
+                    "nicknames": row["nicknames"],
                 }
+        finally:
+            await conn.close()
     except Exception as e:
         logger.warning(f"Failed to enrich matches with profiles: {e}")
-    finally:
-        engine.dispose()
 
     for match in matches:
         cid = match.get("criminal_id", "")
@@ -1271,8 +1270,6 @@ async def run_face_recognize(file_path: str, params: dict) -> tuple[dict, float 
         elapsed = round((time.time() - start_time) * 1000, 1)
         top_confidence = all_matches[0]["similarity"] if all_matches else None
 
-        all_matches = _enrich_matches_with_profiles(all_matches)
-
         return {
             "faces_detected": len(faces),
             "faces": face_details,
@@ -1286,7 +1283,10 @@ async def run_face_recognize(file_path: str, params: dict) -> tuple[dict, float 
             "execution_time_ms": elapsed,
         }, top_confidence
 
-    return await asyncio.to_thread(_recognize)
+    output_data, confidence = await asyncio.to_thread(_recognize)
+    if output_data.get("matches"):
+        output_data["matches"] = await _enrich_matches_with_profiles(output_data["matches"])
+    return output_data, confidence
 
 
 # ---------------------------------------------------------------------------
@@ -1432,8 +1432,6 @@ async def run_fingerprint_match(file_path: str, params: dict) -> tuple[dict, flo
         elapsed = round((time.time() - start_time) * 1000, 1)
         top_confidence = matches[0]["similarity"] if matches else None
 
-        matches = _enrich_matches_with_profiles(matches)
-
         return {
             "minutiae_extracted": minutiae_count,
             "quality_assessment": quality,
@@ -1452,7 +1450,10 @@ async def run_fingerprint_match(file_path: str, params: dict) -> tuple[dict, flo
             },
         }, top_confidence
 
-    return await asyncio.to_thread(_match)
+    output_data, confidence = await asyncio.to_thread(_match)
+    if output_data.get("matches"):
+        output_data["matches"] = await _enrich_matches_with_profiles(output_data["matches"])
+    return output_data, confidence
 
 
 # ---------------------------------------------------------------------------
@@ -1544,8 +1545,6 @@ async def run_dna_search(file_path: str, params: dict) -> tuple[dict, float | No
         elapsed = round((time.time() - start_time) * 1000, 1)
         top_confidence = matches[0]["similarity"] if matches else None
 
-        matches = _enrich_matches_with_profiles(matches)
-
         return {
             "report_parsed": True,
             "extracted_profile": parsed_profile,
@@ -1559,7 +1558,10 @@ async def run_dna_search(file_path: str, params: dict) -> tuple[dict, float | No
             "execution_time_ms": elapsed,
         }, top_confidence
 
-    return await asyncio.to_thread(_search)
+    output_data, confidence = await asyncio.to_thread(_search)
+    if output_data.get("matches"):
+        output_data["matches"] = await _enrich_matches_with_profiles(output_data["matches"])
+    return output_data, confidence
 
 
 def _parse_dna_report(text: str) -> dict:
