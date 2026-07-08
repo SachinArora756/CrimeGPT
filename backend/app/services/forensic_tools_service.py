@@ -2251,10 +2251,20 @@ async def run_crime_scene_analysis(file_path: str, params: dict) -> tuple[dict, 
 
             detection_summary = json.dumps(pipeline_results, indent=2, default=str)[:3000]
 
+            officer_notes = params.get("officer_notes", "")
+            officer_context = ""
+            if officer_notes:
+                officer_context = (
+                    f"\n\nOfficer's Scene Description:\n{officer_notes[:2000]}\n\n"
+                    "Use the officer's description to supplement your visual analysis. "
+                    "If the image is unclear, rely more heavily on the officer's notes.\n"
+                )
+
             prompt = (
                 "You are an expert forensic crime scene analyst working for a police investigation unit. "
                 "Analyze this crime scene image along with the automated detection results below.\n\n"
-                f"Automated Detection Results:\n{detection_summary}\n\n"
+                f"Automated Detection Results:\n{detection_summary}\n"
+                f"{officer_context}\n"
                 "Based on the image AND the detection data, provide a structured Crime Scene Report:\n\n"
                 "## Scene Description\nDescribe what is visible in detail.\n\n"
                 "## Evidence Identified\nList all potential evidence items with their locations.\n\n"

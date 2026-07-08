@@ -38,6 +38,7 @@ export default function ToolExecutionPage() {
   const [progress, setProgress] = useState(0)
   const [summarizing, setSummarizing] = useState(false)
   const [expandedKeys, setExpandedKeys] = useState<Set<string>>(new Set())
+  const [sceneContext, setSceneContext] = useState('')
 
   useEffect(() => {
     if (executionId) {
@@ -78,7 +79,11 @@ export default function ToolExecutionPage() {
     try {
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('params', JSON.stringify({}))
+      const toolParams: Record<string, string> = {}
+      if (sceneContext.trim() && toolKey === 'crime_scene_analysis') {
+        toolParams.officer_notes = sceneContext.trim()
+      }
+      formData.append('params', JSON.stringify(toolParams))
 
       const response = await api.post(`/api/forensic-toolkit/execute/${toolKey}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -717,6 +722,25 @@ export default function ToolExecutionPage() {
               </div>
             )}
           </div>
+
+          {/* Officer Notes (Crime Scene Analysis only) */}
+          {toolKey === 'crime_scene_analysis' && (
+            <div className="rounded-xl border border-dark-700/50 bg-dark-800/30 p-4">
+              <label className="text-sm font-medium text-dark-200 flex items-center gap-2 mb-2">
+                <FileImage className="w-4 h-4 text-primary-400" />
+                Officer's Scene Description (Optional)
+              </label>
+              <textarea
+                className="w-full bg-dark-900/60 border border-dark-700/50 rounded-lg px-3 py-2.5 text-sm text-dark-200 placeholder-dark-500 focus:outline-none focus:border-primary-500/50 resize-none"
+                rows={4}
+                placeholder="Describe what you observed at the crime scene — e.g. type of incident, visible injuries, weapon found near the door, broken window on the east side, blood stains on the floor..."
+                value={sceneContext}
+                onChange={e => setSceneContext(e.target.value)}
+                maxLength={3000}
+              />
+              <p className="text-[10px] text-dark-500 mt-1.5">Your notes help the AI provide more accurate analysis even if the image is unclear.</p>
+            </div>
+          )}
 
           {/* Execute Button */}
           <button
