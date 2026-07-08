@@ -106,7 +106,7 @@ DEFAULT_TOOL_DEFINITIONS = [
         "category": "Document Analysis",
         "description": "Generate AI-powered summary of document contents using Gemini",
         "icon": "Brain",
-        "accepted_file_types": ["application/pdf", "text/plain", "image/jpeg", "image/png"],
+        "accepted_file_types": ["application/pdf", "text/plain", "image/jpeg", "image/png", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/msword"],
     },
     {
         "tool_key": "digital_hash",

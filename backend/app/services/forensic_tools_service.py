@@ -983,19 +983,32 @@ async def run_document_summarize(file_path: str, params: dict) -> tuple[dict, fl
                 doc.close()
             except Exception:
                 pass
-        elif ext in (".txt", ".md", ".csv", ".log"):
+        elif ext in (".docx", ".doc"):
+            try:
+                import docx
+                doc = docx.Document(file_path)
+                text = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+            except Exception:
+                pass
+        elif ext in (".txt", ".md", ".csv", ".log", ".json", ".ipynb"):
             try:
                 with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     text = f.read(50000)
             except Exception:
                 pass
-        else:
+        elif ext in (".jpg", ".jpeg", ".png", ".tiff", ".bmp", ".webp"):
             try:
                 import pytesseract
                 from PIL import Image
                 img = Image.open(file_path)
                 text = pytesseract.image_to_string(img)
                 img.close()
+            except Exception:
+                pass
+        else:
+            try:
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    text = f.read(50000)
             except Exception:
                 pass
 
