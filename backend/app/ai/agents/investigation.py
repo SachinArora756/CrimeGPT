@@ -64,8 +64,17 @@ Sections Applied: {case.sections_applied or 'None yet'}
     for key in ["recommendations", "next_steps", "legal_references"]:
         if key not in result:
             result[key] = []
+        elif not isinstance(result[key], list):
+            result[key] = [str(result[key])]
+
     if "risk_assessment" not in result:
         result["risk_assessment"] = ""
+    elif not isinstance(result["risk_assessment"], str):
+        ra = result["risk_assessment"]
+        if isinstance(ra, dict):
+            result["risk_assessment"] = "; ".join(f"{k}: {v}" for k, v in ra.items())
+        else:
+            result["risk_assessment"] = str(ra)
 
     return result
 
