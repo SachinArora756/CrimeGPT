@@ -39,3 +39,17 @@ class ApprovalRequest(BaseModel):
 
 class RecommendationGenerateRequest(BaseModel):
     focus_area: str | None = Field(default=None, max_length=500)
+
+
+class LegalChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=5000)
+
+
+class LegalChatMessageResponse(BaseModel):
+    id: int
+    role: str
+    content: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

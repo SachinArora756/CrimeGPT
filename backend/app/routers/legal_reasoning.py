@@ -13,10 +13,13 @@ from app.schemas.legal_reasoning import (
     RecommendationGenerateRequest,
     ApprovalRequest,
     SectionRecommendation,
+    LegalChatRequest,
+    LegalChatMessageResponse,
 )
 from app.services.auth_service import get_current_user
 from app.services.authorization import authorize_case_access
 from app.services.legal_reasoning_service import generate_recommendations, approve_recommendations
+from app.services.legal_chat_service import process_legal_chat, get_legal_chat_history
 from app.utils.rate_limiter import limiter
 
 router = APIRouter()
@@ -163,3 +166,56 @@ async def approve_recommendation(
         await db.commit()
 
     return _build_response(rec)
+
+
+@router.post("/recommend/{case_id}/chat", response_model=LegalChatMessageResponse)
+@limiter.limit("10/minute")
+async def send_legal_chat(
+    request: Request,
+    *,
+    case_id: str = Path(),
+    chat_request: LegalChatRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    case = await authorize_case_access(db, case_id, current_user)
+
+    result = await db.execute(
+        select(LegalRecommendation)
+        .where(LegalRecommendation.case_id == case.id)
+        .order_by(LegalRecommendation.created_at.desc())
+        .limit(1)
+    )
+    rec = result.scalar_one_or_none()
+    if not rec:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No recommendations found. Generate recommendations first.",
+        )
+
+    response = await process_legal_chat(
+        db, case.id, rec.id, current_user.id, chat_request.message
+    )
+    return response
+
+
+@router.get("/recommend/{case_id}/chat", response_model=list[LegalChatMessageResponse])
+async def get_legal_chat(
+    case_id: str = Path(),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    case = await authorize_case_access(db, case_id, current_user)
+
+    result = await db.execute(
+        select(LegalRecommendation)
+        .where(LegalRecommendation.case_id == case.id)
+        .order_by(LegalRecommendation.created_at.desc())
+        .limit(1)
+    )
+    rec = result.scalar_one_or_none()
+    if not rec:
+        return []
+
+    messages = await get_legal_chat_history(db, rec.id)
+    return messages

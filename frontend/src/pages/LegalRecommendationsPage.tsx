@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Scale, CheckCircle, XCircle, AlertTriangle, Loader2, BookOpen, Shield, ThumbsUp, ThumbsDown } from 'lucide-react'
+import { Scale, CheckCircle, XCircle, AlertTriangle, Loader2, BookOpen, Shield, ThumbsUp, ThumbsDown, MessageSquare, Send } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
 
@@ -29,6 +29,13 @@ interface Recommendation {
   created_at: string
 }
 
+interface LegalChatMsg {
+  id: number
+  role: 'user' | 'assistant'
+  content: string
+  created_at: string
+}
+
 export default function LegalRecommendationsPage() {
   const { caseId } = useParams()
   const [recommendation, setRecommendation] = useState<Recommendation | null>(null)
@@ -37,8 +44,11 @@ export default function LegalRecommendationsPage() {
   const [approving, setApproving] = useState(false)
   const [selectedSections, setSelectedSections] = useState<string[]>([])
   const [notes, setNotes] = useState('')
+  const [chatMessages, setChatMessages] = useState<LegalChatMsg[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
 
-  useEffect(() => { fetchRecommendation() }, [caseId])
+  useEffect(() => { fetchRecommendation(); loadChatHistory() }, [caseId])
 
   const fetchRecommendation = async () => {
     try {
@@ -51,6 +61,31 @@ export default function LegalRecommendationsPage() {
       setRecommendation(null)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadChatHistory = async () => {
+    try {
+      const res = await api.get(`/api/legal/recommend/${caseId}/chat`)
+      setChatMessages(res.data)
+    } catch {
+      setChatMessages([])
+    }
+  }
+
+  const sendChatMessage = async () => {
+    if (!chatInput.trim() || chatLoading) return
+    const msg = chatInput.trim()
+    setChatInput('')
+    setChatMessages(prev => [...prev, { id: Date.now(), role: 'user', content: msg, created_at: new Date().toISOString() }])
+    setChatLoading(true)
+    try {
+      const res = await api.post(`/api/legal/recommend/${caseId}/chat`, { message: msg })
+      setChatMessages(prev => [...prev, res.data])
+    } catch {
+      setChatMessages(prev => [...prev, { id: Date.now() + 1, role: 'assistant', content: 'Failed to get a response. Please try again.', created_at: new Date().toISOString() }])
+    } finally {
+      setChatLoading(false)
     }
   }
 
@@ -322,6 +357,76 @@ export default function LegalRecommendationsPage() {
               </div>
             </motion.div>
           )}
+
+          {/* Follow-up Chat Section */}
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="card">
+            <h3 className="text-white font-semibold flex items-center gap-2 mb-4">
+              <MessageSquare className="w-5 h-5 text-indigo-400" />
+              Ask Follow-up Questions
+            </h3>
+            <p className="text-dark-400 text-xs mb-4">Ask about evidence gaps, next steps, or get clarification on recommended sections.</p>
+
+            <div className="space-y-3 max-h-[400px] overflow-y-auto mb-4">
+              {chatMessages.length === 0 && !chatLoading && (
+                <div className="text-center py-6">
+                  <MessageSquare className="w-10 h-10 text-dark-600 mx-auto mb-3" />
+                  <p className="text-dark-500 text-sm mb-3">No messages yet. Try asking:</p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    {['What should I do about evidence gaps?', 'Explain the primary charges', "What's my next step?"].map((q) => (
+                      <button
+                        key={q}
+                        onClick={() => { setChatInput(q) }}
+                        className="px-3 py-1.5 bg-dark-800 hover:bg-dark-700 text-dark-300 text-xs rounded-lg transition-colors border border-dark-700"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {chatMessages.map((msg) => (
+                <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] px-4 py-2.5 rounded-xl text-sm ${
+                    msg.role === 'user'
+                      ? 'bg-indigo-600/20 text-indigo-100 border border-indigo-500/30'
+                      : 'bg-dark-800 text-dark-200 border border-dark-700'
+                  }`}>
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-[10px] text-dark-500 mt-1">{new Date(msg.created_at).toLocaleTimeString()}</p>
+                  </div>
+                </div>
+              ))}
+
+              {chatLoading && (
+                <div className="flex justify-start">
+                  <div className="bg-dark-800 text-dark-300 px-4 py-2.5 rounded-xl text-sm border border-dark-700 flex items-center gap-2">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Analyzing...
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-2">
+              <input
+                type="text"
+                className="input flex-1 text-sm"
+                placeholder="Ask about recommendations, evidence, next steps..."
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage() } }}
+                disabled={chatLoading}
+              />
+              <button
+                onClick={sendChatMessage}
+                disabled={chatLoading || !chatInput.trim()}
+                className="btn-primary px-4 flex items-center gap-2 text-sm disabled:opacity-50"
+              >
+                {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </button>
+            </div>
+          </motion.div>
         </div>
       )}
     </div>

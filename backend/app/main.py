@@ -29,6 +29,7 @@ from app.models.legal_recommendation import LegalRecommendation  # noqa: F401
 from app.models.criminal_intelligence import CriminalProfile  # noqa: F401
 from app.models.forensic_toolkit import ForensicToolDefinition  # noqa: F401
 from app.models.ai_investigation import AIInvestigationSession, AIInvestigationMessage  # noqa: F401
+from app.models.legal_chat import LegalChatMessage  # noqa: F401
 from app.services.auth_service import hash_password
 
 
