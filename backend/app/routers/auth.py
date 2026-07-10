@@ -118,7 +118,12 @@ async def _authenticate_user(
     """
     start_time = asyncio.get_event_loop().time()
 
-    result = await db.execute(select(User).where(User.username == credentials.username))
+    username_clean = credentials.username.strip()
+    password_clean = credentials.password
+
+    result = await db.execute(
+        select(User).where(User.username.ilike(username_clean))
+    )
     user = result.scalar_one_or_none()
 
     # --- STEP 1: Authenticate (verify identity) ---
@@ -127,10 +132,10 @@ async def _authenticate_user(
 
     if not user:
         # Perform a dummy hash check to ensure constant timing
-        verify_password(credentials.password, hash_password(secrets.token_urlsafe(16)))
+        verify_password(password_clean, hash_password(secrets.token_urlsafe(16)))
         auth_failed = True
         failure_reason = "user_not_found"
-    elif not verify_password(credentials.password, user.hashed_password):
+    elif not verify_password(password_clean, user.hashed_password):
         auth_failed = True
         failure_reason = "invalid_password"
         user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
@@ -165,14 +170,18 @@ async def _authenticate_user(
             user, request, portal, False, "wrong_portal",
             username_attempted=credentials.username,
         )
-        # Same generic error — do NOT reveal that auth succeeded but role mismatched
         elapsed = asyncio.get_event_loop().time() - start_time
         remaining = (MIN_RESPONSE_MS / 1000) - elapsed
         if remaining > 0:
             await asyncio.sleep(remaining)
+        # Give a helpful redirect hint based on which portal they should use
+        if portal == "admin":
+            detail = "Officer accounts must use the Officer Login portal."
+        else:
+            detail = "Admin accounts must use the Admin Login portal."
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=GENERIC_AUTH_ERROR,
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=detail,
         )
 
     # --- SUCCESS ---
@@ -195,7 +204,7 @@ async def _authenticate_user(
 
 
 @router.post("/login", response_model=TokenResponse)
-@limiter.limit("5/minute")
+@limiter.limit("15/minute")
 async def officer_login(
     credentials: UserLogin,
     request: Request,
@@ -212,7 +221,7 @@ async def officer_login(
 
 
 @router.post("/admin/login", response_model=TokenResponse)
-@limiter.limit("3/minute")
+@limiter.limit("10/minute")
 async def admin_login(
     credentials: UserLogin,
     request: Request,
@@ -264,9 +273,6 @@ async def refresh_token(body: TokenRefresh, request: Request, db: AsyncSession =
 
 @router.get("/me", response_model=UserResponse)
 async def get_me(current_user: User = Depends(get_current_user)):
-    import logging
-    logger = logging.getLogger("crimegpt.auth")
-    logger.info(f"[Auth /me] Validated user={current_user.username} role={current_user.role.value}")
     return UserResponse.model_validate(current_user)
 
 

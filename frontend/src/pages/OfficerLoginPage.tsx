@@ -130,8 +130,16 @@ export default function OfficerLoginPage() {
         navigate('/dashboard')
       }
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { detail?: string } } }
-      setError(error.response?.data?.detail || 'Invalid username or password.')
+      const error = err as { response?: { status?: number; data?: { detail?: string } } }
+      if (error.response?.status === 429) {
+        setError('Too many login attempts. Please wait a minute and try again.')
+      } else if (error.response?.status === 403) {
+        setError(error.response.data?.detail || 'Wrong portal. Use Admin Login instead.')
+        toast.error('Redirecting to Admin Login...')
+        setTimeout(() => navigate('/admin/login'), 2000)
+      } else {
+        setError(error.response?.data?.detail || 'Invalid username or password.')
+      }
     } finally {
       setLoading(false)
     }

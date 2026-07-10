@@ -113,7 +113,9 @@ export default function AdminLoginPage() {
     setLoading(true)
     setError('')
     try {
-      await login(form.username, form.password, 'admin')
+      const username = form.username.trim()
+      const password = form.password
+      await login(username, password, 'admin')
       toast.success('Administrative access granted')
       const { forcePasswordChange } = useAuthStore.getState()
       if (forcePasswordChange) {
@@ -122,8 +124,18 @@ export default function AdminLoginPage() {
         navigate('/admin')
       }
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { detail?: string } } }
-      setError(error.response?.data?.detail || 'Authentication failed.')
+      const error = err as { response?: { status?: number; data?: { detail?: string } } }
+      if (error.response?.status === 429) {
+        setError('Too many login attempts. Please wait a minute and try again.')
+      } else if (error.response?.status === 403) {
+        setError(error.response.data?.detail || 'Wrong portal. Use Officer Login instead.')
+        toast.error('Redirecting to Officer Login...')
+        setTimeout(() => navigate('/login'), 2000)
+      } else if (error.response?.status === 401) {
+        setError('Invalid credentials. Note: password is case-sensitive.')
+      } else {
+        setError(error.response?.data?.detail || 'Authentication failed.')
+      }
     } finally {
       setLoading(false)
     }

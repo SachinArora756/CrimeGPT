@@ -107,7 +107,9 @@ export default function UserManagement() {
         if (!payload.badge_number) delete payload.badge_number
         if (!payload.department) delete payload.department
         await api.post('/api/admin/users', payload)
-        toast.success('User created')
+        const isAdminRole = form.role === 'super_admin' || form.role === 'commissioner'
+        const loginPortal = isAdminRole ? 'Admin Login (/admin/login)' : 'Officer Login (/login)'
+        toast.success(`User created! They should login via ${loginPortal}`, { duration: 5000 })
       }
       setShowModal(false)
       fetchUsers()
