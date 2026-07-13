@@ -492,7 +492,7 @@ export default function AIInvestigationPage() {
               <Brain className="w-4.5 h-4.5 text-primary-400" />
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-white leading-tight">AI Investigation Copilot</h1>
+              <h1 className="text-sm font-semibold text-white leading-tight">Crime Analyst AI</h1>
               <p className="text-[10px] text-dark-500 leading-tight">Forensic Analysis Engine</p>
             </div>
           </div>
@@ -535,7 +535,7 @@ export default function AIInvestigationPage() {
                         <Brain className="w-12 h-12 text-primary-400" />
                       </div>
                     </div>
-                    <h2 className="text-2xl font-bold text-white mb-2">AI Investigation Copilot</h2>
+                    <h2 className="text-2xl font-bold text-white mb-2">Crime Analyst AI</h2>
                     <p className="text-dark-400 text-sm mb-8 leading-relaxed">
                       Upload evidence and I'll automatically classify it, run forensic analysis tools,
                       search criminal intelligence databases, and generate a comprehensive investigation report.

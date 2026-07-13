@@ -107,7 +107,7 @@ export default function InvestigationPage() {
             <Brain className="w-5 h-5 text-primary-400" />
           </div>
           <div>
-            <h2 className="text-base font-semibold text-white">AI Investigation Agent</h2>
+            <h2 className="text-base font-semibold text-white">Case Analysis AI</h2>
             <p className="text-dark-400 text-xs">Analyzes evidence, applicable laws, and recommends investigative steps</p>
           </div>
         </div>
