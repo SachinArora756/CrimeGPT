@@ -15,6 +15,19 @@ interface RecentCriminal {
   created_at: string
 }
 
+interface TopCriminal {
+  id: number
+  criminal_id: string
+  full_name: string
+  nicknames: string[]
+  danger_level: string
+  wanted_status: string
+  gang_name: string | null
+  total_arrests: number
+  total_firs: number
+  crime_categories: string[]
+}
+
 interface Stats {
   total: number
   wanted: number
@@ -29,6 +42,7 @@ export default function CriminalIntelDashboard() {
   const navigate = useNavigate()
   const [stats, setStats] = useState<Stats | null>(null)
   const [recentCriminals, setRecentCriminals] = useState<RecentCriminal[]>([])
+  const [topCriminals, setTopCriminals] = useState<TopCriminal[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -38,12 +52,21 @@ export default function CriminalIntelDashboard() {
 
   const fetchStats = async () => {
     try {
-      const [statsRes, recentRes] = await Promise.all([
+      const [statsRes, recentRes, topRes] = await Promise.all([
         api.get('/api/criminal-intelligence/stats'),
         api.get('/api/criminal-intelligence/?page=1&per_page=5'),
+        api.get('/api/criminal-intelligence/?per_page=6&danger_level=extreme'),
       ])
       setStats(statsRes.data)
       setRecentCriminals(recentRes.data.items || [])
+      let criminals: TopCriminal[] = topRes.data.items || []
+      if (criminals.length < 6) {
+        const moreRes = await api.get('/api/criminal-intelligence/?per_page=6&wanted_status=most_wanted')
+        const existing = new Set(criminals.map(c => c.criminal_id))
+        const more = (moreRes.data.items || []).filter((c: TopCriminal) => !existing.has(c.criminal_id))
+        criminals = [...criminals, ...more].slice(0, 6)
+      }
+      setTopCriminals(criminals)
     } catch (error) {
       console.error('Failed to fetch stats:', error)
     } finally {
@@ -144,6 +167,67 @@ export default function CriminalIntelDashboard() {
           </motion.div>
         ))}
       </div>
+
+      {/* Top Criminals */}
+      {topCriminals.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className="rounded-xl bg-dark-900/80 border border-red-500/20 overflow-hidden"
+        >
+          <div className="px-5 py-4 border-b border-dark-700/50 flex items-center justify-between bg-gradient-to-r from-red-500/5 to-transparent">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Skull className="w-4 h-4 text-red-400" /> Top Criminals
+            </h3>
+            <button
+              onClick={() => navigate('/criminal-intel/profiles?danger_level=extreme')}
+              className="text-xs text-red-400 hover:text-red-300 transition-colors"
+            >
+              View All →
+            </button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-4">
+            {topCriminals.map((criminal, i) => (
+              <motion.div
+                key={criminal.criminal_id}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.3 + i * 0.05 }}
+                onClick={() => navigate(`/criminal-intel/profiles/${criminal.criminal_id}`)}
+                className="relative flex items-start gap-3 p-3.5 rounded-xl bg-dark-800/60 border border-dark-700/50 hover:border-red-500/30 cursor-pointer transition-all group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0 border border-red-500/20">
+                  <Skull className="w-5 h-5 text-red-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-white text-sm font-medium truncate">{criminal.full_name}</p>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium uppercase border ${dangerColors[criminal.danger_level]}`}>
+                      {criminal.danger_level}
+                    </span>
+                    <span className={`text-[10px] font-medium capitalize ${wantedColors[criminal.wanted_status]}`}>
+                      {criminal.wanted_status.replace('_', ' ')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1.5 text-[10px] text-dark-400">
+                    <span className="font-mono">{criminal.criminal_id}</span>
+                    {criminal.gang_name && (
+                      <span className="truncate">• {criminal.gang_name}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 mt-1 text-[10px] text-dark-500">
+                    <span>{criminal.total_arrests} arrests</span>
+                    <span>{criminal.total_firs} FIRs</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Danger Level Distribution */}

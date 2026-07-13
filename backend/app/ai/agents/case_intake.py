@@ -52,6 +52,15 @@ async def extract_case_data(complaint_text: str, language: str = "en") -> dict:
     if "summary" not in result:
         result["summary"] = ""
 
+    # Sanitize accused_name — reject numeric or count-like values
+    accused = result.get("accused_name")
+    if accused is not None:
+        accused_str = str(accused).strip()
+        if accused_str.isdigit() or accused_str.lower() in ("unknown", "none", "null", "n/a", "0"):
+            result["accused_name"] = None
+        else:
+            result["accused_name"] = accused_str
+
     return result
 
 

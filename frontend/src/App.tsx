@@ -41,6 +41,7 @@ const AdminDashboard = lazyRetry(() => import('./pages/admin/AdminDashboard'))
 const UserManagement = lazyRetry(() => import('./pages/admin/UserManagement'))
 const AuditLogs = lazyRetry(() => import('./pages/admin/AuditLogs'))
 const KnowledgeBase = lazyRetry(() => import('./pages/admin/KnowledgeBase'))
+const SendNotification = lazyRetry(() => import('./pages/admin/SendNotification'))
 
 const CriminalIntelDashboard = lazyRetry(() => import('./pages/criminal-intel/CriminalIntelDashboard'))
 const CriminalProfilesPage = lazyRetry(() => import('./pages/criminal-intel/CriminalProfilesPage'))
@@ -215,6 +216,7 @@ export default function App() {
             <Route path="/admin/users" element={<AdminRoute><Layout><UserManagement /></Layout></AdminRoute>} />
             <Route path="/admin/audit" element={<AdminRoute><Layout><AuditLogs /></Layout></AdminRoute>} />
             <Route path="/admin/knowledge-base" element={<AdminRoute><Layout><KnowledgeBase /></Layout></AdminRoute>} />
+            <Route path="/admin/notifications" element={<AdminRoute><Layout><SendNotification /></Layout></AdminRoute>} />
             {/* Admin case routes — admin can view all case data */}
             <Route path="/admin/cases/:id" element={<AdminRoute><Layout><CaseDetailPage /></Layout></AdminRoute>} />
             <Route path="/admin/evidence/:caseId" element={<AdminRoute><Layout><EvidencePage /></Layout></AdminRoute>} />

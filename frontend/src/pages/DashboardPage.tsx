@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import {
@@ -20,39 +20,8 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, BarChart, Bar, Legend,
 } from 'recharts'
-import api from '../api/client'
 import { useAuthStore } from '../store/authStore'
-
-interface DashboardStats {
-  total_cases: number
-  active_cases: number
-  closed_cases: number
-  chargesheet_cases: number
-  total_evidence: number
-  total_documents: number
-  cases_by_status: Record<string, number>
-  today_activity: number
-  today_new_cases: number
-  today_evidence: number
-  today_documents: number
-  cases_per_day: Array<{ date: string; count: number }>
-  crime_categories: Array<{ category: string; count: number }>
-  officer_workload: Array<{ name: string; role: string; cases: number }>
-  completion_trend: Array<{ date: string; count: number }>
-  recent_activity: Array<{ action: string; resource_type: string; resource_id: string; timestamp: string }>
-}
-
-interface RecentCase {
-  id: number
-  public_id: string
-  fir_number: string
-  title: string | null
-  complainant_name: string
-  status: string
-  priority: string | null
-  offense_type: string | null
-  created_at: string
-}
+import { useDashboardStore } from '../store/dashboardStore'
 
 const CHART_COLORS = ['#3b82f6', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#06b6d4', '#f97316', '#ec4899']
 const STATUS_COLORS: Record<string, string> = {
@@ -63,29 +32,12 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [recentCases, setRecentCases] = useState<RecentCase[]>([])
-  const [loading, setLoading] = useState(true)
+  const { stats, recentCases, loading, fetchDashboard } = useDashboardStore()
   const { user } = useAuthStore()
 
   useEffect(() => {
-    loadDashboard()
+    fetchDashboard()
   }, [])
-
-  const loadDashboard = async () => {
-    try {
-      const [statsRes, casesRes] = await Promise.all([
-        api.get('/api/dashboard/stats'),
-        api.get('/api/cases/?per_page=5'),
-      ])
-      setStats(statsRes.data)
-      setRecentCases(casesRes.data.cases)
-    } catch {
-      // fallback
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const statusPieData = stats?.cases_by_status
     ? Object.entries(stats.cases_by_status).map(([name, value]) => ({

@@ -56,7 +56,7 @@ DEFAULT_TOOL_DEFINITIONS = [
         "tool_key": "image_ocr",
         "display_name": "Image OCR",
         "category": "Image Analysis",
-        "description": "Extract text from images using Optical Character Recognition (Tesseract)",
+        "description": "Extract text from images using Optical Character Recognition",
         "icon": "FileText",
         "accepted_file_types": ["image/jpeg", "image/png", "image/tiff", "image/bmp", "image/webp"],
     },
@@ -64,7 +64,7 @@ DEFAULT_TOOL_DEFINITIONS = [
         "tool_key": "image_object_detect",
         "display_name": "Object Detection",
         "category": "Image Analysis",
-        "description": "Detect and classify objects in images using YOLO deep learning model",
+        "description": "Detect and classify objects in images with bounding boxes and labels",
         "icon": "Search",
         "accepted_file_types": ["image/jpeg", "image/png", "image/bmp", "image/webp"],
     },
@@ -80,7 +80,7 @@ DEFAULT_TOOL_DEFINITIONS = [
         "tool_key": "audio_transcribe",
         "display_name": "Audio Transcription",
         "category": "Audio/Video",
-        "description": "Transcribe speech from audio files using OpenAI Whisper",
+        "description": "Transcribe speech from audio files to text with timestamps",
         "icon": "Mic",
         "accepted_file_types": ["audio/mpeg", "audio/wav", "audio/ogg", "audio/mp4", "audio/flac"],
     },
@@ -104,7 +104,7 @@ DEFAULT_TOOL_DEFINITIONS = [
         "tool_key": "document_summarize",
         "display_name": "Document Summarization",
         "category": "Document Analysis",
-        "description": "Generate AI-powered summary of document contents using Gemini",
+        "description": "Generate AI-powered summary of document contents and key findings",
         "icon": "Brain",
         "accepted_file_types": ["application/pdf", "text/plain", "image/jpeg", "image/png", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/msword"],
     },
@@ -136,7 +136,7 @@ DEFAULT_TOOL_DEFINITIONS = [
         "tool_key": "face_detect",
         "display_name": "Face Detection",
         "category": "Biometric Analysis",
-        "description": "Detect and locate faces in images using computer vision",
+        "description": "Detect and locate faces in images with bounding coordinates",
         "icon": "User",
         "accepted_file_types": ["image/jpeg", "image/png", "image/bmp", "image/webp"],
     },
@@ -184,7 +184,7 @@ DEFAULT_TOOL_DEFINITIONS = [
         "tool_key": "weapon_detect",
         "display_name": "Weapon Detection",
         "category": "Threat Analysis",
-        "description": "Detect weapons (knives, firearms, etc.) in images using YOLO",
+        "description": "Detect weapons (knives, firearms, etc.) in images automatically",
         "icon": "AlertTriangle",
         "accepted_file_types": ["image/jpeg", "image/png", "image/bmp", "image/webp"],
     },
@@ -192,7 +192,7 @@ DEFAULT_TOOL_DEFINITIONS = [
         "tool_key": "image_similarity",
         "display_name": "Image Similarity Search",
         "category": "Image Analysis",
-        "description": "Find visually similar images in evidence database using embeddings",
+        "description": "Find visually similar images in the evidence database",
         "icon": "Images",
         "accepted_file_types": ["image/jpeg", "image/png", "image/bmp", "image/webp"],
     },
@@ -216,14 +216,20 @@ def _get_tool_definitions() -> list[dict]:
     return DEFAULT_TOOL_DEFINITIONS
 
 
+_HIDDEN_OUTPUT_KEYS = {"model_used", "model_name", "model", "engine"}
+
+
 def _build_execution_response(execution: ForensicToolExecution) -> dict:
     """Build response dict from execution model."""
+    output = execution.output_data
+    if isinstance(output, dict):
+        output = {k: v for k, v in output.items() if k not in _HIDDEN_OUTPUT_KEYS}
     return {
         "execution_id": execution.execution_id,
         "tool_key": execution.tool_key,
         "status": execution.status.value if isinstance(execution.status, ExecutionStatus) else execution.status,
         "input_filename": execution.input_filename,
-        "output_data": execution.output_data,
+        "output_data": output,
         "ai_summary": execution.ai_summary,
         "confidence_score": execution.confidence_score,
         "execution_time_ms": execution.execution_time_ms,

@@ -4,15 +4,7 @@ import { motion } from 'framer-motion'
 import { FileText, Download, Plus, Loader2, Scale, Stamp, Clock } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
-
-interface DocumentItem {
-  id: number
-  case_id: number
-  doc_type: string
-  file_path: string
-  generated_by: number
-  generated_at: string
-}
+import { useEvidenceDocStore, DocumentItem } from '../store/evidenceDocStore'
 
 const DOC_TYPES = [
   { value: 'fir', label: 'First Information Report (FIR)', icon: '📋', description: 'Official police complaint document' },
@@ -29,6 +21,7 @@ const DOC_TYPES = [
 
 export default function DocumentsPage() {
   const { caseId } = useParams()
+  const { fetchDocuments, invalidateCase } = useEvidenceDocStore()
   const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [generating, setGenerating] = useState(false)
   const [selectedType, setSelectedType] = useState('fir')
@@ -38,8 +31,8 @@ export default function DocumentsPage() {
 
   const loadDocuments = async () => {
     try {
-      const response = await api.get(`/api/documents/case/${caseId}`)
-      setDocuments(Array.isArray(response.data) ? response.data : response.data.documents || [])
+      const items = await fetchDocuments(caseId!)
+      setDocuments(items)
     } catch {
       toast.error('Failed to load documents')
     } finally {
@@ -52,7 +45,9 @@ export default function DocumentsPage() {
     try {
       await api.post(`/api/documents/generate/${caseId}`, { doc_type: selectedType })
       toast.success('Document generated successfully')
-      loadDocuments()
+      invalidateCase(caseId!)
+      const items = await fetchDocuments(caseId!, true)
+      setDocuments(items)
     } catch {
       toast.error('Document generation failed')
     } finally {

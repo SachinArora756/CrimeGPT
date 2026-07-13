@@ -8,61 +8,30 @@ import {
 import toast from 'react-hot-toast'
 import api from '../api/client'
 import { useAuthStore } from '../store/authStore'
-
-interface Case {
-  id: number
-  public_id: string
-  fir_number: string
-  title: string | null
-  complainant_name: string
-  accused_name: string | null
-  status: string
-  priority: string | null
-  offense_type: string | null
-  station_id: string | null
-  assigned_officer_id: number | null
-  incident_date: string | null
-  created_at: string
-  updated_at: string
-}
+import { useCaseStore } from '../store/caseStore'
 
 export default function CasesPage() {
-  const [cases, setCases] = useState<Case[]>([])
-  const [total, setTotal] = useState(0)
-  const [page, setPage] = useState(1)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('')
-  const [loading, setLoading] = useState(true)
+  const {
+    cases, total, page, search, statusFilter, loading,
+    fetchCases, setPage: setStorePage, setSearch: setStoreSearch, setStatusFilter: setStoreStatusFilter,
+    updateCaseInStore,
+  } = useCaseStore()
   const [editingCase, setEditingCase] = useState<string | null>(null)
   const [editTitle, setEditTitle] = useState('')
+  const [localSearch, setLocalSearch] = useState(search)
   const { hasMinRole } = useAuthStore()
 
   const perPage = 15
 
   useEffect(() => {
-    loadCases()
+    fetchCases({ page, status: statusFilter })
   }, [page, statusFilter])
-
-  const loadCases = async () => {
-    setLoading(true)
-    try {
-      const params: Record<string, string | number> = { page, per_page: perPage }
-      if (statusFilter) params.status = statusFilter
-      if (search) params.search = search
-      const response = await api.get('/api/cases/', { params })
-      setCases(response.data.cases)
-      setTotal(response.data.total)
-    } catch {
-      setCases([])
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    setPage(1)
-    loadCases()
+    setStoreSearch(localSearch)
+    setStorePage(1)
+    fetchCases({ page: 1, search: localSearch, status: statusFilter, force: true })
   }
 
   const saveTitle = async (publicId: string) => {
@@ -70,7 +39,7 @@ export default function CasesPage() {
       await api.put(`/api/cases/${publicId}`, { title: editTitle })
       toast.success('Title updated')
       setEditingCase(null)
-      loadCases()
+      updateCaseInStore(publicId, { title: editTitle })
     } catch {
       toast.error('Failed to update title')
     }
@@ -113,8 +82,8 @@ export default function CasesPage() {
             type="text"
             placeholder="Search by name, FIR number, offense..."
             className="input pl-10"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
           />
         </form>
         <div className="relative">
@@ -122,7 +91,7 @@ export default function CasesPage() {
           <select
             className="input pl-10 w-48"
             value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
+            onChange={(e) => { setStoreStatusFilter(e.target.value); setStorePage(1) }}
           >
             <option value="">All Status</option>
             <option value="registered">Registered</option>
@@ -213,7 +182,7 @@ export default function CasesPage() {
                     <User className="w-3 h-3 text-dark-500" />
                     <span className="text-dark-300 truncate">Complainant: {c.complainant_name}</span>
                   </div>
-                  {c.accused_name && (
+                  {c.accused_name && c.accused_name !== '0' && (
                     <div className="flex items-center gap-2 text-xs">
                       <Shield className="w-3 h-3 text-dark-500" />
                       <span className="text-dark-300 truncate">Accused: {c.accused_name}</span>
@@ -247,7 +216,7 @@ export default function CasesPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2">
           <button
-            onClick={() => setPage(Math.max(1, page - 1))}
+            onClick={() => setStorePage(Math.max(1, page - 1))}
             disabled={page === 1}
             className="p-2 rounded-lg bg-dark-800 text-dark-300 hover:text-white hover:bg-dark-700 disabled:opacity-30 transition-colors"
           >
@@ -259,7 +228,7 @@ export default function CasesPage() {
             return (
               <button
                 key={pageNum}
-                onClick={() => setPage(pageNum)}
+                onClick={() => setStorePage(pageNum)}
                 className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
                   page === pageNum
                     ? 'bg-primary-600 text-white'
@@ -271,7 +240,7 @@ export default function CasesPage() {
             )
           })}
           <button
-            onClick={() => setPage(Math.min(totalPages, page + 1))}
+            onClick={() => setStorePage(Math.min(totalPages, page + 1))}
             disabled={page >= totalPages}
             className="p-2 rounded-lg bg-dark-800 text-dark-300 hover:text-white hover:bg-dark-700 disabled:opacity-30 transition-colors"
           >

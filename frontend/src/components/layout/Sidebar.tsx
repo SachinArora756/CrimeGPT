@@ -41,6 +41,7 @@ const officerNavItems = [
 const adminNavItems = [
   { path: '/admin', icon: Settings, label: 'Command Center' },
   { path: '/admin/users', icon: Users, label: 'Users' },
+  { path: '/admin/notifications', icon: Bell, label: 'Send Notifications' },
   { path: '/admin/audit', icon: Activity, label: 'Audit Logs' },
   { path: '/admin/knowledge-base', icon: Database, label: 'Knowledge Base' },
 ]

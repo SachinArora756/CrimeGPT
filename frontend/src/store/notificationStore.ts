@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import api from '../api/client'
+import { isStale, STALE_TIMES } from './helpers/freshness'
 
-interface Notification {
+export interface Notification {
   id: number
   type: string
   title: string
@@ -15,7 +16,8 @@ interface NotificationState {
   notifications: Notification[]
   unreadCount: number
   loading: boolean
-  fetchNotifications: () => Promise<void>
+  lastFetched: number | null
+  fetchNotifications: (force?: boolean) => Promise<void>
   fetchUnreadCount: () => Promise<void>
   markRead: (id: number) => Promise<void>
   markAllRead: () => Promise<void>
@@ -25,12 +27,18 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   notifications: [],
   unreadCount: 0,
   loading: false,
+  lastFetched: null,
 
-  fetchNotifications: async () => {
+  fetchNotifications: async (force = false) => {
+    const state = get()
+    if (!force && !isStale(state.lastFetched, STALE_TIMES.NOTIFICATIONS)) return
+
+    const isFirstLoad = state.notifications.length === 0
+    if (isFirstLoad) set({ loading: true })
+
     try {
-      set({ loading: true })
       const res = await api.get('/api/notifications/')
-      set({ notifications: res.data, loading: false })
+      set({ notifications: res.data, loading: false, lastFetched: Date.now() })
     } catch {
       set({ loading: false })
     }

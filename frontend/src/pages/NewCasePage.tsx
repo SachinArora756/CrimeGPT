@@ -1,9 +1,11 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Mic, MicOff, Brain, Send } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
+import { useCaseStore } from '../store/caseStore'
+import { useDashboardStore } from '../store/dashboardStore'
 
 export default function NewCasePage() {
   const navigate = useNavigate()
@@ -24,6 +26,35 @@ export default function NewCasePage() {
     station_id: '',
   })
   const [submitting, setSubmitting] = useState(false)
+  const [showCustomOffense, setShowCustomOffense] = useState(false)
+
+  const OFFENSE_TYPES = useMemo(() => [
+    'Theft (Section 303 BNS)',
+    'Robbery (Section 309 BNS)',
+    'Murder (Section 101 BNS)',
+    'Attempt to Murder (Section 109 BNS)',
+    'Kidnapping (Section 137 BNS)',
+    'Assault (Section 115 BNS)',
+    'Sexual Harassment (Section 75 BNS)',
+    'Rape (Section 63 BNS)',
+    'Cheating (Section 318 BNS)',
+    'Forgery (Section 336 BNS)',
+    'Criminal Breach of Trust (Section 316 BNS)',
+    'Extortion (Section 308 BNS)',
+    'Dacoity (Section 310 BNS)',
+    'Rioting (Section 189 BNS)',
+    'Dowry Death (Section 80 BNS)',
+    'Domestic Violence (Section 85 BNS)',
+    'Cyber Crime (IT Act)',
+    'Drug Trafficking (NDPS Act)',
+    'Arms Act Violation',
+    'SC/ST Atrocity (PoA Act)',
+    'POCSO Act Violation',
+    'Motor Vehicle Theft',
+    'House Breaking (Section 329 BNS)',
+    'Criminal Intimidation (Section 351 BNS)',
+    'Mischief / Property Damage (Section 324 BNS)',
+  ], [])
 
   const handleExtract = async () => {
     if (!complaintText.trim()) {
@@ -38,13 +69,16 @@ export default function NewCasePage() {
       })
       const data = response.data
       setExtracted(data)
+      const extractedOffense = data.offense_type || form.offense_type
+      const isKnownOffense = OFFENSE_TYPES.includes(extractedOffense)
+      setShowCustomOffense(!isKnownOffense && !!extractedOffense)
       setForm({
         ...form,
         complainant_name: data.complainant_name || form.complainant_name,
         accused_name: data.accused_name || form.accused_name,
         incident_date: data.incident_date || form.incident_date,
         incident_location: data.incident_location || form.incident_location,
-        offense_type: data.offense_type || form.offense_type,
+        offense_type: extractedOffense,
         description: complaintText,
       })
       toast.success('Data extracted successfully')
@@ -64,6 +98,8 @@ export default function NewCasePage() {
         incident_date: form.incident_date || null,
       }
       const response = await api.post('/api/cases/', payload)
+      useCaseStore.getState().invalidateList()
+      useDashboardStore.getState().invalidate()
       toast.success(`Case created: ${response.data.fir_number}`)
       navigate(`/cases/${response.data.public_id}`)
     } catch (err: unknown) {
@@ -208,12 +244,35 @@ export default function NewCasePage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-dark-300 mb-1">Offense Type</label>
-              <input
-                type="text"
+              <select
                 className="input"
-                value={form.offense_type}
-                onChange={(e) => setForm({ ...form, offense_type: e.target.value })}
-              />
+                value={showCustomOffense ? '__other__' : form.offense_type}
+                onChange={(e) => {
+                  if (e.target.value === '__other__') {
+                    setShowCustomOffense(true)
+                    setForm({ ...form, offense_type: '' })
+                  } else {
+                    setShowCustomOffense(false)
+                    setForm({ ...form, offense_type: e.target.value })
+                  }
+                }}
+              >
+                <option value="">Select offense type</option>
+                {OFFENSE_TYPES.map((type) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+                <option value="__other__">Others (specify below)</option>
+              </select>
+              {showCustomOffense && (
+                <input
+                  type="text"
+                  className="input mt-2"
+                  placeholder="Enter offense type..."
+                  value={form.offense_type}
+                  onChange={(e) => setForm({ ...form, offense_type: e.target.value })}
+                  autoFocus
+                />
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-dark-300 mb-1">Incident Date</label>

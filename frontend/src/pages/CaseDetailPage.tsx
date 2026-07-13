@@ -8,36 +8,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
-
-interface CaseDetail {
-  id: number
-  public_id: string
-  fir_number: string
-  title: string | null
-  complainant_name: string
-  complainant_contact: string | null
-  complainant_address: string | null
-  accused_name: string | null
-  incident_date: string | null
-  incident_time: string | null
-  incident_location: string | null
-  description: string
-  status: string
-  priority: string | null
-  assigned_officer_id: number | null
-  created_by_id: number | null
-  sections_applied: string[] | null
-  offense_type: string | null
-  station_id: string | null
-  victims: Array<Record<string, unknown>> | null
-  accused_persons: Array<Record<string, unknown>> | null
-  witnesses: Array<Record<string, unknown>> | null
-  investigation_team: Array<Record<string, unknown>> | null
-  ai_confidence: number | null
-  risk_score: number | null
-  created_at: string
-  updated_at: string
-}
+import { useCaseStore, CaseDetail } from '../store/caseStore'
 
 interface TimelineEvent {
   id: number
@@ -68,8 +39,9 @@ export default function CaseDetailPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const basePath = location.pathname.startsWith('/admin') ? '/admin' : ''
-  const [caseData, setCaseData] = useState<CaseDetail | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { fetchCaseDetail, updateCaseInStore, details } = useCaseStore()
+  const [caseData, setCaseData] = useState<CaseDetail | null>(details[id!]?.data ?? null)
+  const [loading, setLoading] = useState(!details[id!]?.data)
   const [activeTab, setActiveTab] = useState<Tab>('overview')
   const [timeline, setTimeline] = useState<TimelineEvent[]>([])
   const [chatMessages, setChatMessages] = useState<ChatMsg[]>([])
@@ -87,7 +59,9 @@ export default function CaseDetailPage() {
     setSavingTitle(true)
     try {
       await api.put(`/api/cases/${id}`, { title: titleDraft.trim() })
-      setCaseData({ ...caseData, title: titleDraft.trim() })
+      const updated = { ...caseData, title: titleDraft.trim() }
+      setCaseData(updated)
+      updateCaseInStore(id!, { title: titleDraft.trim() })
       setEditingTitle(false)
       toast.success('Case title updated')
     } catch {
@@ -108,12 +82,12 @@ export default function CaseDetailPage() {
 
   const loadCase = async () => {
     try {
-      const [caseRes, evRes, docRes] = await Promise.all([
-        api.get(`/api/cases/${id}`),
+      const [caseResult, evRes, docRes] = await Promise.all([
+        fetchCaseDetail(id!),
         api.get(`/api/evidence/case/${id}`).catch(() => ({ data: { evidence: [] } })),
         api.get(`/api/documents/case/${id}`).catch(() => ({ data: [] })),
       ])
-      setCaseData(caseRes.data)
+      setCaseData(caseResult)
       setEvidenceCount(evRes.data.evidence?.length || 0)
       setDocCount(Array.isArray(docRes.data) ? docRes.data.length : 0)
     } catch { setCaseData(null) }
@@ -325,8 +299,8 @@ export default function CaseDetailPage() {
             </h2>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <InfoRow label="Accused" value={caseData.accused_name} />
-                {caseData.accused_name && (
+                <InfoRow label="Accused" value={caseData.accused_name && caseData.accused_name !== '0' ? caseData.accused_name : (caseData.accused_persons && caseData.accused_persons.length > 0 ? `${caseData.accused_persons.length} person(s)` : null)} />
+                {caseData.accused_name && caseData.accused_name !== '0' && (
                   <button
                     onClick={() => navigate('/criminal-intel/add', { state: { fromCase: { full_name: caseData.accused_name, case_fir: caseData.fir_number, offense_type: caseData.offense_type, station_id: caseData.station_id } } })}
                     className="text-xs px-2.5 py-1 rounded-lg bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-colors whitespace-nowrap"

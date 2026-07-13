@@ -1,18 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Bell, CheckCheck, Trash2, FolderOpen, Upload, FileText, UserPlus, AlertTriangle } from 'lucide-react'
 import api from '../api/client'
-
-interface Notification {
-  id: number
-  type: string
-  title: string
-  message: string
-  case_id: number | null
-  is_read: boolean
-  created_at: string
-}
+import { useNotificationStore } from '../store/notificationStore'
 
 const TYPE_ICONS: Record<string, typeof Bell> = {
   case_created: FolderOpen,
@@ -35,37 +26,14 @@ const TYPE_COLORS: Record<string, string> = {
 }
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [loading, setLoading] = useState(true)
+  const { notifications, loading, fetchNotifications, markRead, markAllRead } = useNotificationStore()
 
-  useEffect(() => { fetchNotifications() }, [])
-
-  const fetchNotifications = async () => {
-    try {
-      const res = await api.get('/api/notifications/')
-      setNotifications(res.data)
-    } catch { /* silent */ }
-    finally { setLoading(false) }
-  }
-
-  const markRead = async (id: number) => {
-    try {
-      await api.put(`/api/notifications/${id}/read`)
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n))
-    } catch { /* silent */ }
-  }
-
-  const markAllRead = async () => {
-    try {
-      await api.put('/api/notifications/mark-all-read')
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
-    } catch { /* silent */ }
-  }
+  useEffect(() => { fetchNotifications(true) }, [])
 
   const deleteNotification = async (id: number) => {
     try {
       await api.delete(`/api/notifications/${id}`)
-      setNotifications(prev => prev.filter(n => n.id !== id))
+      fetchNotifications(true)
     } catch { /* silent */ }
   }
 

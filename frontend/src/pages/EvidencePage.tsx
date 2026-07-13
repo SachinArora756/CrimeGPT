@@ -8,22 +8,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
-
-interface EvidenceItem {
-  id: number
-  case_id: number
-  file_path: string
-  original_filename: string
-  file_type: string
-  file_size: number
-  ocr_text: string | null
-  analysis_results: Record<string, unknown> | null
-  file_hash: string | null
-  description: string | null
-  tags: string[] | null
-  chain_of_custody: Array<Record<string, unknown>> | null
-  created_at: string
-}
+import { useEvidenceDocStore, EvidenceItem } from '../store/evidenceDocStore'
 
 function sanitizeForDisplay(val: unknown): unknown {
   if (typeof val === 'string') {
@@ -50,6 +35,7 @@ function sanitizeForDisplay(val: unknown): unknown {
 
 export default function EvidencePage() {
   const { caseId } = useParams()
+  const { fetchEvidence, invalidateCase } = useEvidenceDocStore()
   const [evidence, setEvidence] = useState<EvidenceItem[]>([])
   const [uploading, setUploading] = useState(false)
   const [selectedEvidence, setSelectedEvidence] = useState<EvidenceItem | null>(null)
@@ -59,8 +45,8 @@ export default function EvidencePage() {
 
   const loadEvidence = async () => {
     try {
-      const response = await api.get(`/api/evidence/case/${caseId}`)
-      setEvidence(response.data.evidence || [])
+      const items = await fetchEvidence(caseId!)
+      setEvidence(items)
     } catch {
       toast.error('Failed to load evidence')
     } finally {
@@ -84,7 +70,9 @@ export default function EvidencePage() {
       }
     }
     setUploading(false)
-    loadEvidence()
+    invalidateCase(caseId!)
+    const items = await fetchEvidence(caseId!, true)
+    setEvidence(items)
   }, [caseId])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({

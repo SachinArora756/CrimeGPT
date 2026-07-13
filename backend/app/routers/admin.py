@@ -24,6 +24,8 @@ from app.services.auth_service import (
 )
 from app.config import settings
 from app.services.audit_service import get_audit_logs
+from app.services.notification_service import create_notification
+from app.models.notification import NotificationType
 
 router = APIRouter()
 
@@ -371,3 +373,77 @@ async def list_audit_logs(
         "page": page,
         "per_page": per_page,
     }
+
+
+from pydantic import BaseModel, Field
+
+
+class AdminNotificationSend(BaseModel):
+    user_ids: list[int] = Field(min_length=1)
+    title: str = Field(min_length=1, max_length=200)
+    message: str = Field(min_length=1, max_length=2000)
+    case_id: int | None = None
+
+
+class AdminNotificationBroadcast(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    message: str = Field(min_length=1, max_length=2000)
+    case_id: int | None = None
+
+
+@router.post("/notifications/send", status_code=status.HTTP_201_CREATED)
+async def send_notification(
+    body: AdminNotificationSend,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    sent_count = 0
+    for user_id in body.user_ids:
+        user_result = await db.execute(select(User).where(User.id == user_id, User.is_active == True))
+        user = user_result.scalar_one_or_none()
+        if user:
+            await create_notification(
+                db,
+                user_id=user.id,
+                type=NotificationType.SYSTEM,
+                title=body.title,
+                message=body.message,
+                case_id=body.case_id,
+            )
+            sent_count += 1
+
+    return {"message": f"Notification sent to {sent_count} user(s)", "sent_count": sent_count}
+
+
+@router.post("/notifications/broadcast", status_code=status.HTTP_201_CREATED)
+async def broadcast_notification(
+    body: AdminNotificationBroadcast,
+    role: UserRole | None = Query(None),
+    station_id: str | None = Query(None),
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    query = select(User).where(User.is_active == True)
+    if role:
+        query = query.where(User.role == role)
+    if station_id:
+        query = query.where(User.station_id == station_id)
+
+    result = await db.execute(query)
+    users = result.scalars().all()
+
+    sent_count = 0
+    for user in users:
+        if user.id == admin.id:
+            continue
+        await create_notification(
+            db,
+            user_id=user.id,
+            type=NotificationType.SYSTEM,
+            title=body.title,
+            message=body.message,
+            case_id=body.case_id,
+        )
+        sent_count += 1
+
+    return {"message": f"Notification broadcast to {sent_count} user(s)", "sent_count": sent_count}

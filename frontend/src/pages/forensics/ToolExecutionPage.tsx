@@ -931,7 +931,7 @@ export default function ToolExecutionPage() {
                     renderBiometricResults()
                   ) : (
                     <div className="space-y-3">
-                      {Object.entries(result.output_data).map(([key, value]) => (
+                      {Object.entries(result.output_data).filter(([key]) => !['model_used', 'model', 'model_name', 'engine'].includes(key)).map(([key, value]) => (
                         <div key={key} className="rounded-xl bg-dark-800/80 border border-dark-700/50 overflow-hidden">
                           <div className="px-4 py-2.5 border-b border-dark-700/30 flex items-center justify-between">
                             <p className="text-[11px] text-dark-400 uppercase font-semibold tracking-wide">
