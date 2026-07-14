@@ -199,6 +199,19 @@ async def delete_user(
     db: AsyncSession = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
+    from sqlalchemy import update, delete as sa_delete
+    from app.models.document import AuditLog, Document, CaseDiary
+    from app.models.notification import Notification
+    from app.models.chat import ChatMessage
+    from app.models.forensic_toolkit import ForensicToolExecution, ForensicSavedResult
+    from app.models.ai_investigation import AIInvestigationSession
+    from app.models.legal_chat import LegalChatMessage
+    from app.models.legal_recommendation import LegalRecommendation
+    from app.models.criminal_intelligence import CriminalSearchLog, CriminalWatchlist, CriminalProfile
+    from app.models.case import Case
+    from app.models.evidence import Evidence
+    from app.models.timeline import TimelineEvent
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
@@ -210,10 +223,31 @@ async def delete_user(
     if user.role == UserRole.SUPER_ADMIN:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete super admin")
 
-    user.is_active = False
-    user.account_locked = True
+    username = user.username
+
+    await db.execute(update(AuditLog).where(AuditLog.user_id == user_id).values(user_id=None))
+    await db.execute(update(TimelineEvent).where(TimelineEvent.actor_id == user_id).values(actor_id=None))
+    await db.execute(sa_delete(Notification).where(Notification.user_id == user_id))
+    await db.execute(sa_delete(ChatMessage).where(ChatMessage.user_id == user_id))
+    await db.execute(sa_delete(ForensicSavedResult).where(ForensicSavedResult.user_id == user_id))
+    await db.execute(sa_delete(ForensicToolExecution).where(ForensicToolExecution.user_id == user_id))
+    await db.execute(sa_delete(AIInvestigationSession).where(AIInvestigationSession.user_id == user_id))
+    await db.execute(sa_delete(LegalChatMessage).where(LegalChatMessage.user_id == user_id))
+    await db.execute(sa_delete(CriminalSearchLog).where(CriminalSearchLog.user_id == user_id))
+    await db.execute(sa_delete(CriminalWatchlist).where(CriminalWatchlist.added_by == user_id))
+    await db.execute(update(Case).where(Case.assigned_officer_id == user_id).values(assigned_officer_id=None))
+    await db.execute(update(Case).where(Case.created_by_id == user_id).values(created_by_id=None))
+    await db.execute(update(Case).where(Case.assigned_by_id == user_id).values(assigned_by_id=None))
+    await db.execute(update(Evidence).where(Evidence.uploaded_by == user_id).values(uploaded_by=admin.id))
+    await db.execute(update(Document).where(Document.generated_by == user_id).values(generated_by=admin.id))
+    await db.execute(update(CaseDiary).where(CaseDiary.officer_id == user_id).values(officer_id=admin.id))
+    await db.execute(update(LegalRecommendation).where(LegalRecommendation.approved_by == user_id).values(approved_by=None))
+    await db.execute(update(LegalRecommendation).where(LegalRecommendation.created_by == user_id).values(created_by=admin.id))
+    await db.execute(update(CriminalProfile).where(CriminalProfile.added_by == user_id).values(added_by=admin.id))
+
+    await db.delete(user)
     await db.commit()
-    return {"message": f"User {user.username} deactivated and locked"}
+    return {"message": f"User {username} permanently deleted"}
 
 
 @router.get("/stats", response_model=SystemStats)

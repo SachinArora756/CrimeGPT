@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
   UserPlus, Edit2, Shield, X, Search, Unlock,
-  RotateCcw, Activity, Clock, Badge,
+  RotateCcw, Activity, Clock, Badge, Trash2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../api/client'
@@ -149,6 +149,18 @@ export default function UserManagement() {
     }
   }
 
+  const deleteUser = async (user: AdminUser) => {
+    if (!confirm(`Are you sure you want to delete "${user.full_name}" (@${user.username})? This action cannot be undone.`)) return
+    try {
+      await api.delete(`/api/admin/users/${user.id}`)
+      toast.success(`User "${user.username}" deleted`)
+      fetchUsers()
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { detail?: string } } }
+      toast.error(error.response?.data?.detail || 'Failed to delete user')
+    }
+  }
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -287,6 +299,12 @@ export default function UserManagement() {
                   className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium bg-dark-800 text-dark-300 hover:text-white hover:bg-dark-700 ml-auto"
                 >
                   <RotateCcw className="w-3 h-3" /> Reset PW
+                </button>
+                <button
+                  onClick={() => deleteUser(user)}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                >
+                  <Trash2 className="w-3 h-3" /> Delete
                 </button>
               </div>
             </div>
