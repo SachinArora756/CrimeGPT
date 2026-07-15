@@ -11,6 +11,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import api from '../../api/client'
 import { useAuthStore } from '../../store/authStore'
+import CaseChat from '../../components/forensics/CaseChat'
 
 interface Hypothesis {
   id: string
@@ -41,6 +42,7 @@ interface ConfidenceDashboard {
 
 export default function IIDSEPage() {
   const { accessToken } = useAuthStore()
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const [isInvestigating, setIsInvestigating] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [, setUploadedFile] = useState<{ name: string; url?: string } | null>(null)
@@ -69,11 +71,12 @@ export default function IIDSEPage() {
 
     try {
       const sessionRes = await api.post('/api/ai-investigation/sessions', { title: `IIDSE: ${file.name}` })
-      const sessionId = sessionRes.data.session_id
+      const newSessionId = sessionRes.data.session_id
+      setSessionId(newSessionId)
 
       const formData = new FormData()
       formData.append('file', file)
-      await api.post(`/api/ai-investigation/sessions/${sessionId}/upload`, formData, {
+      await api.post(`/api/ai-investigation/sessions/${newSessionId}/upload`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
 
@@ -84,7 +87,7 @@ export default function IIDSEPage() {
       const investigateForm = new FormData()
       investigateForm.append('message', '')
 
-      const response = await fetch(`/api/ai-investigation/sessions/${sessionId}/investigate`, {
+      const response = await fetch(`/api/ai-investigation/sessions/${newSessionId}/investigate`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${accessToken}` },
         body: investigateForm,
@@ -414,6 +417,9 @@ export default function IIDSEPage() {
           </AnimatePresence>
         </>
       )}
+
+      {/* Case Discussion Chat */}
+      <CaseChat sessionId={sessionId} disabled={isInvestigating || isUploading} accentColor="purple" />
     </div>
   )
 }

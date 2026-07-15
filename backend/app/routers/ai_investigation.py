@@ -8,6 +8,7 @@ sending messages, and streaming live investigation progress via SSE.
 import os
 import uuid
 import json
+import tempfile
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
@@ -575,3 +576,46 @@ async def reanalyze_evidence(
     """Check readiness for re-analysis of evidence with updated models."""
     from app.services.executive_summary_service import reanalyze_evidence as _reanalyze
     return await _reanalyze(case_id, evidence_id, db)
+
+
+@router.post("/transcribe")
+async def transcribe_audio(
+    audio: UploadFile = File(...),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """Transcribe voice audio to text using Whisper for officer dictation."""
+    allowed_types = {
+        "audio/webm", "audio/ogg", "audio/wav", "audio/mp4",
+        "audio/mpeg", "audio/x-wav", "audio/wave", "audio/mp3",
+        "video/webm",
+    }
+    content_type = audio.content_type or ""
+    if content_type not in allowed_types:
+        raise HTTPException(400, f"Unsupported audio format: {content_type}")
+
+    suffix = ".webm" if "webm" in content_type else ".wav"
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp_path = tmp.name
+            content = await audio.read()
+            if len(content) > 25 * 1024 * 1024:
+                raise HTTPException(413, "Audio file too large (max 25MB)")
+            tmp.write(content)
+
+        from app.services.forensic_tools_service import run_audio_transcribe
+
+        result, _ = await run_audio_transcribe(tmp_path, {"model": "base"})
+
+        return {
+            "text": result.get("transcription", ""),
+            "language": result.get("language", "en"),
+            "duration": result.get("duration_seconds"),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(500, f"Transcription failed: {str(e)}")
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.unlink(tmp_path)
