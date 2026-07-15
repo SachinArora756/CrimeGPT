@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Users, FolderOpen, HardDrive, Activity, CheckCircle, XCircle,
-  Shield, FileText, TrendingUp,
+  Shield, FileText, TrendingUp, Brain, AlertTriangle,
 } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts'
 import api from '../../api/client'
@@ -21,6 +21,18 @@ interface SystemHealth {
   database: string
   qdrant: string
   storage: string
+}
+
+interface IEAEStats {
+  average_completeness: number
+  total_investigations: number
+  total_completed: number
+  total_failed: number
+  skipped_analyses: { tool: string; count: number; reason: string }[]
+  manual_reviews_pending: number
+  evidence_quality_avg: number
+  tool_utilization: Record<string, { executions: number; avg_confidence: number; avg_time_ms: number }>
+  success_rate: number
 }
 
 interface AdminCase {
@@ -50,19 +62,25 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [health, setHealth] = useState<SystemHealth | null>(null)
   const [cases, setCases] = useState<AdminCase[]>([])
+  const [ieaeStats, setIeaeStats] = useState<IEAEStats | null>(null)
+  const [iidseStats, setIidseStats] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, healthRes, casesRes] = await Promise.all([
+        const [statsRes, healthRes, casesRes, ieaeRes, iidseRes] = await Promise.all([
           api.get('/api/admin/stats'),
           api.get('/api/admin/system-health'),
           api.get('/api/admin/cases?per_page=10'),
+          api.get('/api/admin/ieae-stats').catch(() => ({ data: null })),
+          api.get('/api/admin/iidse-stats').catch(() => ({ data: null })),
         ])
         setStats(statsRes.data)
         setHealth(healthRes.data)
         setCases(casesRes.data.cases || [])
+        if (ieaeRes.data) setIeaeStats(ieaeRes.data)
+        if (iidseRes.data) setIidseStats(iidseRes.data)
       } catch (err) {
         console.error('Failed to fetch admin data', err)
       } finally {
@@ -200,6 +218,122 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
+      {/* IEAE Intelligence Dashboard */}
+      {ieaeStats && ieaeStats.total_investigations > 0 && (
+        <div className="card">
+          <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+            <Brain className="w-4 h-4 text-purple-400" /> Evidence Assurance Engine (IEAE)
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div className="rounded-xl bg-dark-800/50 border border-dark-700/50 p-3 text-center">
+              <p className={`text-2xl font-bold ${ieaeStats.average_completeness >= 70 ? 'text-emerald-400' : ieaeStats.average_completeness >= 40 ? 'text-amber-400' : 'text-red-400'}`}>
+                {ieaeStats.average_completeness.toFixed(0)}%
+              </p>
+              <p className="text-dark-400 text-[10px] uppercase mt-1">Avg Completeness</p>
+            </div>
+            <div className="rounded-xl bg-dark-800/50 border border-dark-700/50 p-3 text-center">
+              <p className="text-2xl font-bold text-white">{ieaeStats.total_investigations}</p>
+              <p className="text-dark-400 text-[10px] uppercase mt-1">Total Analyses</p>
+            </div>
+            <div className="rounded-xl bg-dark-800/50 border border-dark-700/50 p-3 text-center">
+              <p className="text-2xl font-bold text-emerald-400">{ieaeStats.success_rate.toFixed(0)}%</p>
+              <p className="text-dark-400 text-[10px] uppercase mt-1">Success Rate</p>
+            </div>
+            <div className="rounded-xl bg-dark-800/50 border border-dark-700/50 p-3 text-center">
+              <p className="text-2xl font-bold text-amber-400">{ieaeStats.manual_reviews_pending}</p>
+              <p className="text-dark-400 text-[10px] uppercase mt-1">Pending Review</p>
+            </div>
+          </div>
+
+          {/* Tool Utilization */}
+          {Object.keys(ieaeStats.tool_utilization).length > 0 && (
+            <div className="mt-4">
+              <p className="text-xs text-dark-400 uppercase tracking-wider mb-2">Tool Utilization</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                {Object.entries(ieaeStats.tool_utilization)
+                  .sort((a, b) => b[1].executions - a[1].executions)
+                  .slice(0, 8)
+                  .map(([tool, data]) => (
+                    <div key={tool} className="flex items-center justify-between px-3 py-2 rounded-lg bg-dark-800/30 border border-dark-700/30">
+                      <span className="text-[10px] text-dark-300 truncate">{tool.replace(/_/g, ' ')}</span>
+                      <span className="text-[10px] font-medium text-primary-400 ml-2">{data.executions}×</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* Skipped/Failed Analyses */}
+          {ieaeStats.skipped_analyses.length > 0 && (
+            <div className="mt-4 border-t border-dark-700/50 pt-3">
+              <p className="text-xs text-dark-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3 text-amber-400" /> Common Failed Analyses
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {ieaeStats.skipped_analyses.slice(0, 5).map((item, i) => (
+                  <span key={i} className="text-[10px] px-2 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+                    {item.tool.replace(/_/g, ' ')} ({item.count})
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* IIDSE Intelligence Dashboard Stats */}
+      {iidseStats && (
+        <div className="card p-4">
+          <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
+            <Brain className="w-4 h-4 text-purple-400" /> Investigation Intelligence (IIDSE)
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div className="bg-dark-800 rounded-xl p-3 text-center">
+              <p className="text-xl font-bold text-purple-400">{iidseStats.investigation_memory?.total_entries || 0}</p>
+              <p className="text-[10px] text-dark-400">Memory Entries</p>
+            </div>
+            <div className="bg-dark-800 rounded-xl p-3 text-center">
+              <p className="text-xl font-bold text-blue-400">{iidseStats.correlations?.total || 0}</p>
+              <p className="text-[10px] text-dark-400">Correlations</p>
+            </div>
+            <div className="bg-dark-800 rounded-xl p-3 text-center">
+              <p className="text-xl font-bold text-green-400">{iidseStats.correlations?.high_confidence || 0}</p>
+              <p className="text-[10px] text-dark-400">High-Conf Matches</p>
+            </div>
+            <div className="bg-dark-800 rounded-xl p-3 text-center">
+              <p className="text-xl font-bold text-amber-400">{iidseStats.detective_chat?.total_sessions || 0}</p>
+              <p className="text-[10px] text-dark-400">Chat Sessions</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <div className="bg-dark-800 rounded-xl p-3">
+              <p className="text-xs text-dark-400 mb-1">Cases with Memory</p>
+              <p className="text-sm font-bold text-white">{iidseStats.investigation_memory?.cases_with_memory || 0}</p>
+            </div>
+            <div className="bg-dark-800 rounded-xl p-3">
+              <p className="text-xs text-dark-400 mb-1">Cases with Correlations</p>
+              <p className="text-sm font-bold text-white">{iidseStats.correlations?.cases_with_correlations || 0}</p>
+            </div>
+            <div className="bg-dark-800 rounded-xl p-3">
+              <p className="text-xs text-dark-400 mb-1">Avg Messages/Session</p>
+              <p className="text-sm font-bold text-white">{iidseStats.detective_chat?.avg_messages_per_session || 0}</p>
+            </div>
+          </div>
+          {iidseStats.investigation_memory?.by_type && Object.keys(iidseStats.investigation_memory.by_type).length > 0 && (
+            <div className="mt-4 border-t border-dark-700/50 pt-3">
+              <p className="text-xs text-dark-400 uppercase tracking-wider mb-2">Memory by Type</p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(iidseStats.investigation_memory.by_type).map(([type, count]) => (
+                  <span key={type} className="text-[10px] px-2 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                    {type} ({count as number})
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Cases Table */}
       <div className="card p-0 overflow-hidden">

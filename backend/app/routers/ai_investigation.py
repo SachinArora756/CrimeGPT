@@ -34,6 +34,7 @@ from app.services.ai_investigation_service import (
     handle_followup_message,
     EVIDENCE_DIR,
 )
+from app.services.detective_chat_service import enhanced_detective_chat, explain_tool_result
 
 router = APIRouter()
 
@@ -376,11 +377,14 @@ async def send_message(
         for m in all_messages
     ]
 
-    response_text = await handle_followup_message(
+    chat_result = await enhanced_detective_chat(
+        case_id=session.case_id,
         session_messages=history,
         user_message=body.message,
-        attachments=None,
+        db=db,
     )
+
+    response_text = chat_result["response"]
 
     assistant_msg_id = str(uuid.uuid4())
     assistant_msg = AIInvestigationMessage(
@@ -388,6 +392,7 @@ async def send_message(
         session_id=session.id,
         role="assistant",
         content=response_text,
+        metadata_={"sources": chat_result.get("sources", []), "confidence": chat_result.get("confidence", 0)},
     )
     db.add(assistant_msg)
     session.updated_at = datetime.utcnow()
@@ -405,5 +410,168 @@ async def send_message(
             "role": "assistant",
             "content": response_text,
             "created_at": datetime.utcnow().isoformat(),
+            "sources": chat_result.get("sources", []),
+            "confidence": chat_result.get("confidence", 0),
+            "context_used": chat_result.get("context_used", {}),
         },
     }
+
+
+@router.get("/tool-explanation/{execution_id}")
+async def get_tool_explanation(
+    execution_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """Get an AI-generated explanation of a specific tool's findings."""
+    result = await explain_tool_result(
+        tool_key="",
+        execution_id=execution_id,
+        db=db,
+    )
+    return result
+
+
+@router.get("/cases/{case_id}/hypotheses")
+async def get_case_hypotheses(
+    case_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """Generate investigation hypotheses for a case."""
+    from app.services.hypothesis_service import get_case_hypotheses as _get_hypotheses
+    return await _get_hypotheses(case_id, db)
+
+
+@router.get("/cases/{case_id}/contradictions")
+async def get_case_contradictions(
+    case_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """Detect contradictions across evidence for a case."""
+    from app.services.contradiction_service import detect_contradictions, build_confidence_dashboard
+    from app.models.forensic_toolkit import ForensicToolExecution, ExecutionStatus
+
+    exec_stmt = (
+        select(ForensicToolExecution)
+        .where(ForensicToolExecution.case_id == case_id)
+        .where(ForensicToolExecution.status == ExecutionStatus.COMPLETED)
+    )
+    exec_result = await db.execute(exec_stmt)
+    executions = exec_result.scalars().all()
+
+    tool_results = []
+    criminal_matches = []
+    for exe in executions:
+        result = {
+            "tool_key": exe.tool_key,
+            "status": "completed",
+            "confidence": exe.confidence_score,
+            "output_data": exe.output_data,
+            "execution_id": exe.id,
+        }
+        tool_results.append(result)
+        if exe.tool_key == "face_recognize" and exe.output_data:
+            for match in exe.output_data.get("matches", []):
+                criminal_matches.append(match)
+
+    contradictions = await detect_contradictions(tool_results, criminal_matches)
+    confidence = build_confidence_dashboard(tool_results, criminal_matches, contradictions.get("contradictions", []))
+
+    return {
+        "contradictions": contradictions,
+        "confidence_dashboard": confidence,
+    }
+
+
+@router.get("/cases/{case_id}/timeline")
+async def get_case_timeline(
+    case_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """Reconstruct the investigation timeline for a case."""
+    from app.services.timeline_reconstruction_service import reconstruct_timeline
+    return await reconstruct_timeline(case_id, db)
+
+
+@router.get("/cases/{case_id}/relationship-graph")
+async def get_relationship_graph(
+    case_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """Build the entity relationship graph for a case."""
+    from app.services.timeline_reconstruction_service import build_relationship_graph
+    return await build_relationship_graph(case_id, db)
+
+
+@router.get("/cases/{case_id}/executive-summary")
+async def get_executive_summary(
+    case_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """Generate an executive investigation summary report."""
+    from app.services.hypothesis_service import get_case_hypotheses as _get_hypotheses
+    from app.services.contradiction_service import detect_contradictions, build_confidence_dashboard
+    from app.services.executive_summary_service import generate_executive_summary
+    from app.models.forensic_toolkit import ForensicToolExecution, ExecutionStatus
+    from app.models.investigation_memory import EvidenceCorrelation
+
+    exec_stmt = (
+        select(ForensicToolExecution)
+        .where(ForensicToolExecution.case_id == case_id)
+        .where(ForensicToolExecution.status == ExecutionStatus.COMPLETED)
+    )
+    exec_result = await db.execute(exec_stmt)
+    executions = exec_result.scalars().all()
+
+    tool_results = []
+    criminal_matches = []
+    for exe in executions:
+        tool_results.append({
+            "tool_key": exe.tool_key,
+            "status": "completed",
+            "confidence": exe.confidence_score,
+            "output_data": exe.output_data,
+        })
+        if exe.tool_key == "face_recognize" and exe.output_data:
+            for match in exe.output_data.get("matches", []):
+                criminal_matches.append(match)
+
+    hypotheses = await _get_hypotheses(case_id, db)
+    contradictions = await detect_contradictions(tool_results, criminal_matches)
+    confidence = build_confidence_dashboard(
+        tool_results, criminal_matches, contradictions.get("contradictions", []), hypotheses.get("hypotheses"),
+    )
+
+    corr_stmt = select(EvidenceCorrelation).where(EvidenceCorrelation.case_id == case_id)
+    corr_result = await db.execute(corr_stmt)
+    correlations = [
+        {"correlation_type": c.correlation_type, "confidence": c.confidence, "details": c.details}
+        for c in corr_result.scalars().all()
+    ]
+
+    return await generate_executive_summary(
+        case_id=case_id,
+        hypotheses=hypotheses,
+        contradictions=contradictions,
+        confidence_dashboard=confidence,
+        completeness={},
+        correlations=correlations,
+        db=db,
+    )
+
+
+@router.post("/cases/{case_id}/evidence/{evidence_id}/reanalyze")
+async def reanalyze_evidence(
+    case_id: int,
+    evidence_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """Check readiness for re-analysis of evidence with updated models."""
+    from app.services.executive_summary_service import reanalyze_evidence as _reanalyze
+    return await _reanalyze(case_id, evidence_id, db)

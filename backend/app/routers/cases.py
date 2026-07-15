@@ -99,3 +99,29 @@ async def get_case_completeness(
 ):
     case = await authorize_case_access(db, case_id, current_user)
     return await calculate_completeness(db, case.id)
+
+
+@router.get("/{case_id}/closure-readiness")
+async def get_case_closure_readiness(
+    case_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """IEAE: Verify all investigation steps are completed before case closure."""
+    from app.services.case_closure_service import verify_case_closure_readiness
+
+    case = await authorize_case_access(db, case_id, current_user)
+    return await verify_case_closure_readiness(case.id, db)
+
+
+@router.get("/{case_id}/evidence-correlations")
+async def get_evidence_correlations(
+    case_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """IEAE: Get cross-evidence correlation report for a case."""
+    from app.services.investigation_memory_service import generate_correlation_report
+
+    case = await authorize_case_access(db, case_id, current_user)
+    return await generate_correlation_report(case.id, db)

@@ -481,3 +481,205 @@ async def broadcast_notification(
         sent_count += 1
 
     return {"message": f"Notification broadcast to {sent_count} user(s)", "sent_count": sent_count}
+
+
+# --- IEAE Admin Dashboard ---
+
+@router.get("/ieae-stats")
+async def get_ieae_stats(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """IEAE: Get Intelligent Evidence Assurance Engine statistics."""
+    from app.models.forensic_toolkit import ForensicToolExecution, ExecutionStatus
+
+    total_stmt = select(func.count(ForensicToolExecution.id))
+    total_result = await db.execute(total_stmt)
+    total_investigations = total_result.scalar() or 0
+
+    completed_stmt = (
+        select(func.count(ForensicToolExecution.id))
+        .where(ForensicToolExecution.status == ExecutionStatus.COMPLETED)
+    )
+    completed_result = await db.execute(completed_stmt)
+    completed_count = completed_result.scalar() or 0
+
+    failed_stmt = (
+        select(func.count(ForensicToolExecution.id))
+        .where(ForensicToolExecution.status == ExecutionStatus.FAILED)
+    )
+    failed_result = await db.execute(failed_stmt)
+    failed_count = failed_result.scalar() or 0
+
+    avg_conf_stmt = (
+        select(func.avg(ForensicToolExecution.confidence_score))
+        .where(ForensicToolExecution.status == ExecutionStatus.COMPLETED)
+        .where(ForensicToolExecution.confidence_score.isnot(None))
+    )
+    avg_conf_result = await db.execute(avg_conf_stmt)
+    avg_confidence = float(avg_conf_result.scalar() or 0)
+
+    tool_stats_stmt = (
+        select(
+            ForensicToolExecution.tool_key,
+            func.count(ForensicToolExecution.id).label("executions"),
+            func.avg(ForensicToolExecution.confidence_score).label("avg_confidence"),
+            func.avg(ForensicToolExecution.execution_time_ms).label("avg_time"),
+        )
+        .where(ForensicToolExecution.status == ExecutionStatus.COMPLETED)
+        .group_by(ForensicToolExecution.tool_key)
+    )
+    tool_stats_result = await db.execute(tool_stats_stmt)
+    tool_utilization = {}
+    for row in tool_stats_result.all():
+        tool_utilization[row.tool_key] = {
+            "executions": row.executions,
+            "avg_confidence": round(float(row.avg_confidence or 0), 3),
+            "avg_time_ms": round(float(row.avg_time or 0), 0),
+        }
+
+    failed_tools_stmt = (
+        select(
+            ForensicToolExecution.tool_key,
+            func.count(ForensicToolExecution.id).label("fail_count"),
+        )
+        .where(ForensicToolExecution.status == ExecutionStatus.FAILED)
+        .group_by(ForensicToolExecution.tool_key)
+        .order_by(func.count(ForensicToolExecution.id).desc())
+        .limit(10)
+    )
+    failed_tools_result = await db.execute(failed_tools_stmt)
+    skipped_analyses = [
+        {"tool": row.tool_key, "count": row.fail_count, "reason": "Execution failed"}
+        for row in failed_tools_result.all()
+    ]
+
+    success_rate = (completed_count / max(total_investigations, 1)) * 100
+    overall_completeness = success_rate * (avg_confidence if avg_confidence else 0.7)
+
+    return {
+        "average_completeness": round(min(overall_completeness, 100.0), 1),
+        "total_investigations": total_investigations,
+        "total_completed": completed_count,
+        "total_failed": failed_count,
+        "skipped_analyses": skipped_analyses,
+        "manual_reviews_pending": failed_count,
+        "evidence_quality_avg": round(avg_confidence * 100, 1),
+        "common_missing_analyses": skipped_analyses[:5],
+        "tool_utilization": tool_utilization,
+        "success_rate": round(success_rate, 1),
+    }
+
+
+@router.get("/iidse-stats")
+async def get_iidse_stats(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """IIDSE: Get Investigation Intelligence & Decision Support Engine statistics."""
+    from app.models.forensic_toolkit import ForensicToolExecution, ExecutionStatus
+    from app.models.investigation_memory import InvestigationMemory, EvidenceCorrelation
+    from app.models.ai_investigation import AIInvestigationSession, AIInvestigationMessage
+
+    memory_count_stmt = select(func.count(InvestigationMemory.id))
+    memory_result = await db.execute(memory_count_stmt)
+    total_memory_entries = memory_result.scalar() or 0
+
+    correlation_count_stmt = select(func.count(EvidenceCorrelation.id))
+    corr_result = await db.execute(correlation_count_stmt)
+    total_correlations = corr_result.scalar() or 0
+
+    high_conf_corr_stmt = (
+        select(func.count(EvidenceCorrelation.id))
+        .where(EvidenceCorrelation.confidence >= 0.8)
+    )
+    high_corr_result = await db.execute(high_conf_corr_stmt)
+    high_confidence_correlations = high_corr_result.scalar() or 0
+
+    session_count_stmt = select(func.count(AIInvestigationSession.id))
+    session_result = await db.execute(session_count_stmt)
+    total_chat_sessions = session_result.scalar() or 0
+
+    message_count_stmt = select(func.count(AIInvestigationMessage.id))
+    msg_result = await db.execute(message_count_stmt)
+    total_chat_messages = msg_result.scalar() or 0
+
+    memory_by_type_stmt = (
+        select(
+            InvestigationMemory.finding_type,
+            func.count(InvestigationMemory.id).label("count"),
+        )
+        .group_by(InvestigationMemory.finding_type)
+    )
+    type_result = await db.execute(memory_by_type_stmt)
+    memory_by_type = {row.finding_type: row.count for row in type_result.all()}
+
+    corr_by_type_stmt = (
+        select(
+            EvidenceCorrelation.correlation_type,
+            func.count(EvidenceCorrelation.id).label("count"),
+            func.avg(EvidenceCorrelation.confidence).label("avg_confidence"),
+        )
+        .group_by(EvidenceCorrelation.correlation_type)
+    )
+    corr_type_result = await db.execute(corr_by_type_stmt)
+    correlations_by_type = {
+        row.correlation_type: {
+            "count": row.count,
+            "avg_confidence": round(float(row.avg_confidence or 0), 3),
+        }
+        for row in corr_type_result.all()
+    }
+
+    cases_with_memory_stmt = (
+        select(func.count(func.distinct(InvestigationMemory.case_id)))
+    )
+    cases_mem_result = await db.execute(cases_with_memory_stmt)
+    cases_with_memory = cases_mem_result.scalar() or 0
+
+    cases_with_correlations_stmt = (
+        select(func.count(func.distinct(EvidenceCorrelation.case_id)))
+    )
+    cases_corr_result = await db.execute(cases_with_correlations_stmt)
+    cases_with_correlations = cases_corr_result.scalar() or 0
+
+    avg_messages_stmt = (
+        select(func.avg(func.count(AIInvestigationMessage.id)))
+        .group_by(AIInvestigationMessage.session_id)
+    )
+    try:
+        avg_msg_subq = (
+            select(func.count(AIInvestigationMessage.id).label("msg_count"))
+            .group_by(AIInvestigationMessage.session_id)
+            .subquery()
+        )
+        avg_msgs_result = await db.execute(select(func.avg(avg_msg_subq.c.msg_count)))
+        avg_messages_per_session = float(avg_msgs_result.scalar() or 0)
+    except Exception:
+        avg_messages_per_session = (total_chat_messages / max(total_chat_sessions, 1))
+
+    return {
+        "investigation_memory": {
+            "total_entries": total_memory_entries,
+            "by_type": memory_by_type,
+            "cases_with_memory": cases_with_memory,
+        },
+        "correlations": {
+            "total": total_correlations,
+            "high_confidence": high_confidence_correlations,
+            "by_type": correlations_by_type,
+            "cases_with_correlations": cases_with_correlations,
+        },
+        "detective_chat": {
+            "total_sessions": total_chat_sessions,
+            "total_messages": total_chat_messages,
+            "avg_messages_per_session": round(avg_messages_per_session, 1),
+        },
+        "decision_support": {
+            "hypotheses_available": cases_with_memory > 0,
+            "contradiction_detection_active": True,
+            "timeline_reconstruction_active": True,
+            "relationship_graph_active": True,
+            "executive_summary_active": True,
+        },
+    }

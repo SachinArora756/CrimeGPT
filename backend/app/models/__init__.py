@@ -13,3 +13,4 @@ from app.models.forensic_toolkit import (
     ForensicToolDefinition, ForensicToolExecution, ForensicSavedResult,
 )
 from app.models.ai_investigation import AIInvestigationSession, AIInvestigationMessage
+from app.models.investigation_memory import InvestigationMemory, EvidenceCorrelation

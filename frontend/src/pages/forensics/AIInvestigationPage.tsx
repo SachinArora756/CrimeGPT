@@ -48,6 +48,48 @@ interface Classification {
   type: string
   mime_type: string
   confidence: number
+  ai_enhanced?: boolean
+  description?: string
+  detected_elements?: string[]
+}
+
+interface ChecklistItem {
+  category: string
+  state: 'completed' | 'not_found' | 'needs_manual_review' | 'not_applicable'
+  findings_count: number
+  confidence: number
+  details: string
+}
+
+interface CompletenessData {
+  scores: {
+    evidence_collection_score: number
+    evidence_analysis_score: number
+    evidence_verification_score: number
+    overall_completeness: number
+  }
+  missing_analyses: string[]
+  recommendations: string[]
+}
+
+interface CorrelationItem {
+  source_evidence_id: number
+  target_evidence_id: number
+  correlation_type: string
+  confidence: number
+  source_filename?: string
+  target_filename?: string
+  details?: any
+}
+
+interface PassResult {
+  pass_number: number
+  pass_name: string
+  tool_key: string
+  status: string
+  confidence: number | null
+  findings_summary: string
+  execution_time_ms: number
 }
 
 // ─── Tool Metadata ───────────────────────────────────────────────────────────
@@ -96,6 +138,17 @@ export default function AIInvestigationPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedTools, setExpandedTools] = useState<Set<string>>(new Set())
   const [expandedReportSections, setExpandedReportSections] = useState<Set<string>>(new Set(['executive-summary']))
+  // IEAE state
+  const [checklist, setChecklist] = useState<{ items: ChecklistItem[]; completed_count: number; needs_review_count: number } | null>(null)
+  const [completeness, setCompleteness] = useState<CompletenessData | null>(null)
+  const [correlations, setCorrelations] = useState<CorrelationItem[]>([])
+  const [passResults, setPassResults] = useState<PassResult[]>([])
+  const [aiPlanReasoning, setAiPlanReasoning] = useState<string>('')
+  const [memoryCount, setMemoryCount] = useState(0)
+  // IIDSE state
+  const [hypotheses, setHypotheses] = useState<any[]>([])
+  const [contradictionsData, setContradictionsData] = useState<any>(null)
+  const [confidenceDashboard, setConfidenceDashboard] = useState<any>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const filePreviewRef = useRef<string | null>(null)
@@ -222,6 +275,15 @@ export default function AIInvestigationPage() {
     setIsInvestigating(true)
     setToolProgress([])
     setCriminalMatches([])
+    setChecklist(null)
+    setCompleteness(null)
+    setCorrelations([])
+    setPassResults([])
+    setAiPlanReasoning('')
+    setMemoryCount(0)
+    setHypotheses([])
+    setContradictionsData(null)
+    setConfidenceDashboard(null)
     setShowTimeline(true)
 
     const formData = new FormData()
@@ -278,12 +340,16 @@ export default function AIInvestigationPage() {
       case 'classification':
         setUploadedFile(prev => prev ? { ...prev, classification: data } : null)
         break
+      case 'ai_classification':
+        setUploadedFile(prev => prev ? { ...prev, classification: data } : null)
+        break
       case 'plan':
         if (Array.isArray(data.tools_selected)) {
           setToolProgress(data.tools_selected.map((t: string) => ({
             tool_key: t, status: 'pending',
           })))
         }
+        if (data.ai_reasoning) setAiPlanReasoning(data.ai_reasoning)
         break
       case 'tool_start':
         setToolProgress(prev => prev.map(t =>
@@ -301,8 +367,32 @@ export default function AIInvestigationPage() {
           } : t
         ))
         break
+      case 'pass_complete':
+        setPassResults(prev => [...prev, data as PassResult])
+        break
+      case 'checklist':
+        setChecklist(data)
+        break
+      case 'completeness':
+        setCompleteness(data)
+        break
+      case 'memory_updated':
+        setMemoryCount(data.findings_count || 0)
+        break
+      case 'correlations':
+        setCorrelations(data.correlations || [])
+        break
       case 'criminal_matches':
         setCriminalMatches(data.matches || [])
+        break
+      case 'hypotheses':
+        setHypotheses(data.hypotheses || [])
+        break
+      case 'contradictions':
+        setContradictionsData(data)
+        break
+      case 'confidence_dashboard':
+        setConfidenceDashboard(data)
         break
       case 'report_complete':
         setMessages(prev => [...prev, {
@@ -316,6 +406,9 @@ export default function AIInvestigationPage() {
         if (data.criminal_matches?.length) {
           setCriminalMatches(data.criminal_matches)
         }
+        if (data.checklist && !checklist) setChecklist(data.checklist)
+        if (data.completeness && !completeness) setCompleteness(data.completeness)
+        if (data.correlations?.length && !correlations.length) setCorrelations(data.correlations)
         break
     }
   }
@@ -638,6 +731,29 @@ export default function AIInvestigationPage() {
                         />
                       </div>
 
+                      {/* AI Planner Reasoning */}
+                      {aiPlanReasoning && (
+                        <div className="flex items-center gap-2 mt-3 px-3 py-2 rounded-xl bg-purple-500/5 border border-purple-500/20">
+                          <Brain className="w-3.5 h-3.5 text-purple-400 flex-shrink-0" />
+                          <p className="text-[11px] text-purple-300">{aiPlanReasoning}</p>
+                        </div>
+                      )}
+
+                      {/* Memory indicator */}
+                      {memoryCount > 0 && (
+                        <div className="flex items-center gap-2 mt-2 px-3 py-1.5 rounded-lg bg-dark-700/30">
+                          <Lock className="w-3 h-3 text-cyan-400" />
+                          <span className="text-[10px] text-cyan-300">{memoryCount} finding(s) stored in investigation memory</span>
+                        </div>
+                      )}
+
+                      {/* Multi-pass results */}
+                      {passResults.length > 0 && !isInvestigating && (
+                        <div className="mt-3 text-[10px] text-dark-500">
+                          {passResults.length} analysis passes completed
+                        </div>
+                      )}
+
                       {/* Tool Cards Grid */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                         {toolProgress.map((tool, index) => (
@@ -657,6 +773,246 @@ export default function AIInvestigationPage() {
                   {/* ─── Criminal Matches ────────────────────────────────── */}
                   {criminalMatches.length > 0 && (
                     <CriminalMatchesSection matches={criminalMatches} />
+                  )}
+
+                  {/* ─── IEAE: Evidence Checklist ─────────────────────────── */}
+                  {checklist && checklist.items?.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-dark-800/50 border border-dark-700/50 rounded-2xl p-5"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Shield className="w-5 h-5 text-emerald-400" />
+                        <h3 className="text-sm font-semibold text-white">Evidence Analysis Checklist</h3>
+                        <span className="ml-auto text-xs text-dark-400">
+                          {checklist.completed_count}/{checklist.items.length} categories analyzed
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {checklist.items.map((item) => (
+                          <div
+                            key={item.category}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs ${
+                              item.state === 'completed' ? 'bg-emerald-500/10 border border-emerald-500/20' :
+                              item.state === 'not_found' ? 'bg-dark-700/50 border border-dark-600/30' :
+                              item.state === 'needs_manual_review' ? 'bg-amber-500/10 border border-amber-500/20' :
+                              'bg-dark-800/30 border border-dark-700/20'
+                            }`}
+                          >
+                            {item.state === 'completed' ? (
+                              <CheckCircle className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                            ) : item.state === 'needs_manual_review' ? (
+                              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0" />
+                            ) : item.state === 'not_found' ? (
+                              <XCircle className="w-3.5 h-3.5 text-dark-500 flex-shrink-0" />
+                            ) : (
+                              <div className="w-3.5 h-3.5 rounded-full border border-dark-600 flex-shrink-0" />
+                            )}
+                            <span className={
+                              item.state === 'completed' ? 'text-emerald-300' :
+                              item.state === 'needs_manual_review' ? 'text-amber-300' :
+                              item.state === 'not_applicable' ? 'text-dark-500' :
+                              'text-dark-400'
+                            }>
+                              {item.category}
+                            </span>
+                            {item.findings_count > 0 && (
+                              <span className="ml-auto text-[10px] font-medium text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">
+                                {item.findings_count}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ─── IEAE: Completeness Score ─────────────────────────── */}
+                  {completeness && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-dark-800/50 border border-dark-700/50 rounded-2xl p-5"
+                    >
+                      <div className="flex items-center gap-2 mb-4">
+                        <Activity className="w-5 h-5 text-primary-400" />
+                        <h3 className="text-sm font-semibold text-white">Evidence Completeness</h3>
+                        <span className={`ml-auto text-lg font-bold ${
+                          completeness.scores.overall_completeness >= 80 ? 'text-emerald-400' :
+                          completeness.scores.overall_completeness >= 50 ? 'text-amber-400' :
+                          'text-red-400'
+                        }`}>
+                          {completeness.scores.overall_completeness.toFixed(0)}%
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3 mb-4">
+                        {[
+                          { label: 'Collection', value: completeness.scores.evidence_collection_score },
+                          { label: 'Analysis', value: completeness.scores.evidence_analysis_score },
+                          { label: 'Verification', value: completeness.scores.evidence_verification_score },
+                        ].map(s => (
+                          <div key={s.label} className="text-center">
+                            <div className="text-xs text-dark-400 mb-1">{s.label}</div>
+                            <div className="w-full h-2 bg-dark-700 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-500 ${
+                                  s.value >= 80 ? 'bg-emerald-500' : s.value >= 50 ? 'bg-amber-500' : 'bg-red-500'
+                                }`}
+                                style={{ width: `${Math.min(s.value, 100)}%` }}
+                              />
+                            </div>
+                            <div className="text-xs font-medium text-white mt-1">{s.value.toFixed(0)}%</div>
+                          </div>
+                        ))}
+                      </div>
+                      {completeness.recommendations.length > 0 && (
+                        <div className="border-t border-dark-700/50 pt-3 mt-3">
+                          <p className="text-[10px] uppercase tracking-wider text-dark-500 font-medium mb-2">Recommendations</p>
+                          <ul className="space-y-1">
+                            {completeness.recommendations.slice(0, 4).map((rec, i) => (
+                              <li key={i} className="text-xs text-dark-400 flex items-start gap-1.5">
+                                <ChevronRight className="w-3 h-3 text-primary-400 mt-0.5 flex-shrink-0" />
+                                {rec}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+
+                  {/* ─── IEAE: Cross-Evidence Correlations ────────────────── */}
+                  {correlations.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-dark-800/50 border border-purple-500/20 rounded-2xl p-5"
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <Globe className="w-5 h-5 text-purple-400" />
+                        <h3 className="text-sm font-semibold text-white">Cross-Evidence Links</h3>
+                        <span className="ml-auto text-xs text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">
+                          {correlations.length} link(s) found
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {correlations.slice(0, 5).map((corr, i) => (
+                          <div key={i} className="flex items-center gap-2 px-3 py-2 rounded-xl bg-dark-700/30 border border-dark-600/30">
+                            <Lock className="w-3.5 h-3.5 text-purple-400" />
+                            <span className="text-xs text-white">{corr.correlation_type.replace('same_', 'Same ')}</span>
+                            <span className="text-[10px] text-dark-400">•</span>
+                            <span className="text-[10px] text-dark-400 truncate">{corr.source_filename || `Evidence #${corr.source_evidence_id}`}</span>
+                            <ChevronRight className="w-3 h-3 text-dark-500" />
+                            <span className="text-[10px] text-dark-400 truncate">{corr.target_filename || `Evidence #${corr.target_evidence_id}`}</span>
+                            <span className="ml-auto text-[10px] font-medium text-purple-300">
+                              {(corr.confidence * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ─── IIDSE: Confidence Dashboard ────────────────────── */}
+                  {confidenceDashboard && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-dark-800/50 border border-primary-500/20 rounded-2xl p-5"
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <Shield className="w-5 h-5 text-primary-400" />
+                        <h3 className="text-sm font-semibold text-white">Investigation Confidence</h3>
+                        <span className="ml-auto text-lg font-bold text-primary-400">
+                          {confidenceDashboard.overall_investigation_confidence?.toFixed(0)}%
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="px-2 py-1.5 bg-dark-700/30 rounded-lg">
+                          <p className="text-xs font-bold text-green-400">{confidenceDashboard.tools_successful}/{confidenceDashboard.tools_executed}</p>
+                          <p className="text-[10px] text-dark-500">Tools OK</p>
+                        </div>
+                        <div className="px-2 py-1.5 bg-dark-700/30 rounded-lg">
+                          <p className="text-xs font-bold text-purple-400">{confidenceDashboard.criminal_matches_found}</p>
+                          <p className="text-[10px] text-dark-500">Matches</p>
+                        </div>
+                        <div className="px-2 py-1.5 bg-dark-700/30 rounded-lg">
+                          <p className={`text-xs font-bold ${confidenceDashboard.contradiction_penalty > 10 ? 'text-red-400' : 'text-amber-400'}`}>
+                            -{confidenceDashboard.contradiction_penalty}%
+                          </p>
+                          <p className="text-[10px] text-dark-500">Penalty</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {/* ─── IIDSE: Hypotheses ──────────────────────────────── */}
+                  {hypotheses.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-dark-800/50 border border-amber-500/20 rounded-2xl p-5"
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <Target className="w-5 h-5 text-amber-400" />
+                        <h3 className="text-sm font-semibold text-white">Investigation Hypotheses</h3>
+                        <span className="ml-auto text-xs text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                          AI-Assisted
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {hypotheses.slice(0, 3).map((h: any, i: number) => (
+                          <div key={i} className="flex items-center gap-3 px-3 py-2 rounded-xl bg-dark-700/30 border border-dark-600/30">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                              h.confidence >= 70 ? 'bg-green-500/10' : h.confidence >= 40 ? 'bg-amber-500/10' : 'bg-red-500/10'
+                            }`}>
+                              <span className={`text-[10px] font-bold ${
+                                h.confidence >= 70 ? 'text-green-400' : h.confidence >= 40 ? 'text-amber-400' : 'text-red-400'
+                              }`}>{h.confidence}%</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-white font-medium truncate">{h.title}</p>
+                              <p className="text-[10px] text-dark-400 truncate">{h.description?.slice(0, 80)}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-amber-400/60 mt-2 italic">
+                        Requires human verification — not an accusation of guilt.
+                      </p>
+                    </motion.div>
+                  )}
+
+                  {/* ─── IIDSE: Contradictions ──────────────────────────── */}
+                  {contradictionsData?.has_contradictions && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-dark-800/50 border border-red-500/20 rounded-2xl p-5"
+                    >
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="w-5 h-5 text-red-400" />
+                        <h3 className="text-sm font-semibold text-white">Contradictions Detected</h3>
+                        <span className="ml-auto text-xs text-red-400 bg-red-500/10 px-2 py-0.5 rounded-full">
+                          {contradictionsData.total_contradictions} found
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {contradictionsData.contradictions?.slice(0, 3).map((c: any, i: number) => (
+                          <div key={i} className={`px-3 py-2 rounded-xl border ${
+                            c.severity === 'high' ? 'bg-red-500/5 border-red-500/20' : 'bg-amber-500/5 border-amber-500/20'
+                          }`}>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-medium ${
+                                c.severity === 'high' ? 'bg-red-500/20 text-red-400' : 'bg-amber-500/20 text-amber-400'
+                              }`}>{c.severity?.toUpperCase()}</span>
+                            </div>
+                            <p className="text-xs text-dark-300">{c.description}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </motion.div>
                   )}
 
                   {/* Loading indicator */}
@@ -696,6 +1052,10 @@ export default function AIInvestigationPage() {
                     {uploadedFile.classification && (
                       <p className="text-[10px] text-dark-500">
                         Classified as: <span className="text-primary-400">{uploadedFile.classification.type}</span>
+                        {uploadedFile.classification.ai_enhanced && (
+                          <span className="ml-1 px-1 py-0.5 rounded bg-purple-500/10 text-purple-400 text-[9px]">AI</span>
+                        )}
+                        <span className="ml-1 text-dark-600">({(uploadedFile.classification.confidence * 100).toFixed(0)}%)</span>
                       </p>
                     )}
                   </div>
