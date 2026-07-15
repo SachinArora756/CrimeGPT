@@ -56,6 +56,8 @@ const ExecutionHistoryPage = lazyRetry(() => import('./pages/forensics/Execution
 const SavedResultsPage = lazyRetry(() => import('./pages/forensics/SavedResultsPage'))
 const AIInvestigationPage = lazyRetry(() => import('./pages/forensics/AIInvestigationPage'))
 const InvestigationIntelligencePage = lazyRetry(() => import('./pages/forensics/InvestigationIntelligencePage'))
+const IEAEPage = lazyRetry(() => import('./pages/forensics/IEAEPage'))
+const IIDSEPage = lazyRetry(() => import('./pages/forensics/IIDSEPage'))
 
 function PageLoader() {
   return (
@@ -259,6 +261,8 @@ export default function App() {
             <Route path="/forensics/history" element={<ForensicsRoute><Layout><ExecutionHistoryPage /></Layout></ForensicsRoute>} />
             <Route path="/forensics/saved" element={<ForensicsRoute><Layout><SavedResultsPage /></Layout></ForensicsRoute>} />
             <Route path="/forensics/ai-investigate" element={<ForensicsRoute><Layout><AIInvestigationPage /></Layout></ForensicsRoute>} />
+            <Route path="/forensics/ieae" element={<ForensicsRoute><Layout><IEAEPage /></Layout></ForensicsRoute>} />
+            <Route path="/forensics/iidse" element={<ForensicsRoute><Layout><IIDSEPage /></Layout></ForensicsRoute>} />
             <Route path="/forensics/intelligence/:caseId" element={<ForensicsRoute><Layout><InvestigationIntelligencePage /></Layout></ForensicsRoute>} />
 
             {/* Catch-all — redirect to dashboard or login, never expose unknown routes */}
