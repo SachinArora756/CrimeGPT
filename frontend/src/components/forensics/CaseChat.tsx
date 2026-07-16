@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   MessageSquare, Send, Mic, MicOff, Loader2, User, Bot,
-  ChevronDown, ChevronUp, AlertCircle,
+  ChevronDown, ChevronUp, AlertCircle, Paperclip, Image, X,
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -14,21 +14,32 @@ interface Message {
   role: 'user' | 'assistant'
   content: string
   timestamp: string
+  attachments?: { name: string; url?: string }[]
 }
 
 interface CaseChatProps {
   sessionId: string | null
+  onSessionCreated?: (sessionId: string) => void
   disabled?: boolean
   accentColor?: 'emerald' | 'purple'
 }
 
-export default function CaseChat({ sessionId, disabled = false, accentColor = 'emerald' }: CaseChatProps) {
+export default function CaseChat({ sessionId, onSessionCreated, disabled = false, accentColor = 'emerald' }: CaseChatProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [inputText, setInputText] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isExpanded, setIsExpanded] = useState(true)
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [pendingPreviews, setPendingPreviews] = useState<(string | null)[]>([])
+  const [isUploading, setIsUploading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const internalSessionRef = useRef<string | null>(sessionId)
+
+  useEffect(() => {
+    internalSessionRef.current = sessionId
+  }, [sessionId])
 
   const onTranscript = useCallback((text: string) => {
     setInputText(prev => prev ? prev + ' ' + text : text)
@@ -45,25 +56,63 @@ export default function CaseChat({ sessionId, disabled = false, accentColor = 'e
     if (!sessionId) {
       setMessages([])
       setInputText('')
+      internalSessionRef.current = null
     }
   }, [sessionId])
 
+  const ensureSession = async (): Promise<string> => {
+    if (internalSessionRef.current) return internalSessionRef.current
+    const res = await api.post('/api/ai-investigation/sessions', { title: 'Chat Session' })
+    const newId = res.data.session_id
+    internalSessionRef.current = newId
+    onSessionCreated?.(newId)
+    return newId
+  }
+
+
   const sendMessage = async () => {
-    if (!inputText.trim() || !sessionId || isLoading || disabled) return
+    if ((!inputText.trim() && !pendingFiles.length) || isLoading || disabled) return
+
+    const messageText = inputText.trim()
+    const filesToSend = [...pendingFiles]
+    const previewsToSend = [...pendingPreviews]
+
+    setInputText('')
+    setPendingFiles([])
+    setPendingPreviews([])
+    setIsLoading(true)
+
+    const userAttachments = filesToSend.map((f, i) => ({
+      name: f.name,
+      url: previewsToSend[i] || undefined,
+    }))
 
     const userMsg: Message = {
       id: crypto.randomUUID(),
       role: 'user',
-      content: inputText.trim(),
+      content: messageText || `Attached ${filesToSend.length} file${filesToSend.length > 1 ? 's' : ''}`,
       timestamp: new Date().toISOString(),
+      attachments: userAttachments.length ? userAttachments : undefined,
     }
     setMessages(prev => [...prev, userMsg])
-    setInputText('')
-    setIsLoading(true)
 
     try {
-      const res = await api.post(`/api/ai-investigation/sessions/${sessionId}/message`, {
-        message: userMsg.content,
+      const sid = await ensureSession()
+
+      if (filesToSend.length) {
+        setIsUploading(true)
+        for (const file of filesToSend) {
+          const formData = new FormData()
+          formData.append('file', file)
+          await api.post(`/api/ai-investigation/sessions/${sid}/upload`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          })
+        }
+        setIsUploading(false)
+      }
+
+      const res = await api.post(`/api/ai-investigation/sessions/${sid}/message`, {
+        message: messageText || `I've uploaded ${filesToSend.length} evidence file(s). Please analyze them.`,
       })
       setMessages(prev => [...prev, {
         id: res.data.assistant_message.message_id,
@@ -80,6 +129,7 @@ export default function CaseChat({ sessionId, disabled = false, accentColor = 'e
       }])
     } finally {
       setIsLoading(false)
+      setIsUploading(false)
     }
   }
 
@@ -98,25 +148,48 @@ export default function CaseChat({ sessionId, disabled = false, accentColor = 'e
     }
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files
+    if (!fileList?.length) return
+    const newFiles = Array.from(fileList)
+    const newPreviews = newFiles.map(f => f.type.startsWith('image/') ? URL.createObjectURL(f) : null)
+    setPendingFiles(prev => [...prev, ...newFiles])
+    setPendingPreviews(prev => [...prev, ...newPreviews])
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  const removePendingFile = (index: number) => {
+    setPendingFiles(prev => prev.filter((_, i) => i !== index))
+    setPendingPreviews(prev => prev.filter((_, i) => i !== index))
+  }
+
   const accent = accentColor === 'purple'
     ? { border: 'border-purple-500/30', bg: 'bg-purple-500/10', text: 'text-purple-400', btn: 'from-purple-600 to-purple-500' }
     : { border: 'border-emerald-500/30', bg: 'bg-emerald-500/10', text: 'text-emerald-400', btn: 'from-emerald-600 to-emerald-500' }
-
-  const chatDisabled = !sessionId || disabled
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className={`rounded-2xl border ${sessionId ? accent.border : 'border-dark-700/50'} bg-dark-900/80 overflow-hidden`}
+      className={`rounded-2xl border ${accent.border} bg-dark-900/80 overflow-hidden`}
     >
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        accept="image/*,application/pdf,audio/*,video/*,text/*"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center justify-between px-4 py-3 hover:bg-dark-800/30 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <MessageSquare className={`w-4 h-4 ${sessionId ? accent.text : 'text-dark-500'}`} />
+          <MessageSquare className={`w-4 h-4 ${accent.text}`} />
           <span className="text-sm font-medium text-white">Case Discussion</span>
           {messages.length > 0 && (
             <span className="px-1.5 py-0.5 rounded-full text-[9px] bg-dark-700 text-dark-300">{messages.length}</span>
@@ -130,18 +203,13 @@ export default function CaseChat({ sessionId, disabled = false, accentColor = 'e
           <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden">
             <div className="border-t border-dark-700/50">
               {/* Messages area */}
-              <div className="h-64 overflow-y-auto px-4 py-3 space-y-3">
-                {!sessionId && (
-                  <div className="h-full flex items-center justify-center">
-                    <p className="text-dark-500 text-sm text-center">Upload evidence to start the investigation chat</p>
-                  </div>
-                )}
-                {sessionId && messages.length === 0 && !isLoading && (
+              <div className="h-72 overflow-y-auto px-4 py-3 space-y-3">
+                {messages.length === 0 && !isLoading && (
                   <div className="h-full flex items-center justify-center">
                     <div className="text-center">
                       <MessageSquare className="w-8 h-8 text-dark-600 mx-auto mb-2" />
-                      <p className="text-dark-500 text-sm">Describe your case or ask questions about the analysis</p>
-                      <p className="text-dark-600 text-xs mt-1">Use the mic button to dictate with voice</p>
+                      <p className="text-dark-500 text-sm">Describe your case or ask questions</p>
+                      <p className="text-dark-600 text-xs mt-1">You can attach evidence files anytime using the clip icon</p>
                     </div>
                   </div>
                 )}
@@ -157,6 +225,17 @@ export default function CaseChat({ sessionId, disabled = false, accentColor = 'e
                         ? 'bg-dark-700 text-dark-100'
                         : 'bg-dark-800/50 border border-dark-700/30 text-dark-200'
                     }`}>
+                      {/* Attachments */}
+                      {msg.attachments && msg.attachments.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-1.5">
+                          {msg.attachments.map((att, i) => (
+                            <div key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-dark-600/50 border border-dark-600">
+                              <Image className="w-3 h-3 text-dark-400" />
+                              <span className="text-[10px] text-dark-300 truncate max-w-[100px]">{att.name}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       {msg.role === 'assistant' ? (
                         <div className="prose prose-invert prose-xs max-w-none text-[13px] leading-relaxed">
                           <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
@@ -178,12 +257,39 @@ export default function CaseChat({ sessionId, disabled = false, accentColor = 'e
                       <Bot className={`w-3.5 h-3.5 ${accent.text}`} />
                     </div>
                     <div className="bg-dark-800/50 border border-dark-700/30 rounded-xl px-3 py-2">
-                      <Loader2 className="w-4 h-4 text-dark-400 animate-spin" />
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="w-4 h-4 text-dark-400 animate-spin" />
+                        {isUploading && <span className="text-[11px] text-dark-500">Uploading files...</span>}
+                      </div>
                     </div>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
               </div>
+
+              {/* Pending files preview */}
+              {pendingFiles.length > 0 && (
+                <div className="px-4 pb-2">
+                  <div className="flex flex-wrap gap-2">
+                    {pendingFiles.map((f, idx) => (
+                      <div key={idx} className="relative group flex items-center gap-1.5 px-2 py-1 rounded-lg bg-dark-800 border border-dark-700/50">
+                        {pendingPreviews[idx] ? (
+                          <img src={pendingPreviews[idx]!} alt={f.name} className="w-6 h-6 rounded object-cover" />
+                        ) : (
+                          <Image className="w-4 h-4 text-dark-400" />
+                        )}
+                        <span className="text-[11px] text-dark-300 max-w-[80px] truncate">{f.name}</span>
+                        <button
+                          onClick={() => removePendingFile(idx)}
+                          className="w-4 h-4 rounded-full bg-dark-700 hover:bg-red-500/30 flex items-center justify-center transition-colors"
+                        >
+                          <X className="w-2.5 h-2.5 text-dark-400 hover:text-red-400" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Voice error */}
               {voiceError && (
@@ -201,13 +307,13 @@ export default function CaseChat({ sessionId, disabled = false, accentColor = 'e
                   {/* Mic button */}
                   <button
                     onClick={handleMicClick}
-                    disabled={chatDisabled || isTranscribing}
+                    disabled={disabled || isTranscribing}
                     className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
                       isRecording
                         ? 'bg-red-500/20 border border-red-500/50 animate-pulse'
                         : isTranscribing
                           ? 'bg-dark-800 border border-dark-700'
-                          : chatDisabled
+                          : disabled
                             ? 'bg-dark-800/50 border border-dark-700/30 cursor-not-allowed'
                             : 'bg-dark-800 border border-dark-700 hover:border-dark-600'
                     }`}
@@ -218,8 +324,22 @@ export default function CaseChat({ sessionId, disabled = false, accentColor = 'e
                     ) : isRecording ? (
                       <MicOff className="w-4 h-4 text-red-400" />
                     ) : (
-                      <Mic className={`w-4 h-4 ${chatDisabled ? 'text-dark-600' : 'text-dark-300'}`} />
+                      <Mic className={`w-4 h-4 ${disabled ? 'text-dark-600' : 'text-dark-300'}`} />
                     )}
+                  </button>
+
+                  {/* Attachment button */}
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={disabled || isLoading}
+                    className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                      disabled || isLoading
+                        ? 'bg-dark-800/50 border border-dark-700/30 cursor-not-allowed'
+                        : 'bg-dark-800 border border-dark-700 hover:border-dark-600'
+                    }`}
+                    title="Attach evidence files"
+                  >
+                    <Paperclip className={`w-4 h-4 ${disabled || isLoading ? 'text-dark-600' : 'text-dark-300'}`} />
                   </button>
 
                   {/* Textarea */}
@@ -228,11 +348,11 @@ export default function CaseChat({ sessionId, disabled = false, accentColor = 'e
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    disabled={chatDisabled}
+                    disabled={disabled}
                     placeholder={
                       isRecording ? 'Recording... click mic to stop'
                         : isTranscribing ? 'Transcribing your voice...'
-                        : chatDisabled ? 'Upload evidence first...'
+                        : disabled ? 'Processing...'
                         : 'Describe the case or ask a question...'
                     }
                     rows={1}
@@ -248,9 +368,9 @@ export default function CaseChat({ sessionId, disabled = false, accentColor = 'e
                   {/* Send button */}
                   <button
                     onClick={sendMessage}
-                    disabled={chatDisabled || !inputText.trim() || isLoading}
+                    disabled={disabled || (!inputText.trim() && !pendingFiles.length) || isLoading}
                     className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-                      !chatDisabled && inputText.trim() && !isLoading
+                      !disabled && (inputText.trim() || pendingFiles.length) && !isLoading
                         ? `bg-gradient-to-r ${accent.btn} text-white shadow-lg`
                         : 'bg-dark-800/50 border border-dark-700/30 text-dark-600 cursor-not-allowed'
                     }`}

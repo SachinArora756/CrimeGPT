@@ -6,7 +6,7 @@ import {
   Plus, ChevronRight, ChevronDown, Trash2, Search, Copy,
   Camera, Fingerprint, Car, FileSearch, Hash, Mic, Eye, Target,
   Skull, Dna, CreditCard, ScanLine, Activity, MapPin,
-  Image, File, X,
+  Image, File, X, Paperclip,
   Crosshair, Zap, Globe, Lock, Scale, AlertOctagon,
 } from 'lucide-react'
 import { useDropzone } from 'react-dropzone'
@@ -128,6 +128,8 @@ export default function AIInvestigationPage() {
   const [activeSession, setActiveSession] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [inputMessage, setInputMessage] = useState('')
+  const [chatAttachments, setChatAttachments] = useState<File[]>([])
+  const chatFileInputRef = useRef<HTMLInputElement>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isInvestigating, setIsInvestigating] = useState(false)
   const [uploadedFile, setUploadedFile] = useState<{ name: string; classification?: Classification; message_id?: string; url?: string } | null>(null)
@@ -227,31 +229,32 @@ export default function AIInvestigationPage() {
       setMessages([])
     }
 
-    const file = acceptedFiles[0]
-    const formData = new FormData()
-    formData.append('file', file)
-
-    const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null
-    filePreviewRef.current = previewUrl
-
     try {
       setIsLoading(true)
-      const res = await api.post(`/api/ai-investigation/sessions/${sessionId}/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
-      setUploadedFile({
-        name: res.data.original_filename,
-        classification: res.data.classification,
-        message_id: res.data.message_id,
-        url: previewUrl || undefined,
-      })
-      setMessages(prev => [...prev, {
-        message_id: res.data.message_id,
-        role: 'user',
-        content: `Uploaded evidence: ${res.data.original_filename}`,
-        attachments: [{ ...res.data, preview_url: previewUrl }],
-        created_at: new Date().toISOString(),
-      }])
+      for (const file of acceptedFiles) {
+        const formData = new FormData()
+        formData.append('file', file)
+
+        const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null
+        filePreviewRef.current = previewUrl
+
+        const res = await api.post(`/api/ai-investigation/sessions/${sessionId}/upload`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        setUploadedFile({
+          name: res.data.original_filename,
+          classification: res.data.classification,
+          message_id: res.data.message_id,
+          url: previewUrl || undefined,
+        })
+        setMessages(prev => [...prev, {
+          message_id: res.data.message_id,
+          role: 'user',
+          content: `Uploaded evidence: ${res.data.original_filename}`,
+          attachments: [{ ...res.data, preview_url: previewUrl }],
+          created_at: new Date().toISOString(),
+        }])
+      }
       startInvestigation(sessionId!)
     } catch (e) {
       console.error('Upload failed', e)
@@ -262,7 +265,7 @@ export default function AIInvestigationPage() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    multiple: false,
+    multiple: true,
     accept: {
       'image/*': ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp'],
       'audio/*': ['.wav', '.mp3', '.ogg', '.flac', '.m4a'],
@@ -414,21 +417,41 @@ export default function AIInvestigationPage() {
   }
 
   const sendFollowUp = async () => {
-    if (!inputMessage.trim() || !activeSession) return
+    if (!inputMessage.trim() && !chatAttachments.length) return
+
+    let sessionId = activeSession
+    if (!sessionId) {
+      const res = await api.post('/api/ai-investigation/sessions', { title: null })
+      setSessions(prev => [res.data, ...prev])
+      sessionId = res.data.session_id
+      setActiveSession(sessionId)
+    }
 
     const userMsg: Message = {
       message_id: crypto.randomUUID(),
       role: 'user',
-      content: inputMessage,
+      content: inputMessage || `Attached ${chatAttachments.length} file(s)`,
       created_at: new Date().toISOString(),
+      attachments: chatAttachments.map(f => ({ original_filename: f.name, preview_url: f.type.startsWith('image/') ? URL.createObjectURL(f) : undefined })),
     }
     setMessages(prev => [...prev, userMsg])
+    const filesToUpload = [...chatAttachments]
+    const messageText = inputMessage.trim()
     setInputMessage('')
+    setChatAttachments([])
     setIsLoading(true)
 
     try {
-      const res = await api.post(`/api/ai-investigation/sessions/${activeSession}/message`, {
-        message: userMsg.content,
+      for (const file of filesToUpload) {
+        const formData = new FormData()
+        formData.append('file', file)
+        await api.post(`/api/ai-investigation/sessions/${sessionId}/upload`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+      }
+
+      const res = await api.post(`/api/ai-investigation/sessions/${sessionId}/message`, {
+        message: messageText || `I've uploaded ${filesToUpload.length} evidence file(s). Please analyze them.`,
       })
       setMessages(prev => [...prev, {
         message_id: res.data.assistant_message.message_id,
@@ -630,7 +653,7 @@ export default function AIInvestigationPage() {
                     </div>
                     <h2 className="text-2xl font-bold text-white mb-2">Crime Analyst AI</h2>
                     <p className="text-dark-400 text-sm mb-8 leading-relaxed">
-                      Upload evidence and I'll automatically classify it, run forensic analysis tools,
+                      Describe your case below or upload evidence — I'll automatically classify it, run forensic analysis tools,
                       search criminal intelligence databases, and generate a comprehensive investigation report.
                     </p>
 
@@ -1074,33 +1097,67 @@ export default function AIInvestigationPage() {
                     </button>
                   </div>
                 )}
+                {/* Attachment button */}
+                <input
+                  ref={chatFileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/*,application/pdf,audio/*,video/*,text/*"
+                  className="hidden"
+                  onChange={e => {
+                    if (e.target.files?.length) {
+                      setChatAttachments(prev => [...prev, ...Array.from(e.target.files!)])
+                      e.target.value = ''
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => chatFileInputRef.current?.click()}
+                  disabled={isInvestigating}
+                  className="p-2.5 rounded-xl bg-dark-800 border border-dark-700/50 hover:border-dark-600 text-dark-300 hover:text-white disabled:opacity-30 transition-all"
+                  title="Attach evidence files"
+                >
+                  <Paperclip className="w-4 h-4" />
+                </button>
+
                 <div className="flex-1 relative">
+                  {chatAttachments.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-1.5">
+                      {chatAttachments.map((f, idx) => (
+                        <span key={idx} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-dark-700 border border-dark-600/50 text-[10px] text-dark-300">
+                          <Image className="w-3 h-3" />
+                          <span className="max-w-[80px] truncate">{f.name}</span>
+                          <button onClick={() => setChatAttachments(prev => prev.filter((_, i) => i !== idx))} className="hover:text-red-400">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <textarea
                     ref={inputRef}
                     value={inputMessage}
                     onChange={e => setInputMessage(e.target.value)}
                     onKeyDown={handleKeyDown}
                     placeholder={
-                      !activeSession
-                        ? 'Create a new investigation to begin...'
-                        : isInvestigating
+                      isInvestigating
                         ? 'Investigation in progress...'
-                        : 'Ask a follow-up question about the evidence...'
+                        : 'Describe your case or ask a question...'
                     }
-                    disabled={!activeSession || isInvestigating}
+                    disabled={isInvestigating}
                     rows={1}
                     className="w-full bg-dark-800 border border-dark-700/50 rounded-xl px-4 py-3 pr-12 text-sm text-white placeholder-dark-500 resize-none focus:outline-none focus:border-primary-500/50 focus:ring-1 focus:ring-primary-500/20 disabled:opacity-50 transition-all"
                   />
                 </div>
                 <button
                   onClick={() => {
-                    if (uploadedFile && !isInvestigating) {
-                      startInvestigation(activeSession!)
+                    if (uploadedFile && !isInvestigating && activeSession) {
+                      startInvestigation(activeSession)
                     } else {
                       sendFollowUp()
                     }
                   }}
-                  disabled={!activeSession || isInvestigating || (!inputMessage.trim() && !uploadedFile)}
+                  disabled={isInvestigating || (!inputMessage.trim() && !uploadedFile && !chatAttachments.length)}
                   className="p-2.5 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white disabled:opacity-30 disabled:hover:from-primary-600 transition-all shadow-lg shadow-primary-500/20 disabled:shadow-none"
                 >
                   <Send className="w-4 h-4" />

@@ -107,14 +107,16 @@ export default function CriminalProfileDetailPage() {
   })
 
   const handleFaceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !criminalId) return
+    const fileList = e.target.files
+    if (!fileList?.length || !criminalId) return
     setUploading('face')
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      await api.post(`/api/criminal-intelligence/${criminalId}/biometrics/faces`, formData)
-      toast.success('Face embedding generated successfully')
+      for (const file of Array.from(fileList)) {
+        const formData = new FormData()
+        formData.append('file', file)
+        await api.post(`/api/criminal-intelligence/${criminalId}/biometrics/faces`, formData)
+      }
+      toast.success(`${fileList.length} face embedding${fileList.length > 1 ? 's' : ''} generated successfully`)
       const res = await api.get(`/api/criminal-intelligence/${criminalId}/biometrics/faces`)
       setFaceData(res.data)
       fetchCriminal()
@@ -127,15 +129,17 @@ export default function CriminalProfileDetailPage() {
   }
 
   const handleFingerprintUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !criminalId) return
+    const fileList = e.target.files
+    if (!fileList?.length || !criminalId) return
     setUploading('fingerprint')
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('finger_type', fpFingerType)
-      await api.post(`/api/criminal-intelligence/${criminalId}/biometrics/fingerprints`, formData)
-      toast.success('Fingerprint template extracted successfully')
+      for (const file of Array.from(fileList)) {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('finger_type', fpFingerType)
+        await api.post(`/api/criminal-intelligence/${criminalId}/biometrics/fingerprints`, formData)
+      }
+      toast.success(`${fileList.length} fingerprint${fileList.length > 1 ? 's' : ''} extracted successfully`)
       const res = await api.get(`/api/criminal-intelligence/${criminalId}/biometrics/fingerprints`)
       setFpData(res.data)
       fetchCriminal()
@@ -816,8 +820,8 @@ export default function CriminalProfileDetailPage() {
       {activeTab === 'biometrics' && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
           {/* Hidden file inputs */}
-          <input ref={faceInputRef} type="file" accept="image/jpeg,image/png,image/bmp,image/tiff,image/webp" className="hidden" onChange={handleFaceUpload} />
-          <input ref={fpInputRef} type="file" accept="image/jpeg,image/png,image/bmp,image/tiff,image/webp" className="hidden" onChange={handleFingerprintUpload} />
+          <input ref={faceInputRef} type="file" accept="image/jpeg,image/png,image/bmp,image/tiff,image/webp" multiple className="hidden" onChange={handleFaceUpload} />
+          <input ref={fpInputRef} type="file" accept="image/jpeg,image/png,image/bmp,image/tiff,image/webp" multiple className="hidden" onChange={handleFingerprintUpload} />
 
           {/* Face Embeddings */}
           <div className="rounded-xl bg-dark-900/80 border border-dark-700/50 overflow-hidden">

@@ -100,7 +100,7 @@ export default function IEAEPage() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [isInvestigating, setIsInvestigating] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-  const [uploadedFile, setUploadedFile] = useState<{ name: string; classification?: Classification; url?: string } | null>(null)
+  const [uploadedFiles, setUploadedFiles] = useState<{ name: string; classification?: Classification; url?: string }[]>([])
   const [toolProgress, setToolProgress] = useState<ToolProgress[]>([])
   const [checklist, setChecklist] = useState<{ items: ChecklistItem[]; completed_count: number; needs_review_count: number } | null>(null)
   const [completeness, setCompleteness] = useState<CompletenessData | null>(null)
@@ -114,10 +114,9 @@ export default function IEAEPage() {
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!acceptedFiles.length) return
-    const file = acceptedFiles[0]
     setError('')
     setIsUploading(true)
-    setUploadedFile(null)
+    setUploadedFiles([])
     setToolProgress([])
     setChecklist(null)
     setCompleteness(null)
@@ -126,25 +125,31 @@ export default function IEAEPage() {
     setAiPlanReasoning('')
     setReport('')
 
-    const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null
-    filePreviewRef.current = previewUrl
+    const lastPreview = acceptedFiles[acceptedFiles.length - 1].type.startsWith('image/')
+      ? URL.createObjectURL(acceptedFiles[acceptedFiles.length - 1])
+      : null
+    filePreviewRef.current = lastPreview
 
     try {
-      const sessionRes = await api.post('/api/ai-investigation/sessions', { title: `IEAE: ${file.name}` })
+      const title = acceptedFiles.length === 1 ? `IEAE: ${acceptedFiles[0].name}` : `IEAE: ${acceptedFiles.length} files`
+      const sessionRes = await api.post('/api/ai-investigation/sessions', { title })
       const newSessionId = sessionRes.data.session_id
       setSessionId(newSessionId)
 
-      const formData = new FormData()
-      formData.append('file', file)
-      const uploadRes = await api.post(`/api/ai-investigation/sessions/${newSessionId}/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      for (const file of acceptedFiles) {
+        const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null
+        const formData = new FormData()
+        formData.append('file', file)
+        const uploadRes = await api.post(`/api/ai-investigation/sessions/${newSessionId}/upload`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        setUploadedFiles(prev => [...prev, {
+          name: uploadRes.data.original_filename,
+          classification: uploadRes.data.classification,
+          url: previewUrl || undefined,
+        }])
+      }
 
-      setUploadedFile({
-        name: uploadRes.data.original_filename,
-        classification: uploadRes.data.classification,
-        url: previewUrl || undefined,
-      })
       setIsUploading(false)
 
       setIsInvestigating(true)
@@ -174,11 +179,12 @@ export default function IEAEPage() {
         for (const part of parts) {
           const lines = part.split('\n')
           let eventName = 'message'
-          let dataStr = ''
+          const dataLines: string[] = []
           for (const line of lines) {
             if (line.startsWith('event: ')) eventName = line.slice(7).trim()
-            else if (line.startsWith('data: ')) dataStr = line.slice(6)
+            else if (line.startsWith('data: ')) dataLines.push(line.slice(6))
           }
+          const dataStr = dataLines.join('\n')
           if (dataStr) {
             try {
               const data = JSON.parse(dataStr)
@@ -199,7 +205,7 @@ export default function IEAEPage() {
     switch (event) {
       case 'classification':
       case 'ai_classification':
-        setUploadedFile(prev => prev ? { ...prev, classification: data } : null)
+        setUploadedFiles(prev => prev.length ? [...prev.slice(0, -1), { ...prev[prev.length - 1], classification: data }] : prev)
         break
       case 'plan':
         if (Array.isArray(data.tools_selected)) {
@@ -234,6 +240,9 @@ export default function IEAEPage() {
       case 'report_complete':
         setReport(data.report || '')
         break
+      case 'error':
+        setError(data.error || 'Investigation pipeline error')
+        break
       case 'complete':
         if (data.checklist && !checklist) setChecklist(data.checklist)
         if (data.completeness && !completeness) setCompleteness(data.completeness)
@@ -244,7 +253,7 @@ export default function IEAEPage() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    multiple: false,
+    multiple: true,
     disabled: isInvestigating || isUploading,
     accept: {
       'image/*': ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp'],
@@ -321,30 +330,34 @@ export default function IEAEPage() {
       )}
 
       {/* Classification */}
-      {uploadedFile?.classification && (
+      {uploadedFiles.some(f => f.classification) && (
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="card p-4">
           <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
-            <Camera className="w-4 h-4 text-cyan-400" /> Evidence Classification
+            <Camera className="w-4 h-4 text-cyan-400" /> Evidence Classification ({uploadedFiles.length} file{uploadedFiles.length > 1 ? 's' : ''})
           </h3>
-          <div className="flex items-start gap-4">
-            {uploadedFile.url && (
-              <img src={uploadedFile.url} alt="Evidence" className="w-20 h-20 object-cover rounded-lg border border-dark-700" />
-            )}
-            <div className="flex-1 space-y-1">
-              <p className="text-white text-sm font-medium">{uploadedFile.name}</p>
-              <p className="text-dark-400 text-xs">Type: <span className="text-emerald-400">{uploadedFile.classification.type}</span></p>
-              <p className="text-dark-400 text-xs">Confidence: <span className="text-emerald-400">{(uploadedFile.classification.confidence * 100).toFixed(0)}%</span></p>
-              {uploadedFile.classification.description && (
-                <p className="text-dark-400 text-xs mt-1">{uploadedFile.classification.description}</p>
-              )}
-              {uploadedFile.classification.detected_elements?.length ? (
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {uploadedFile.classification.detected_elements.map((el, i) => (
-                    <span key={i} className="px-2 py-0.5 rounded-full text-[10px] bg-dark-800 text-dark-300 border border-dark-700">{el}</span>
-                  ))}
+          <div className="space-y-3">
+            {uploadedFiles.filter(f => f.classification).map((uf, idx) => (
+              <div key={idx} className="flex items-start gap-4">
+                {uf.url && (
+                  <img src={uf.url} alt="Evidence" className="w-20 h-20 object-cover rounded-lg border border-dark-700" />
+                )}
+                <div className="flex-1 space-y-1">
+                  <p className="text-white text-sm font-medium">{uf.name}</p>
+                  <p className="text-dark-400 text-xs">Type: <span className="text-emerald-400">{uf.classification!.type}</span></p>
+                  <p className="text-dark-400 text-xs">Confidence: <span className="text-emerald-400">{(uf.classification!.confidence * 100).toFixed(0)}%</span></p>
+                  {uf.classification!.description && (
+                    <p className="text-dark-400 text-xs mt-1">{uf.classification!.description}</p>
+                  )}
+                  {uf.classification!.detected_elements?.length ? (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {uf.classification!.detected_elements.map((el, i) => (
+                        <span key={i} className="px-2 py-0.5 rounded-full text-[10px] bg-dark-800 text-dark-300 border border-dark-700">{el}</span>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
+              </div>
+            ))}
           </div>
         </motion.div>
       )}
@@ -540,7 +553,7 @@ export default function IEAEPage() {
       )}
 
       {/* Case Discussion Chat */}
-      <CaseChat sessionId={sessionId} disabled={isInvestigating || isUploading} accentColor="emerald" />
+      <CaseChat sessionId={sessionId} onSessionCreated={setSessionId} disabled={isInvestigating || isUploading} accentColor="emerald" />
     </div>
   )
 }

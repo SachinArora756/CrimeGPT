@@ -8,8 +8,11 @@ sending messages, and streaming live investigation progress via SSE.
 import os
 import uuid
 import json
+import logging
 import tempfile
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Query
 from fastapi.responses import StreamingResponse
@@ -288,18 +291,24 @@ async def investigate(
 
     async def sse_generator():
         all_events = []
-        async for event in run_investigation(
-            file_path=file_path,
-            original_filename=original_filename,
-            user_message=message or None,
-            user_id=current_user.id,
-            case_id=session.case_id,
-            db=db,
-        ):
-            all_events.append(event)
-            event_name = event.get("event", "message")
-            data_json = json.dumps(event.get("data", {}), default=str)
-            yield f"event: {event_name}\ndata: {data_json}\n\n"
+        try:
+            async for event in run_investigation(
+                file_path=file_path,
+                original_filename=original_filename,
+                user_message=message or None,
+                user_id=current_user.id,
+                case_id=session.case_id,
+                db=db,
+            ):
+                all_events.append(event)
+                event_name = event.get("event", "message")
+                data_json = json.dumps(event.get("data", {}), default=str)
+                yield f"event: {event_name}\ndata: {data_json}\n\n"
+        except Exception as e:
+            logger.error(f"Investigation stream error: {e}", exc_info=True)
+            error_data = json.dumps({"error": str(e)[:500]})
+            yield f"event: error\ndata: {error_data}\n\n"
+            return
 
         final_event = all_events[-1] if all_events else None
         if final_event and final_event.get("event") == "complete":

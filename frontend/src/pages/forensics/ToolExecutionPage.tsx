@@ -31,8 +31,8 @@ interface ExecutionResult {
 export default function ToolExecutionPage() {
   const { toolKey, executionId } = useParams<{ toolKey?: string; executionId?: string }>()
   const navigate = useNavigate()
-  const [file, setFile] = useState<File | null>(null)
-  const [filePreview, setFilePreview] = useState<string | null>(null)
+  const [files, setFiles] = useState<File[]>([])
+  const [filePreviews, setFilePreviews] = useState<(string | null)[]>([])
   const [executing, setExecuting] = useState(false)
   const [result, setResult] = useState<ExecutionResult | null>(null)
   const [progress, setProgress] = useState(0)
@@ -50,25 +50,26 @@ export default function ToolExecutionPage() {
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
-      const f = acceptedFiles[0]
-      setFile(f)
+      setFiles(prev => [...prev, ...acceptedFiles])
       setResult(null)
-      if (f.type.startsWith('image/')) {
-        setFilePreview(URL.createObjectURL(f))
-      } else {
-        setFilePreview(null)
-      }
+      const previews = acceptedFiles.map(f => f.type.startsWith('image/') ? URL.createObjectURL(f) : null)
+      setFilePreviews(prev => [...prev, ...previews])
     }
   }, [])
 
+  const removeFile = (index: number) => {
+    setFiles(prev => prev.filter((_, i) => i !== index))
+    setFilePreviews(prev => prev.filter((_, i) => i !== index))
+  }
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    multiple: false,
+    multiple: true,
     maxSize: 50 * 1024 * 1024,
   })
 
   const executeTask = async () => {
-    if (!file || !toolKey) return
+    if (!files.length || !toolKey) return
     setExecuting(true)
     setProgress(10)
 
@@ -78,7 +79,7 @@ export default function ToolExecutionPage() {
 
     try {
       const formData = new FormData()
-      formData.append('file', file)
+      files.forEach(f => formData.append('file', f))
       const toolParams: Record<string, string> = {}
       if (sceneContext.trim() && toolKey === 'crime_scene_analysis') {
         toolParams.officer_notes = sceneContext.trim()
@@ -685,38 +686,48 @@ export default function ToolExecutionPage() {
             {...getRootProps()}
             className={`relative rounded-2xl border-2 border-dashed transition-all duration-300 cursor-pointer overflow-hidden ${
               isDragActive ? 'border-primary-400 bg-primary-400/5 scale-[1.01]' :
-              file ? 'border-green-500/30 bg-green-500/5' :
+              files.length ? 'border-green-500/30 bg-green-500/5' :
               'border-dark-600/50 hover:border-primary-500/30 hover:bg-dark-800/30'
             }`}
           >
             <input {...getInputProps()} />
-            {filePreview ? (
-              <div className="relative">
-                <img src={filePreview} alt="Preview" className="w-full h-48 object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-dark-900/90 to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                  <p className="text-sm text-white font-medium truncate">{file?.name}</p>
-                  <p className="text-[10px] text-dark-400 mt-0.5">{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB` : ''} — Click to replace</p>
+            {files.length > 0 ? (
+              <div className="p-4">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {files.map((f, idx) => (
+                    <div key={idx} className="relative rounded-xl border border-dark-700/50 bg-dark-900/50 overflow-hidden group">
+                      {filePreviews[idx] ? (
+                        <img src={filePreviews[idx]!} alt={f.name} className="w-full h-24 object-cover" />
+                      ) : (
+                        <div className="w-full h-24 flex items-center justify-center bg-dark-800">
+                          <CheckCircle className="w-6 h-6 text-green-400" />
+                        </div>
+                      )}
+                      <div className="p-2">
+                        <p className="text-[11px] text-white truncate">{f.name}</p>
+                        <p className="text-[10px] text-dark-400">{(f.size / 1024 / 1024).toFixed(2)} MB</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={e => { e.stopPropagation(); removeFile(idx) }}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-dark-900/80 text-dark-300 hover:text-red-400 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            ) : file ? (
-              <div className="p-8 text-center">
-                <div className="w-14 h-14 mx-auto rounded-2xl bg-green-500/10 border border-green-500/20 flex items-center justify-center mb-3">
-                  <CheckCircle className="w-6 h-6 text-green-400" />
-                </div>
-                <p className="text-sm text-white font-medium">{file.name}</p>
-                <p className="text-xs text-dark-400 mt-1">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                <p className="text-[10px] text-dark-500 mt-2">Click or drop to replace</p>
+                <p className="text-[10px] text-dark-500 mt-3 text-center">{files.length} file{files.length > 1 ? 's' : ''} selected — click or drop to add more</p>
               </div>
             ) : (
               <div className="p-10 text-center">
                 <div className="w-14 h-14 mx-auto rounded-2xl bg-dark-800 border border-dark-700/50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <Upload className="w-6 h-6 text-dark-400" />
                 </div>
-                <p className="text-sm text-dark-300 font-medium">Drop evidence file here</p>
-                <p className="text-xs text-dark-500 mt-1.5">or click to browse</p>
+                <p className="text-sm text-dark-300 font-medium">Drop evidence files here</p>
+                <p className="text-xs text-dark-500 mt-1.5">or click to browse (multiple files supported)</p>
                 <div className="flex items-center justify-center gap-2 mt-4">
-                  <span className="text-[10px] px-2 py-1 rounded bg-dark-800 text-dark-500 border border-dark-700/50">Max 50MB</span>
+                  <span className="text-[10px] px-2 py-1 rounded bg-dark-800 text-dark-500 border border-dark-700/50">Max 50MB each</span>
                   <span className="text-[10px] px-2 py-1 rounded bg-dark-800 text-dark-500 border border-dark-700/50">Images, Audio, PDF</span>
                 </div>
               </div>
@@ -745,7 +756,7 @@ export default function ToolExecutionPage() {
           {/* Execute Button */}
           <button
             onClick={executeTask}
-            disabled={!file || executing}
+            disabled={!files.length || executing}
             className="w-full flex items-center justify-center gap-2.5 py-3.5 rounded-xl bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-medium text-sm disabled:opacity-30 disabled:hover:from-primary-600 transition-all shadow-lg shadow-primary-500/20 disabled:shadow-none"
           >
             {executing ? (

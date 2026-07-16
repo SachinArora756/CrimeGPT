@@ -45,7 +45,7 @@ export default function IIDSEPage() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [isInvestigating, setIsInvestigating] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
-  const [, setUploadedFile] = useState<{ name: string; url?: string } | null>(null)
+  const [uploadedFiles, setUploadedFiles] = useState<{ name: string; url?: string }[]>([])
   const [hypotheses, setHypotheses] = useState<Hypothesis[]>([])
   const [contradictions, setContradictions] = useState<Contradiction[]>([])
   const [confidenceDashboard, setConfidenceDashboard] = useState<ConfidenceDashboard | null>(null)
@@ -57,30 +57,31 @@ export default function IIDSEPage() {
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!acceptedFiles.length) return
-    const file = acceptedFiles[0]
     setError('')
     setIsUploading(true)
-    setUploadedFile(null)
+    setUploadedFiles([])
     setHypotheses([])
     setContradictions([])
     setConfidenceDashboard(null)
     setReport('')
     setToolCount({ completed: 0, total: 0 })
 
-    const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null
-
     try {
-      const sessionRes = await api.post('/api/ai-investigation/sessions', { title: `IIDSE: ${file.name}` })
+      const title = acceptedFiles.length === 1 ? `IIDSE: ${acceptedFiles[0].name}` : `IIDSE: ${acceptedFiles.length} files`
+      const sessionRes = await api.post('/api/ai-investigation/sessions', { title })
       const newSessionId = sessionRes.data.session_id
       setSessionId(newSessionId)
 
-      const formData = new FormData()
-      formData.append('file', file)
-      await api.post(`/api/ai-investigation/sessions/${newSessionId}/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      })
+      for (const file of acceptedFiles) {
+        const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null
+        const formData = new FormData()
+        formData.append('file', file)
+        await api.post(`/api/ai-investigation/sessions/${newSessionId}/upload`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        setUploadedFiles(prev => [...prev, { name: file.name, url: previewUrl || undefined }])
+      }
 
-      setUploadedFile({ name: file.name, url: previewUrl || undefined })
       setIsUploading(false)
 
       setIsInvestigating(true)
@@ -112,11 +113,12 @@ export default function IIDSEPage() {
         for (const part of parts) {
           const lines = part.split('\n')
           let eventName = 'message'
-          let dataStr = ''
+          const dataLines: string[] = []
           for (const line of lines) {
             if (line.startsWith('event: ')) eventName = line.slice(7).trim()
-            else if (line.startsWith('data: ')) dataStr = line.slice(6)
+            else if (line.startsWith('data: ')) dataLines.push(line.slice(6))
           }
+          const dataStr = dataLines.join('\n')
           if (dataStr) {
             try {
               const data = JSON.parse(dataStr)
@@ -146,6 +148,9 @@ export default function IIDSEPage() {
                 case 'complete':
                   if (data.hypotheses?.length && !hypotheses.length) setHypotheses(data.hypotheses)
                   break
+                case 'error':
+                  setError(data.error || 'Investigation pipeline error')
+                  break
               }
             } catch {}
           }
@@ -161,7 +166,7 @@ export default function IIDSEPage() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    multiple: false,
+    multiple: true,
     disabled: isInvestigating || isUploading,
     accept: {
       'image/*': ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.webp'],
@@ -186,6 +191,18 @@ export default function IIDSEPage() {
           <p className="text-dark-400 text-sm">Investigation Intelligence & Decision Support Engine — Upload evidence for strategic analysis</p>
         </div>
       </div>
+
+      {/* Uploaded Files Indicator */}
+      {uploadedFiles.length > 0 && !isUploading && !isInvestigating && (
+        <div className="flex flex-wrap gap-2">
+          {uploadedFiles.map((f, idx) => (
+            <div key={idx} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/20">
+              {f.url ? <FileImage className="w-3.5 h-3.5 text-purple-400" /> : <FileText className="w-3.5 h-3.5 text-purple-400" />}
+              <span className="text-xs text-purple-300">{f.name}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Upload Zone */}
       <div
@@ -212,7 +229,7 @@ export default function IIDSEPage() {
           <div className="flex flex-col items-center gap-3">
             <Upload className="w-10 h-10 text-dark-500" />
             <p className="text-dark-300 font-medium">Drop evidence files here or click to browse</p>
-            <p className="text-dark-500 text-sm">Upload evidence for hypothesis generation, contradiction detection & decision support</p>
+            <p className="text-dark-500 text-sm">Upload multiple files for hypothesis generation, contradiction detection & decision support</p>
             <div className="flex gap-2 mt-2">
               <span className="px-2 py-1 rounded-full text-[10px] bg-dark-800 text-dark-400"><FileImage className="w-3 h-3 inline mr-1" />Images</span>
               <span className="px-2 py-1 rounded-full text-[10px] bg-dark-800 text-dark-400"><FileAudio className="w-3 h-3 inline mr-1" />Audio</span>
@@ -419,7 +436,7 @@ export default function IIDSEPage() {
       )}
 
       {/* Case Discussion Chat */}
-      <CaseChat sessionId={sessionId} disabled={isInvestigating || isUploading} accentColor="purple" />
+      <CaseChat sessionId={sessionId} onSessionCreated={setSessionId} disabled={isInvestigating || isUploading} accentColor="purple" />
     </div>
   )
 }
