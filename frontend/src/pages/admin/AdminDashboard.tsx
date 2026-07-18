@@ -221,26 +221,29 @@ export default function AdminDashboard() {
 
       {/* IEAE Intelligence Dashboard */}
       {ieaeStats && ieaeStats.total_investigations > 0 && (
-        <div className="card">
-          <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-            <Brain className="w-4 h-4 text-purple-400" /> Evidence Assurance Engine (IEAE)
-          </h3>
+        <div className="card cursor-pointer hover:border-purple-500/30 transition-all" onClick={() => navigate('/forensics/ieae')}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Brain className="w-4 h-4 text-purple-400" /> Evidence Assurance Engine (IEAE)
+            </h3>
+            <span className="text-xs text-primary-400 hover:text-primary-300">Open IEAE →</span>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div className="rounded-xl bg-dark-800/50 border border-dark-700/50 p-3 text-center">
+            <div onClick={(e) => { e.stopPropagation(); navigate('/forensics/ieae'); }} className="rounded-xl bg-dark-800/50 border border-dark-700/50 p-3 text-center hover:border-purple-500/40 hover:bg-purple-500/5 transition-all cursor-pointer">
               <p className={`text-2xl font-bold ${ieaeStats.average_completeness >= 70 ? 'text-emerald-400' : ieaeStats.average_completeness >= 40 ? 'text-amber-400' : 'text-red-400'}`}>
                 {ieaeStats.average_completeness.toFixed(0)}%
               </p>
               <p className="text-dark-400 text-[10px] uppercase mt-1">Avg Completeness</p>
             </div>
-            <div className="rounded-xl bg-dark-800/50 border border-dark-700/50 p-3 text-center">
+            <div onClick={(e) => { e.stopPropagation(); navigate('/forensics/ieae'); }} className="rounded-xl bg-dark-800/50 border border-dark-700/50 p-3 text-center hover:border-purple-500/40 hover:bg-purple-500/5 transition-all cursor-pointer">
               <p className="text-2xl font-bold text-white">{ieaeStats.total_investigations}</p>
               <p className="text-dark-400 text-[10px] uppercase mt-1">Total Analyses</p>
             </div>
-            <div className="rounded-xl bg-dark-800/50 border border-dark-700/50 p-3 text-center">
+            <div onClick={(e) => { e.stopPropagation(); navigate('/forensics/ieae'); }} className="rounded-xl bg-dark-800/50 border border-dark-700/50 p-3 text-center hover:border-purple-500/40 hover:bg-purple-500/5 transition-all cursor-pointer">
               <p className="text-2xl font-bold text-emerald-400">{ieaeStats.success_rate.toFixed(0)}%</p>
               <p className="text-dark-400 text-[10px] uppercase mt-1">Success Rate</p>
             </div>
-            <div className="rounded-xl bg-dark-800/50 border border-dark-700/50 p-3 text-center">
+            <div onClick={(e) => { e.stopPropagation(); navigate('/forensics/ieae'); }} className="rounded-xl bg-dark-800/50 border border-dark-700/50 p-3 text-center hover:border-purple-500/40 hover:bg-purple-500/5 transition-all cursor-pointer">
               <p className="text-2xl font-bold text-amber-400">{ieaeStats.manual_reviews_pending}</p>
               <p className="text-dark-400 text-[10px] uppercase mt-1">Pending Review</p>
             </div>
@@ -255,7 +258,7 @@ export default function AdminDashboard() {
                   .sort((a, b) => b[1].executions - a[1].executions)
                   .slice(0, 8)
                   .map(([tool, data]) => (
-                    <div key={tool} className="flex items-center justify-between px-3 py-2 rounded-lg bg-dark-800/30 border border-dark-700/30">
+                    <div key={tool} onClick={(e) => { e.stopPropagation(); navigate(`/forensics/tools/${tool}`); }} className="flex items-center justify-between px-3 py-2 rounded-lg bg-dark-800/30 border border-dark-700/30 hover:border-primary-500/40 hover:bg-primary-500/5 transition-all cursor-pointer">
                       <span className="text-[10px] text-dark-300 truncate">{tool.replace(/_/g, ' ')}</span>
                       <span className="text-[10px] font-medium text-primary-400 ml-2">{data.executions}×</span>
                     </div>
@@ -272,7 +275,7 @@ export default function AdminDashboard() {
               </p>
               <div className="flex flex-wrap gap-2">
                 {ieaeStats.skipped_analyses.slice(0, 5).map((item, i) => (
-                  <span key={i} className="text-[10px] px-2 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+                  <span key={i} onClick={(e) => { e.stopPropagation(); navigate(`/forensics/tools/${item.tool}`); }} className="text-[10px] px-2 py-1 rounded-full bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition-all cursor-pointer">
                     {item.tool.replace(/_/g, ' ')} ({item.count})
                   </span>
                 ))}
@@ -284,38 +287,41 @@ export default function AdminDashboard() {
 
       {/* IIDSE Intelligence Dashboard Stats */}
       {iidseStats && (
-        <div className="card p-4">
-          <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
-            <Brain className="w-4 h-4 text-purple-400" /> Investigation Intelligence (IIDSE)
-          </h3>
+        <div className="card p-4 cursor-pointer hover:border-purple-500/30 transition-all" onClick={() => navigate('/forensics/iidse')}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+              <Brain className="w-4 h-4 text-purple-400" /> Investigation Intelligence (IIDSE)
+            </h3>
+            <span className="text-xs text-primary-400 hover:text-primary-300">Open IIDSE →</span>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-            <div className="bg-dark-800 rounded-xl p-3 text-center">
+            <div onClick={(e) => { e.stopPropagation(); navigate('/forensics/iidse'); }} className="bg-dark-800 rounded-xl p-3 text-center hover:border-purple-500/40 hover:bg-purple-500/5 border border-transparent transition-all cursor-pointer">
               <p className="text-xl font-bold text-purple-400">{iidseStats.investigation_memory?.total_entries || 0}</p>
               <p className="text-[10px] text-dark-400">Memory Entries</p>
             </div>
-            <div className="bg-dark-800 rounded-xl p-3 text-center">
+            <div onClick={(e) => { e.stopPropagation(); navigate('/forensics/iidse'); }} className="bg-dark-800 rounded-xl p-3 text-center hover:border-blue-500/40 hover:bg-blue-500/5 border border-transparent transition-all cursor-pointer">
               <p className="text-xl font-bold text-blue-400">{iidseStats.correlations?.total || 0}</p>
               <p className="text-[10px] text-dark-400">Correlations</p>
             </div>
-            <div className="bg-dark-800 rounded-xl p-3 text-center">
+            <div onClick={(e) => { e.stopPropagation(); navigate('/forensics/iidse'); }} className="bg-dark-800 rounded-xl p-3 text-center hover:border-green-500/40 hover:bg-green-500/5 border border-transparent transition-all cursor-pointer">
               <p className="text-xl font-bold text-green-400">{iidseStats.correlations?.high_confidence || 0}</p>
               <p className="text-[10px] text-dark-400">High-Conf Matches</p>
             </div>
-            <div className="bg-dark-800 rounded-xl p-3 text-center">
+            <div onClick={(e) => { e.stopPropagation(); navigate('/forensics/iidse'); }} className="bg-dark-800 rounded-xl p-3 text-center hover:border-amber-500/40 hover:bg-amber-500/5 border border-transparent transition-all cursor-pointer">
               <p className="text-xl font-bold text-amber-400">{iidseStats.detective_chat?.total_sessions || 0}</p>
               <p className="text-[10px] text-dark-400">Chat Sessions</p>
             </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <div className="bg-dark-800 rounded-xl p-3">
+            <div onClick={(e) => { e.stopPropagation(); navigate('/forensics/iidse'); }} className="bg-dark-800 rounded-xl p-3 hover:border-purple-500/40 hover:bg-purple-500/5 border border-transparent transition-all cursor-pointer">
               <p className="text-xs text-dark-400 mb-1">Cases with Memory</p>
               <p className="text-sm font-bold text-white">{iidseStats.investigation_memory?.cases_with_memory || 0}</p>
             </div>
-            <div className="bg-dark-800 rounded-xl p-3">
+            <div onClick={(e) => { e.stopPropagation(); navigate('/forensics/iidse'); }} className="bg-dark-800 rounded-xl p-3 hover:border-purple-500/40 hover:bg-purple-500/5 border border-transparent transition-all cursor-pointer">
               <p className="text-xs text-dark-400 mb-1">Cases with Correlations</p>
               <p className="text-sm font-bold text-white">{iidseStats.correlations?.cases_with_correlations || 0}</p>
             </div>
-            <div className="bg-dark-800 rounded-xl p-3">
+            <div onClick={(e) => { e.stopPropagation(); navigate('/forensics/iidse'); }} className="bg-dark-800 rounded-xl p-3 hover:border-purple-500/40 hover:bg-purple-500/5 border border-transparent transition-all cursor-pointer">
               <p className="text-xs text-dark-400 mb-1">Avg Messages/Session</p>
               <p className="text-sm font-bold text-white">{iidseStats.detective_chat?.avg_messages_per_session || 0}</p>
             </div>
@@ -325,7 +331,7 @@ export default function AdminDashboard() {
               <p className="text-xs text-dark-400 uppercase tracking-wider mb-2">Memory by Type</p>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(iidseStats.investigation_memory.by_type).map(([type, count]) => (
-                  <span key={type} className="text-[10px] px-2 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20">
+                  <span key={type} onClick={(e) => { e.stopPropagation(); navigate('/forensics/iidse'); }} className="text-[10px] px-2 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500/20 transition-all cursor-pointer">
                     {type} ({count as number})
                   </span>
                 ))}
