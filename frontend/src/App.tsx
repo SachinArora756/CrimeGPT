@@ -53,7 +53,7 @@ const PendingApprovalPage = lazyRetry(() => import('./pages/PendingApprovalPage'
 const CriminalIntelDashboard = lazyRetry(() => import('./pages/criminal-intel/CriminalIntelDashboard'))
 const CriminalProfilesPage = lazyRetry(() => import('./pages/criminal-intel/CriminalProfilesPage'))
 const CriminalProfileDetailPage = lazyRetry(() => import('./pages/criminal-intel/CriminalProfileDetailPage'))
-const WatchlistPage = lazyRetry(() => import('./pages/criminal-intel/WatchlistPage'))
+const OsintHubPage = lazyRetry(() => import('./pages/criminal-intel/OsintHubPage'))
 const AddCriminalPage = lazyRetry(() => import('./pages/criminal-intel/AddCriminalPage'))
 
 const ForensicsDashboard = lazyRetry(() => import('./pages/forensics/ForensicsDashboard'))
@@ -264,7 +264,7 @@ export default function App() {
             <Route path="/criminal-intel/profiles" element={<ForensicsRoute><Layout><CriminalProfilesPage /></Layout></ForensicsRoute>} />
             <Route path="/criminal-intel/profiles/new" element={<ForensicsRoute><Layout><AddCriminalPage /></Layout></ForensicsRoute>} />
             <Route path="/criminal-intel/profiles/:criminalId" element={<ForensicsRoute><Layout><CriminalProfileDetailPage /></Layout></ForensicsRoute>} />
-            <Route path="/criminal-intel/watchlist" element={<ForensicsRoute><Layout><WatchlistPage /></Layout></ForensicsRoute>} />
+            <Route path="/criminal-intel/osint" element={<ForensicsRoute><Layout><OsintHubPage /></Layout></ForensicsRoute>} />
 
             {/* Digital Forensics Toolkit routes */}
             <Route path="/forensics" element={<ForensicsRoute><Layout><ForensicsDashboard /></Layout></ForensicsRoute>} />

@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  Skull, AlertTriangle, Eye, Users, TrendingUp,
-  Search, Shield, Fingerprint, MapPin, Clock
+  Skull, AlertTriangle, Globe, Users, TrendingUp,
+  Search, Shield, Fingerprint, Clock
 } from 'lucide-react'
 import api from '../../api/client'
 
@@ -150,7 +150,7 @@ export default function CriminalIntelDashboard() {
           { label: 'Total Criminals', value: stats?.total ?? 0, icon: Users, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20' },
           { label: 'Wanted', value: stats?.wanted ?? 0, icon: AlertTriangle, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20' },
           { label: 'Most Wanted', value: stats?.most_wanted ?? 0, icon: Shield, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' },
-          { label: 'On Watchlist', value: 0, icon: Eye, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+          { label: 'OSINT Searches', value: 0, icon: Globe, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
         ].map((stat, i) => (
           <motion.div
             key={stat.label}
@@ -386,15 +386,15 @@ export default function CriminalIntelDashboard() {
           </div>
         </button>
         <button
-          onClick={() => navigate('/criminal-intel/watchlist')}
+          onClick={() => navigate('/criminal-intel/osint')}
           className="flex items-center gap-3 p-4 rounded-xl bg-dark-800/50 border border-dark-700/50 hover:border-emerald-500/30 transition-all group"
         >
-          <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center group-hover:bg-red-500/20 transition-colors">
-            <MapPin className="w-5 h-5 text-red-400" />
+          <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center group-hover:bg-cyan-500/20 transition-colors">
+            <Globe className="w-5 h-5 text-cyan-400" />
           </div>
           <div className="text-left">
-            <p className="text-sm font-medium text-white">Watchlist Alerts</p>
-            <p className="text-xs text-dark-400">Monitor high-priority targets</p>
+            <p className="text-sm font-medium text-white">OSINT Hub</p>
+            <p className="text-xs text-dark-400">AI-powered intelligence gathering</p>
           </div>
         </button>
       </div>

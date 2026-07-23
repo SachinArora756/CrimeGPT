@@ -20,7 +20,7 @@ import {
   Bookmark,
   Clock,
   Skull,
-  Eye,
+  Globe,
   Wrench,
   ChevronsLeft,
   ChevronsRight,
@@ -52,7 +52,7 @@ const adminNavItems = [
 const criminalIntelItems = [
   { path: '/criminal-intel', icon: Skull, label: 'Intelligence Hub' },
   { path: '/criminal-intel/profiles', icon: Search, label: 'Criminal Profiles' },
-  { path: '/criminal-intel/watchlist', icon: Eye, label: 'Watchlist' },
+  { path: '/criminal-intel/osint', icon: Globe, label: 'OSINT Hub' },
 ]
 
 const forensicsItems = [

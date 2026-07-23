@@ -105,6 +105,8 @@ async def _ensure_schema_columns():
         "ALTER TABLE criminal_profiles ADD COLUMN IF NOT EXISTS marked_most_wanted_at TIMESTAMP",
         "ALTER TABLE criminal_profiles ADD COLUMN IF NOT EXISTS gang_marked_by INTEGER REFERENCES users(id)",
         "ALTER TABLE criminal_profiles ADD COLUMN IF NOT EXISTS gang_marked_at TIMESTAMP",
+        # Remove old watchlist table (replaced by osint_investigations)
+        "DROP TABLE IF EXISTS criminal_watchlist",
     ]
     async with engine.begin() as conn:
         for stmt in migrations:

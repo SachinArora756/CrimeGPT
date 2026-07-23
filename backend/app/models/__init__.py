@@ -7,7 +7,7 @@ from app.models.criminal_intelligence import (
     CriminalDNAProfile, CriminalAlias, CriminalAddress, CriminalVehicle,
     CriminalPhoneNumber, CriminalSocialAccount, CriminalAssociate,
     CriminalCaseHistory, CriminalImage, CriminalDocument,
-    CriminalTimeline, CriminalSearchLog, CriminalWatchlist,
+    CriminalTimeline, CriminalSearchLog, OsintInvestigation,
 )
 from app.models.forensic_toolkit import (
     ForensicToolDefinition, ForensicToolExecution, ForensicSavedResult,

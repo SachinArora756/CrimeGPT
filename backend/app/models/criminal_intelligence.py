@@ -338,17 +338,46 @@ class CriminalSearchLog(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
 
-class CriminalWatchlist(Base):
-    __tablename__ = "criminal_watchlist"
+class OsintIdentifierType(str, enum.Enum):
+    PHONE = "phone"
+    EMAIL = "email"
+    USERNAME = "username"
+    VEHICLE_PLATE = "vehicle_plate"
+    IP_DOMAIN = "ip_domain"
+    PERSON_NAME = "person_name"
+
+
+class OsintFindingStatus(str, enum.Enum):
+    UNVERIFIED = "unverified"
+    VERIFIED = "verified"
+    REJECTED = "rejected"
+
+
+class OsintInvestigation(Base):
+    __tablename__ = "osint_investigations"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    criminal_id: Mapped[int] = mapped_column(ForeignKey("criminal_profiles.id", ondelete="CASCADE"), index=True)
-    added_by: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
-    reason: Mapped[str] = mapped_column(Text)
-    priority: Mapped[str] = mapped_column(String(20), default="medium")
-    alert_on_match: Mapped[bool] = mapped_column(Boolean, default=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    identifier_type: Mapped[OsintIdentifierType] = mapped_column(
+        SAEnum(OsintIdentifierType, native_enum=False, length=20)
+    )
+    identifier_value: Mapped[str] = mapped_column(String(500), index=True)
+    findings: Mapped[dict] = mapped_column(JSON)
+    officer_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    overall_status: Mapped[OsintFindingStatus] = mapped_column(
+        SAEnum(OsintFindingStatus, native_enum=False, length=20),
+        default=OsintFindingStatus.UNVERIFIED,
+    )
+    finding_statuses: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    linked_criminal_id: Mapped[int | None] = mapped_column(
+        ForeignKey("criminal_profiles.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    searched_by: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    ip_address: Mapped[str | None] = mapped_column(String(45), nullable=True)
+    ai_model_used: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    ai_generation_time_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    criminal = relationship("CriminalProfile")
+    __table_args__ = (
+        Index("ix_osint_investigations_type_value", "identifier_type", "identifier_value"),
+    )

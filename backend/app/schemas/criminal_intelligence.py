@@ -358,30 +358,56 @@ class VehicleResponse(BaseModel):
     created_at: datetime
 
 
-# ─── Watchlist Schemas ───────────────────────────────────────────────────────────
+# ─── OSINT Schemas ───────────────────────────────────────────────────────────────
 
-class WatchlistCreate(BaseModel):
-    criminal_id: int
-    reason: str = Field(..., min_length=5)
-    priority: str = Field(default="medium", max_length=20)
-    alert_on_match: bool = True
-    expires_at: datetime | None = None
+class OsintSearchRequest(BaseModel):
+    identifier_type: str = Field(..., pattern="^(phone|email|username|vehicle_plate|ip_domain|person_name)$")
+    identifier_value: str = Field(..., min_length=2, max_length=500)
 
 
-class WatchlistResponse(BaseModel):
+class OsintFindingUpdate(BaseModel):
+    finding_statuses: dict[str, str] | None = None
+    officer_notes: str | None = None
+    overall_status: str | None = Field(None, pattern="^(unverified|verified|rejected)$")
+
+
+class OsintLinkProfile(BaseModel):
+    criminal_profile_id: int
+
+
+class OsintInvestigationResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    criminal_id: int
-    criminal_name: str | None = None
-    criminal_profile_id: str | None = None
-    added_by: int
-    reason: str
-    priority: str
-    alert_on_match: bool
-    is_active: bool
-    expires_at: datetime | None = None
+    identifier_type: str
+    identifier_value: str
+    findings: dict
+    officer_notes: str | None = None
+    overall_status: str
+    finding_statuses: dict | None = None
+    linked_criminal_id: int | None = None
+    searched_by: int
+    ai_model_used: str | None = None
+    ai_generation_time_ms: int | None = None
     created_at: datetime
+    updated_at: datetime
+
+
+class OsintInvestigationListItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    identifier_type: str
+    identifier_value: str
+    overall_status: str
+    linked_criminal_id: int | None = None
+    searched_by: int
+    created_at: datetime
+
+
+class OsintInvestigationListResponse(BaseModel):
+    items: list[OsintInvestigationListItem]
+    total: int
 
 
 # ─── Search Log Schema ───────────────────────────────────────────────────────────

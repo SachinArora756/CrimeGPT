@@ -13,7 +13,7 @@ from app.models.criminal_intelligence import (
     CriminalDNAProfile, CriminalAlias, CriminalAddress, CriminalVehicle,
     CriminalPhoneNumber, CriminalSocialAccount, CriminalAssociate,
     CriminalCaseHistory, CriminalImage, CriminalDocument, CriminalTimeline,
-    CriminalSearchLog, CriminalWatchlist,
+    CriminalSearchLog, OsintInvestigation, OsintFindingStatus,
     DangerLevel, WantedStatus, Gender,
 )
 from app.schemas.criminal_intelligence import (
@@ -26,7 +26,8 @@ from app.schemas.criminal_intelligence import (
     TimelineCreate, TimelineResponse,
     AddressCreate, AddressResponse,
     VehicleCreate, VehicleResponse,
-    WatchlistCreate, WatchlistResponse,
+    OsintSearchRequest, OsintFindingUpdate, OsintLinkProfile,
+    OsintInvestigationResponse, OsintInvestigationListItem, OsintInvestigationListResponse,
     FaceEmbeddingResponse, FingerprintResponse,
     DNAProfileCreate, DNAProfileResponse,
 )
@@ -260,109 +261,166 @@ async def get_criminal_stats(
     )
 
 
-# ─── Watchlist (must be before /{criminal_id} to avoid route conflict) ──────────
+# ─── OSINT Investigation (must be before /{criminal_id} to avoid route conflict) ─
 
-@router.get("/watchlist", response_model=list[WatchlistResponse])
+@router.post("/osint/search", response_model=OsintInvestigationResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
+async def osint_search(
+    request: Request,
+    data: OsintSearchRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = role_dependency,
+):
+    """Run an AI-powered OSINT search and save results."""
+    import time
+    from app.services.osint_service import generate_osint_findings
+
+    start_time = time.time()
+    findings, model_used = await generate_osint_findings(data.identifier_type, data.identifier_value)
+    generation_time_ms = int((time.time() - start_time) * 1000)
+
+    client_ip = request.client.host if request.client else None
+
+    investigation = OsintInvestigation(
+        identifier_type=data.identifier_type,
+        identifier_value=data.identifier_value,
+        findings=findings,
+        searched_by=current_user.id,
+        ip_address=client_ip,
+        ai_model_used=model_used,
+        ai_generation_time_ms=generation_time_ms,
+    )
+    db.add(investigation)
+    await db.commit()
+    await db.refresh(investigation)
+
+    return OsintInvestigationResponse.model_validate(investigation)
+
+
+@router.get("/osint", response_model=OsintInvestigationListResponse)
 @limiter.limit("60/minute")
-async def get_watchlist(
+async def list_osint_investigations(
     request: Request,
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
+    identifier_type: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = role_dependency,
 ):
-    """Get active watchlist entries with criminal name."""
-    result = await db.execute(
-        select(CriminalWatchlist)
-        .where(CriminalWatchlist.is_active == True)
-        .order_by(desc(CriminalWatchlist.created_at))
-        .offset((page - 1) * per_page)
-        .limit(per_page)
-    )
-    entries = result.scalars().all()
+    """List OSINT investigations with optional type filter."""
+    query = select(OsintInvestigation).order_by(desc(OsintInvestigation.created_at))
+    count_query = select(func.count(OsintInvestigation.id))
 
-    items = []
-    for entry in entries:
-        profile_result = await db.execute(
-            select(CriminalProfile.full_name, CriminalProfile.criminal_id)
-            .where(CriminalProfile.id == entry.criminal_id)
-        )
-        profile_row = profile_result.first()
-        resp = WatchlistResponse.model_validate(entry)
-        if profile_row:
-            resp.criminal_name = profile_row[0]
-            resp.criminal_profile_id = profile_row[1]
-        items.append(resp)
+    if identifier_type:
+        query = query.where(OsintInvestigation.identifier_type == identifier_type)
+        count_query = count_query.where(OsintInvestigation.identifier_type == identifier_type)
 
-    return items
+    total_result = await db.execute(count_query)
+    total = total_result.scalar() or 0
+
+    result = await db.execute(query.offset((page - 1) * per_page).limit(per_page))
+    items = [OsintInvestigationListItem.model_validate(r) for r in result.scalars().all()]
+
+    return OsintInvestigationListResponse(items=items, total=total)
 
 
-@router.post("/watchlist", response_model=WatchlistResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("20/minute")
-async def add_to_watchlist(
-    request: Request,
-    data: WatchlistCreate,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = role_dependency,
-):
-    """Add a criminal to the watchlist."""
-    criminal_result = await db.execute(
-        select(CriminalProfile).where(CriminalProfile.id == data.criminal_id)
-    )
-    if criminal_result.scalar_one_or_none() is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Criminal profile not found",
-        )
-
-    existing = await db.execute(
-        select(CriminalWatchlist).where(
-            CriminalWatchlist.criminal_id == data.criminal_id,
-            CriminalWatchlist.is_active == True,
-        )
-    )
-    if existing.scalar_one_or_none() is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Criminal is already on the active watchlist",
-        )
-
-    entry = CriminalWatchlist(
-        criminal_id=data.criminal_id,
-        added_by=current_user.id,
-        reason=data.reason,
-        priority=data.priority,
-        alert_on_match=data.alert_on_match,
-        expires_at=data.expires_at,
-    )
-    db.add(entry)
-    await db.commit()
-    await db.refresh(entry)
-
-    return WatchlistResponse.model_validate(entry)
-
-
-@router.delete("/watchlist/{id}", status_code=status.HTTP_204_NO_CONTENT)
-@limiter.limit("20/minute")
-async def remove_from_watchlist(
+@router.get("/osint/{id}", response_model=OsintInvestigationResponse)
+@limiter.limit("60/minute")
+async def get_osint_investigation(
     request: Request,
     id: int,
     db: AsyncSession = Depends(get_db),
     current_user: User = role_dependency,
 ):
-    """Remove a criminal from the watchlist (soft-delete by deactivating)."""
+    """Get a single OSINT investigation by ID."""
     result = await db.execute(
-        select(CriminalWatchlist).where(CriminalWatchlist.id == id)
+        select(OsintInvestigation).where(OsintInvestigation.id == id)
     )
-    entry = result.scalar_one_or_none()
+    investigation = result.scalar_one_or_none()
+    if investigation is None:
+        raise HTTPException(status_code=404, detail="Investigation not found")
+    return OsintInvestigationResponse.model_validate(investigation)
 
-    if entry is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Watchlist entry not found",
-        )
 
-    entry.is_active = False
+@router.patch("/osint/{id}", response_model=OsintInvestigationResponse)
+@limiter.limit("30/minute")
+async def update_osint_investigation(
+    request: Request,
+    id: int,
+    data: OsintFindingUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = role_dependency,
+):
+    """Update finding statuses, notes, or overall status."""
+    result = await db.execute(
+        select(OsintInvestigation).where(OsintInvestigation.id == id)
+    )
+    investigation = result.scalar_one_or_none()
+    if investigation is None:
+        raise HTTPException(status_code=404, detail="Investigation not found")
+
+    if data.finding_statuses is not None:
+        existing = investigation.finding_statuses or {}
+        existing.update(data.finding_statuses)
+        investigation.finding_statuses = existing
+    if data.officer_notes is not None:
+        investigation.officer_notes = data.officer_notes
+    if data.overall_status is not None:
+        investigation.overall_status = data.overall_status
+
+    investigation.updated_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(investigation)
+    return OsintInvestigationResponse.model_validate(investigation)
+
+
+@router.post("/osint/{id}/link-profile", response_model=OsintInvestigationResponse)
+@limiter.limit("20/minute")
+async def link_osint_to_profile(
+    request: Request,
+    id: int,
+    data: OsintLinkProfile,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = role_dependency,
+):
+    """Link an OSINT investigation to a criminal profile."""
+    result = await db.execute(
+        select(OsintInvestigation).where(OsintInvestigation.id == id)
+    )
+    investigation = result.scalar_one_or_none()
+    if investigation is None:
+        raise HTTPException(status_code=404, detail="Investigation not found")
+
+    profile_result = await db.execute(
+        select(CriminalProfile).where(CriminalProfile.id == data.criminal_profile_id)
+    )
+    if profile_result.scalar_one_or_none() is None:
+        raise HTTPException(status_code=404, detail="Criminal profile not found")
+
+    investigation.linked_criminal_id = data.criminal_profile_id
+    investigation.updated_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(investigation)
+    return OsintInvestigationResponse.model_validate(investigation)
+
+
+@router.delete("/osint/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("20/minute")
+async def delete_osint_investigation(
+    request: Request,
+    id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = role_dependency,
+):
+    """Delete an OSINT investigation."""
+    result = await db.execute(
+        select(OsintInvestigation).where(OsintInvestigation.id == id)
+    )
+    investigation = result.scalar_one_or_none()
+    if investigation is None:
+        raise HTTPException(status_code=404, detail="Investigation not found")
+
+    await db.delete(investigation)
     await db.commit()
     return None
 
