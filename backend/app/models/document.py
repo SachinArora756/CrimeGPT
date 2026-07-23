@@ -27,6 +27,7 @@ class Document(Base):
     doc_type: Mapped[DocType] = mapped_column(SAEnum(DocType, native_enum=False, length=30))
     output_format: Mapped[str] = mapped_column(String(10), default="docx")
     file_path: Mapped[str] = mapped_column(String(500))
+    file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     generated_by: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     generated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

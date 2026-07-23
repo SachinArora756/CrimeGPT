@@ -16,6 +16,7 @@ class DocumentResponse(BaseModel):
     doc_type: DocType
     output_format: str = "docx"
     file_path: str
+    file_hash: str | None = None
     generated_by: int
     generated_at: datetime
 

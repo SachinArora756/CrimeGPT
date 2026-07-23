@@ -76,6 +76,8 @@ async def list_criminals(
     wanted_status: WantedStatus | None = None,
     danger_level: DangerLevel | None = None,
     crime_category: str | None = Query(default=None, max_length=100),
+    state: str | None = Query(default=None, max_length=100),
+    district: str | None = Query(default=None, max_length=100),
     db: AsyncSession = Depends(get_db),
     current_user: User = role_dependency,
 ):
@@ -103,6 +105,10 @@ async def list_criminals(
         query = query.where(
             CriminalProfile.crime_categories.cast(str).ilike(f"%{crime_category}%")
         )
+    if state:
+        query = query.where(CriminalProfile.last_known_state == state)
+    if district:
+        query = query.where(CriminalProfile.last_known_district == district)
 
     # Count total
     count_query = select(func.count()).select_from(query.subquery())
@@ -140,6 +146,8 @@ async def list_criminals(
             total_arrests=profile.total_arrests,
             total_firs=profile.total_firs,
             crime_categories=profile.crime_categories,
+            last_known_state=profile.last_known_state,
+            last_known_district=profile.last_known_district,
             primary_image_url=primary_image,
             created_at=profile.created_at,
         ))
@@ -430,6 +438,21 @@ async def get_criminal_profile(
             items.append(d)
         return items
 
+    # Resolve accountability user names
+    marked_mw_name = None
+    if profile.marked_most_wanted_by:
+        mw_user = await db.execute(
+            select(User.full_name).where(User.id == profile.marked_most_wanted_by)
+        )
+        marked_mw_name = mw_user.scalar_one_or_none()
+
+    gang_marked_name = None
+    if profile.gang_marked_by:
+        gm_user = await db.execute(
+            select(User.full_name).where(User.id == profile.gang_marked_by)
+        )
+        gang_marked_name = gm_user.scalar_one_or_none()
+
     return CriminalProfileDetailResponse(
         id=profile.id,
         criminal_id=profile.criminal_id,
@@ -470,6 +493,14 @@ async def get_criminal_profile(
         is_active=profile.is_active,
         added_by=profile.added_by,
         station_id=profile.station_id,
+        last_known_state=profile.last_known_state,
+        last_known_district=profile.last_known_district,
+        marked_most_wanted_by=profile.marked_most_wanted_by,
+        marked_most_wanted_at=profile.marked_most_wanted_at,
+        marked_most_wanted_by_name=marked_mw_name,
+        gang_marked_by=profile.gang_marked_by,
+        gang_marked_at=profile.gang_marked_at,
+        gang_marked_by_name=gang_marked_name,
         created_at=profile.created_at,
         updated_at=profile.updated_at,
         face_embeddings_count=face_count.scalar() or 0,
@@ -536,8 +567,17 @@ async def create_criminal_profile(
         bail_status=data.bail_status,
         notes=data.notes,
         station_id=data.station_id,
+        last_known_state=data.last_known_state,
+        last_known_district=data.last_known_district,
         added_by=current_user.id,
     )
+
+    if data.wanted_status == WantedStatus.MOST_WANTED:
+        profile.marked_most_wanted_by = current_user.id
+        profile.marked_most_wanted_at = datetime.utcnow()
+    if data.gang_name:
+        profile.gang_marked_by = current_user.id
+        profile.gang_marked_at = datetime.utcnow()
 
     db.add(profile)
     await db.commit()
@@ -561,6 +601,17 @@ async def update_criminal_profile(
     profile = await _get_criminal_by_criminal_id(db, criminal_id)
 
     update_data = data.model_dump(exclude_unset=True)
+
+    if "wanted_status" in update_data and update_data["wanted_status"] == WantedStatus.MOST_WANTED:
+        if profile.wanted_status != WantedStatus.MOST_WANTED:
+            profile.marked_most_wanted_by = current_user.id
+            profile.marked_most_wanted_at = datetime.utcnow()
+
+    if "gang_name" in update_data and update_data["gang_name"]:
+        if not profile.gang_name or profile.gang_name != update_data["gang_name"]:
+            profile.gang_marked_by = current_user.id
+            profile.gang_marked_at = datetime.utcnow()
+
     for field, value in update_data.items():
         setattr(profile, field, value)
 

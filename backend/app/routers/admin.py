@@ -3,19 +3,28 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 import httpx
 
+from datetime import datetime
 from app.database import get_db
-from app.models.user import User, UserRole
+from app.models.user import User, UserRole, UserStatus
 from app.models.case import Case, CaseStatus
 from app.models.evidence import Evidence
 from app.models.document import Document
 from app.schemas.admin import (
-    AdminUserCreate,
     AdminUserUpdate,
-    AdminPasswordReset,
     UserListResponse,
     UserDetailResponse,
     SystemStats,
     SystemHealth,
+)
+from app.schemas.registration import (
+    PendingRegistrationResponse,
+    RegistrationStatsResponse,
+    ApprovalAction,
+)
+from app.services.email_service import (
+    send_approval_email,
+    send_rejection_email,
+    send_suspension_email,
 )
 from app.services.auth_service import (
     hash_password,
@@ -29,33 +38,6 @@ from app.models.notification import NotificationType
 
 router = APIRouter()
 
-
-@router.post("/users", response_model=UserDetailResponse, status_code=status.HTTP_201_CREATED)
-async def create_user(
-    user_data: AdminUserCreate,
-    db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_admin),
-):
-    existing = await db.execute(
-        select(User).where((User.username == user_data.username) | (User.email == user_data.email))
-    )
-    if existing.scalar_one_or_none():
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username or email already exists")
-
-    user = User(
-        username=user_data.username,
-        email=user_data.email,
-        hashed_password=hash_password(user_data.password),
-        full_name=user_data.full_name,
-        role=user_data.role,
-        station_id=user_data.station_id,
-        department=user_data.department,
-        badge_number=user_data.badge_number,
-    )
-    db.add(user)
-    await db.commit()
-    await db.refresh(user)
-    return UserDetailResponse.model_validate(user)
 
 
 @router.get("/users", response_model=UserListResponse)
@@ -131,28 +113,6 @@ async def update_user(
     await db.refresh(user)
     return UserDetailResponse.model_validate(user)
 
-
-@router.post("/users/{user_id}/reset-password", status_code=status.HTTP_200_OK)
-async def reset_password(
-    *,
-    user_id: int = Path(ge=1),
-    body: AdminPasswordReset,
-    db: AsyncSession = Depends(get_db),
-    admin: User = Depends(require_admin),
-):
-    result = await db.execute(select(User).where(User.id == user_id))
-    user = result.scalar_one_or_none()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-
-    from datetime import datetime
-    user.hashed_password = hash_password(body.new_password)
-    user.failed_login_attempts = 0
-    user.account_locked = False
-    user.force_password_change = True
-    user.password_changed_at = datetime.utcnow()
-    await db.commit()
-    return {"message": "Password reset successfully"}
 
 
 @router.put("/users/{user_id}/toggle-active", response_model=UserDetailResponse)
@@ -683,3 +643,181 @@ async def get_iidse_stats(
             "executive_summary_active": True,
         },
     }
+
+
+# ==================== Registration Management ====================
+
+
+@router.get("/registrations/stats", response_model=RegistrationStatsResponse)
+async def get_registration_stats(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Get counts of registrations by status."""
+    pending = await db.execute(select(func.count(User.id)).where(User.status == UserStatus.PENDING))
+    active = await db.execute(select(func.count(User.id)).where(User.status == UserStatus.ACTIVE))
+    suspended = await db.execute(select(func.count(User.id)).where(User.status == UserStatus.SUSPENDED))
+    rejected = await db.execute(select(func.count(User.id)).where(User.status == UserStatus.REJECTED))
+    total = await db.execute(select(func.count(User.id)))
+
+    return RegistrationStatsResponse(
+        pending=pending.scalar() or 0,
+        active=active.scalar() or 0,
+        suspended=suspended.scalar() or 0,
+        rejected=rejected.scalar() or 0,
+        total=total.scalar() or 0,
+    )
+
+
+@router.get("/registrations", response_model=list[PendingRegistrationResponse])
+async def list_registrations(
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+    status_filter: str | None = Query(None, alias="status"),
+    search: str | None = Query(None),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+):
+    """List registrations with optional status filter."""
+    query = select(User)
+
+    if status_filter:
+        query = query.where(User.status == status_filter)
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.where(
+            (User.full_name.ilike(search_term)) |
+            (User.email.ilike(search_term)) |
+            (User.username.ilike(search_term)) |
+            (User.badge_number.ilike(search_term))
+        )
+
+    query = query.order_by(User.created_at.desc())
+    query = query.offset((page - 1) * per_page).limit(per_page)
+
+    result = await db.execute(query)
+    users = result.scalars().all()
+
+    return [
+        PendingRegistrationResponse(
+            id=u.id,
+            username=u.username,
+            email=u.email,
+            full_name=u.full_name,
+            role=u.role.value if hasattr(u.role, "value") else u.role,
+            station_id=u.station_id,
+            department=u.department,
+            badge_number=u.badge_number,
+            mobile_number=getattr(u, "mobile_number", None),
+            status=u.status if isinstance(u.status, str) else u.status.value,
+            email_verified=getattr(u, "email_verified", True),
+            admin_approved=getattr(u, "admin_approved", True),
+            created_at=u.created_at,
+        )
+        for u in users
+    ]
+
+
+@router.get("/registrations/{user_id}", response_model=PendingRegistrationResponse)
+async def get_registration_detail(
+    user_id: int = Path(..., ge=1),
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Get detailed info about a specific registration."""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return PendingRegistrationResponse(
+        id=user.id,
+        username=user.username,
+        email=user.email,
+        full_name=user.full_name,
+        role=user.role.value if hasattr(user.role, "value") else user.role,
+        station_id=user.station_id,
+        department=user.department,
+        badge_number=user.badge_number,
+        mobile_number=getattr(user, "mobile_number", None),
+        status=user.status if isinstance(user.status, str) else user.status.value,
+        email_verified=getattr(user, "email_verified", True),
+        admin_approved=getattr(user, "admin_approved", True),
+        created_at=user.created_at,
+    )
+
+
+@router.post("/registrations/{user_id}/action")
+async def registration_action(
+    action_data: ApprovalAction,
+    user_id: int = Path(..., ge=1),
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Approve, reject, suspend, or reactivate a registration."""
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.id == admin.id:
+        raise HTTPException(status_code=400, detail="Cannot modify your own registration")
+
+    action = action_data.action
+
+    if action == "approve":
+        if getattr(user, "status", None) not in (UserStatus.PENDING, "pending", UserStatus.SUSPENDED, "suspended"):
+            raise HTTPException(status_code=400, detail="User is not in a state that can be approved")
+        user.status = UserStatus.ACTIVE
+        user.admin_approved = True
+        user.is_active = True
+        user.force_password_change = True
+        user.approved_by = admin.id
+        user.approved_at = datetime.utcnow()
+        user.rejected_reason = None
+        await db.commit()
+        try:
+            await send_approval_email(user.email, user.full_name)
+        except Exception:
+            pass
+        return {"message": f"User {user.username} has been approved", "status": "active"}
+
+    elif action == "reject":
+        if getattr(user, "status", None) not in (UserStatus.PENDING, "pending"):
+            raise HTTPException(status_code=400, detail="Only pending users can be rejected")
+        user.status = UserStatus.REJECTED
+        user.is_active = False
+        user.rejected_reason = action_data.reason
+        await db.commit()
+        try:
+            await send_rejection_email(user.email, user.full_name, action_data.reason)
+        except Exception:
+            pass
+        return {"message": f"User {user.username} has been rejected", "status": "rejected"}
+
+    elif action == "suspend":
+        if getattr(user, "status", None) not in (UserStatus.ACTIVE, "active"):
+            raise HTTPException(status_code=400, detail="Only active users can be suspended")
+        user.status = UserStatus.SUSPENDED
+        user.is_active = False
+        await db.commit()
+        try:
+            await send_suspension_email(user.email, user.full_name)
+        except Exception:
+            pass
+        return {"message": f"User {user.username} has been suspended", "status": "suspended"}
+
+    elif action == "reactivate":
+        if getattr(user, "status", None) not in (UserStatus.SUSPENDED, "suspended", UserStatus.REJECTED, "rejected"):
+            raise HTTPException(status_code=400, detail="Only suspended or rejected users can be reactivated")
+        user.status = UserStatus.ACTIVE
+        user.is_active = True
+        user.admin_approved = True
+        user.rejected_reason = None
+        await db.commit()
+        try:
+            await send_approval_email(user.email, user.full_name)
+        except Exception:
+            pass
+        return {"message": f"User {user.username} has been reactivated", "status": "active"}

@@ -21,8 +21,8 @@ const ROLE_HIERARCHY: Record<UserRole, number> = {
   constable: 1,
 }
 
-const ADMIN_ROLES: UserRole[] = ['super_admin', 'commissioner']
-const OFFICER_ROLES: UserRole[] = ['acp', 'sho', 'inspector', 'sub_inspector', 'constable']
+const ADMIN_ROLES: UserRole[] = ['super_admin']
+const OFFICER_ROLES: UserRole[] = ['commissioner', 'acp', 'sho', 'inspector', 'sub_inspector', 'constable']
 
 export interface User {
   id: number

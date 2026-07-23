@@ -11,7 +11,7 @@ from app.config import settings
 from app.database import engine, Base, async_session
 from app.routers import auth, cases, evidence, documents, agents
 from app.routers import admin, notifications, timeline, chat, dashboard, legal
-from app.routers import legal_reasoning, users
+from app.routers import legal_reasoning, users, registration
 from app.routers import criminal_intelligence, forensic_toolkit, ai_investigation
 from app.routers import knowledge_base
 from app.middleware.audit import AuditMiddleware
@@ -84,6 +84,27 @@ async def _ensure_schema_columns():
         "ALTER TABLE ingestion_logs ADD COLUMN IF NOT EXISTS mime_type VARCHAR(100)",
         "ALTER TABLE ingestion_logs ADD COLUMN IF NOT EXISTS page_count INTEGER",
         "ALTER TABLE ingestion_logs ADD COLUMN IF NOT EXISTS embedding_model VARCHAR(100) DEFAULT 'BAAI/bge-small-en-v1.5'",
+        # Registration workflow columns
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'active'",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN DEFAULT true",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS admin_approved BOOLEAN DEFAULT true",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS approved_by INTEGER REFERENCES users(id)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS rejected_reason VARCHAR(500)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS mobile_number VARCHAR(15)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token_hash VARCHAR(64)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_expiry TIMESTAMP",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token_hash VARCHAR(64)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expiry TIMESTAMP",
+        # Document hash column
+        "ALTER TABLE documents ADD COLUMN IF NOT EXISTS file_hash VARCHAR(64)",
+        # Criminal Intelligence location & accountability columns
+        "ALTER TABLE criminal_profiles ADD COLUMN IF NOT EXISTS last_known_state VARCHAR(100)",
+        "ALTER TABLE criminal_profiles ADD COLUMN IF NOT EXISTS last_known_district VARCHAR(100)",
+        "ALTER TABLE criminal_profiles ADD COLUMN IF NOT EXISTS marked_most_wanted_by INTEGER REFERENCES users(id)",
+        "ALTER TABLE criminal_profiles ADD COLUMN IF NOT EXISTS marked_most_wanted_at TIMESTAMP",
+        "ALTER TABLE criminal_profiles ADD COLUMN IF NOT EXISTS gang_marked_by INTEGER REFERENCES users(id)",
+        "ALTER TABLE criminal_profiles ADD COLUMN IF NOT EXISTS gang_marked_at TIMESTAMP",
     ]
     async with engine.begin() as conn:
         for stmt in migrations:
@@ -95,6 +116,9 @@ async def _ensure_schema_columns():
         # Add unique index if not exists
         await conn.execute(text(
             "CREATE UNIQUE INDEX IF NOT EXISTS ix_cases_public_id ON cases(public_id)"
+        ))
+        await conn.execute(text(
+            "CREATE INDEX IF NOT EXISTS ix_criminal_profiles_location ON criminal_profiles(last_known_state, last_known_district)"
         ))
 
 
@@ -149,6 +173,7 @@ app.add_middleware(
 app.add_middleware(AuditMiddleware)
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(registration.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(cases.router, prefix="/api/cases", tags=["Cases"])
 app.include_router(evidence.router, prefix="/api/evidence", tags=["Evidence"])

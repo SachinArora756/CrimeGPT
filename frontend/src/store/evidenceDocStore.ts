@@ -23,6 +23,7 @@ export interface DocumentItem {
   case_id: number
   doc_type: string
   file_path: string
+  file_hash?: string | null
   generated_by: number
   generated_at: string
 }

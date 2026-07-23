@@ -42,6 +42,13 @@ const UserManagement = lazyRetry(() => import('./pages/admin/UserManagement'))
 const AuditLogs = lazyRetry(() => import('./pages/admin/AuditLogs'))
 const KnowledgeBase = lazyRetry(() => import('./pages/admin/KnowledgeBase'))
 const SendNotification = lazyRetry(() => import('./pages/admin/SendNotification'))
+const PendingRegistrations = lazyRetry(() => import('./pages/admin/PendingRegistrations'))
+
+const RegisterPage = lazyRetry(() => import('./pages/RegisterPage'))
+const VerifyEmailPage = lazyRetry(() => import('./pages/VerifyEmailPage'))
+const ForgotPasswordPage = lazyRetry(() => import('./pages/ForgotPasswordPage'))
+const ResetPasswordPage = lazyRetry(() => import('./pages/ResetPasswordPage'))
+const PendingApprovalPage = lazyRetry(() => import('./pages/PendingApprovalPage'))
 
 const CriminalIntelDashboard = lazyRetry(() => import('./pages/criminal-intel/CriminalIntelDashboard'))
 const CriminalProfilesPage = lazyRetry(() => import('./pages/criminal-intel/CriminalProfilesPage'))
@@ -204,6 +211,11 @@ export default function App() {
             {/* Public auth routes */}
             <Route path="/login" element={<PublicOnlyRoute><OfficerLoginPage /></PublicOnlyRoute>} />
             <Route path="/s9x" element={<PublicOnlyRoute><AdminLoginPage /></PublicOnlyRoute>} />
+            <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
+            <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
+            <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPasswordPage /></PublicOnlyRoute>} />
+            <Route path="/reset-password/:token" element={<PublicOnlyRoute><ResetPasswordPage /></PublicOnlyRoute>} />
+            <Route path="/pending-approval" element={<PendingApprovalPage />} />
 
             {/* Access Denied */}
             <Route path="/403" element={<AccessDeniedPage />} />
@@ -220,6 +232,7 @@ export default function App() {
             <Route path="/admin/audit" element={<AdminRoute><Layout><AuditLogs /></Layout></AdminRoute>} />
             <Route path="/admin/knowledge-base" element={<AdminRoute><Layout><KnowledgeBase /></Layout></AdminRoute>} />
             <Route path="/admin/notifications" element={<AdminRoute><Layout><SendNotification /></Layout></AdminRoute>} />
+            <Route path="/admin/registrations" element={<AdminRoute><Layout><PendingRegistrations /></Layout></AdminRoute>} />
             {/* Admin case routes — admin can view all case data */}
             <Route path="/admin/cases/:id" element={<AdminRoute><Layout><CaseDetailPage /></Layout></AdminRoute>} />
             <Route path="/admin/evidence/:caseId" element={<AdminRoute><Layout><EvidencePage /></Layout></AdminRoute>} />

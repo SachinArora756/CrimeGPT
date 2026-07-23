@@ -1,3 +1,4 @@
+import hashlib
 import os
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, status
 from fastapi.responses import FileResponse
@@ -75,6 +76,7 @@ async def list_my_documents(
             "doc_type": d.doc_type.value,
             "output_format": d.output_format,
             "file_path": d.file_path,
+            "file_hash": d.file_hash,
             "generated_by": d.generated_by,
             "generated_at": d.generated_at.isoformat() if d.generated_at else None,
         })
@@ -105,11 +107,18 @@ async def generate_document(
     except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Document generation failed")
 
+    sha = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            sha.update(chunk)
+    file_hash = sha.hexdigest()
+
     doc = Document(
         case_id=case.id,
         doc_type=doc_request.doc_type,
         output_format=doc_request.output_format,
         file_path=file_path,
+        file_hash=file_hash,
         generated_by=current_user.id,
     )
     db.add(doc)
@@ -217,3 +226,28 @@ async def get_diary_entries(
     )
     entries = result.scalars().all()
     return [CaseDiaryResponse.model_validate(e) for e in entries]
+
+
+@router.post("/recompute-hashes")
+async def recompute_document_hashes(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Backfill SHA-256 hashes for documents that don't have one yet."""
+    from app.models.user import UserRole
+    if current_user.role != UserRole.SUPER_ADMIN:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin only")
+
+    result = await db.execute(select(Document).where(Document.file_hash.is_(None)))
+    docs = result.scalars().all()
+    updated = 0
+    for doc in docs:
+        if os.path.exists(doc.file_path):
+            sha = hashlib.sha256()
+            with open(doc.file_path, "rb") as f:
+                for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                    sha.update(chunk)
+            doc.file_hash = sha.hexdigest()
+            updated += 1
+    await db.commit()
+    return {"updated": updated, "total_without_hash": len(docs)}

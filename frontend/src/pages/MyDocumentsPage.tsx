@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
-  FileText, Download, Search, Filter, Eye, Printer, Calendar, FolderOpen,
+  FileText, Download, Search, Filter, Eye, Printer, Calendar, FolderOpen, Hash,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
@@ -15,6 +15,7 @@ interface MyDocument {
   doc_type: string
   output_format: string
   file_path: string
+  file_hash: string | null
   generated_by: number
   generated_at: string | null
 }
@@ -187,6 +188,12 @@ export default function MyDocumentsPage() {
                       <span className="text-dark-500 flex items-center gap-1">
                         <Calendar className="w-3 h-3" />
                         {new Date(doc.generated_at).toLocaleDateString()}
+                      </span>
+                    )}
+                    {doc.file_hash && (
+                      <span className="text-dark-500 flex items-center gap-1 font-mono text-xs">
+                        <Hash className="w-3 h-3 text-green-500" />
+                        {doc.file_hash.slice(0, 16)}...
                       </span>
                     )}
                   </div>

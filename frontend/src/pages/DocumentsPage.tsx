@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { FileText, Download, Plus, Loader2, Scale, Stamp, Clock } from 'lucide-react'
+import { FileText, Download, Plus, Loader2, Scale, Stamp, Clock, Hash } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
 import { useEvidenceDocStore, DocumentItem } from '../store/evidenceDocStore'
@@ -164,6 +164,12 @@ export default function DocumentsPage() {
                         <Clock className="w-3 h-3" />
                         {new Date(doc.generated_at).toLocaleString()}
                       </p>
+                      {doc.file_hash && (
+                        <p className="text-dark-500 text-xs flex items-center gap-1 mt-0.5 font-mono">
+                          <Hash className="w-3 h-3 text-green-500" />
+                          {doc.file_hash.slice(0, 16)}...
+                        </p>
+                      )}
                     </div>
                   </div>
                   <button

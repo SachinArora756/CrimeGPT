@@ -9,6 +9,7 @@ import {
 } from 'lucide-react'
 import api from '../../api/client'
 import toast from 'react-hot-toast'
+import { INDIA_STATES_DISTRICTS, getDistrictsForState } from '../../data/indiaGeo'
 
 interface CriminalDetail {
   id: number
@@ -58,6 +59,14 @@ interface CriminalDetail {
   case_history: Array<{ fir_number: string | null; case_type: string; sections_applied: string[] | null; police_station: string | null; date_of_offense: string | null; case_status: string | null; verdict: string | null; sentence: string | null }>
   timeline: Array<{ event_date: string; event_type: string; title: string; description: string | null; location: string | null }>
   images: Array<{ id: number; image_path: string; image_type: string | null; description: string | null; created_at: string }>
+  last_known_state: string | null
+  last_known_district: string | null
+  marked_most_wanted_by: number | null
+  marked_most_wanted_at: string | null
+  marked_most_wanted_by_name: string | null
+  gang_marked_by: number | null
+  gang_marked_at: string | null
+  gang_marked_by_name: string | null
   created_at: string
 }
 
@@ -104,6 +113,8 @@ export default function CriminalProfileDetailPage() {
     reward_amount: '',
     notes: '',
     station_id: '',
+    last_known_state: '',
+    last_known_district: '',
   })
 
   const handleFaceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -232,6 +243,8 @@ export default function CriminalProfileDetailPage() {
       reward_amount: criminal.reward_amount?.toString() || '',
       notes: criminal.notes || '',
       station_id: '',
+      last_known_state: criminal.last_known_state || '',
+      last_known_district: criminal.last_known_district || '',
     })
     setEditing(true)
   }
@@ -284,6 +297,8 @@ export default function CriminalProfileDetailPage() {
       else payload.reward_amount = null
       if (editForm.notes) payload.notes = editForm.notes
       else payload.notes = null
+      if (editForm.last_known_state) payload.last_known_state = editForm.last_known_state
+      if (editForm.last_known_district) payload.last_known_district = editForm.last_known_district
 
       await api.put(`/api/criminal-intelligence/${criminalId}`, payload)
       toast.success('Criminal profile updated successfully')
@@ -390,6 +405,34 @@ export default function CriminalProfileDetailPage() {
         >
           <Trash2 className="w-5 h-5" />
         </button>
+      </div>
+
+      {/* Location & Accountability Banners */}
+      <div className="space-y-2">
+        {(criminal.last_known_state || criminal.last_known_district) && (
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/5 border border-blue-500/20">
+            <MapPin className="w-4 h-4 text-blue-400 flex-shrink-0" />
+            <span className="text-sm text-blue-300">
+              Last Known Location: <span className="font-medium text-white">{criminal.last_known_district}{criminal.last_known_state ? `, ${criminal.last_known_state}` : ''}</span>
+            </span>
+          </div>
+        )}
+        {criminal.marked_most_wanted_by_name && criminal.marked_most_wanted_at && (
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-500/5 border border-red-500/20">
+            <BadgeAlert className="w-4 h-4 text-red-400 flex-shrink-0" />
+            <span className="text-sm text-red-300">
+              Marked as <span className="font-semibold text-red-200">Most Wanted</span> by <span className="font-medium text-white">{criminal.marked_most_wanted_by_name}</span> on {new Date(criminal.marked_most_wanted_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+            </span>
+          </div>
+        )}
+        {criminal.gang_marked_by_name && criminal.gang_marked_at && (
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/5 border border-amber-500/20">
+            <Users className="w-4 h-4 text-amber-400 flex-shrink-0" />
+            <span className="text-sm text-amber-300">
+              Gang affiliation <span className="font-semibold text-amber-200">"{criminal.gang_name}"</span> marked by <span className="font-medium text-white">{criminal.gang_marked_by_name}</span> on {new Date(criminal.gang_marked_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Edit Form */}
@@ -512,6 +555,31 @@ export default function CriminalProfileDetailPage() {
             <div className="mt-3">
               <label className="block text-xs text-dark-300 mb-1">Modus Operandi</label>
               <textarea name="modus_operandi" value={editForm.modus_operandi} onChange={handleEditChange} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none h-20 resize-none" />
+            </div>
+          </div>
+
+          {/* Location */}
+          <div>
+            <h3 className="text-xs font-semibold text-emerald-400 mb-3">Location</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">State</label>
+                <select name="last_known_state" value={editForm.last_known_state} onChange={(e) => setEditForm(prev => ({ ...prev, last_known_state: e.target.value, last_known_district: '' }))} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none">
+                  <option value="">Select State</option>
+                  {INDIA_STATES_DISTRICTS.map(s => (
+                    <option key={s.name} value={s.name}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-dark-300 mb-1">District</label>
+                <select name="last_known_district" value={editForm.last_known_district} onChange={handleEditChange} disabled={!editForm.last_known_state} className="w-full bg-dark-800 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none disabled:opacity-40">
+                  <option value="">Select District</option>
+                  {editForm.last_known_state && getDistrictsForState(editForm.last_known_state).map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 

@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime
-from sqlalchemy import String, DateTime, Boolean, Integer, Enum as SAEnum
+from sqlalchemy import String, DateTime, Boolean, Integer, Enum as SAEnum, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -14,6 +14,13 @@ class UserRole(str, enum.Enum):
     INSPECTOR = "inspector"
     SUB_INSPECTOR = "sub_inspector"
     CONSTABLE = "constable"
+
+
+class UserStatus(str, enum.Enum):
+    PENDING = "pending"
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
+    REJECTED = "rejected"
 
 
 ROLE_HIERARCHY = {
@@ -44,6 +51,23 @@ class User(Base):
     department: Mapped[str | None] = mapped_column(String(100), nullable=True)
     badge_number: Mapped[str | None] = mapped_column(String(20), nullable=True, unique=True)
     is_active: Mapped[bool] = mapped_column(default=True)
+
+    # Registration workflow fields
+    status: Mapped[str] = mapped_column(String(20), default=UserStatus.ACTIVE)
+    email_verified: Mapped[bool] = mapped_column(Boolean, default=True)
+    admin_approved: Mapped[bool] = mapped_column(Boolean, default=True)
+    approved_by: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    rejected_reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    mobile_number: Mapped[str | None] = mapped_column(String(15), nullable=True)
+
+    # Email verification tokens
+    email_verification_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    email_verification_expiry: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
+    # Password reset tokens
+    password_reset_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    password_reset_expiry: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # Security fields
     failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0)

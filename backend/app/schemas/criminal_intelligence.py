@@ -48,6 +48,8 @@ class CriminalProfileCreate(BaseModel):
 
     notes: str | None = None
     station_id: str | None = Field(default=None, max_length=50)
+    last_known_state: str = Field(..., min_length=2, max_length=100)
+    last_known_district: str = Field(..., min_length=2, max_length=100)
 
 
 class CriminalProfileUpdate(BaseModel):
@@ -92,6 +94,8 @@ class CriminalProfileUpdate(BaseModel):
 
     notes: str | None = None
     station_id: str | None = Field(default=None, max_length=50)
+    last_known_state: str | None = Field(default=None, max_length=100)
+    last_known_district: str | None = Field(default=None, max_length=100)
 
 
 class CriminalProfileResponse(BaseModel):
@@ -142,6 +146,14 @@ class CriminalProfileResponse(BaseModel):
     is_active: bool
     added_by: int
     station_id: str | None = None
+    last_known_state: str | None = None
+    last_known_district: str | None = None
+    marked_most_wanted_by: int | None = None
+    marked_most_wanted_at: datetime | None = None
+    marked_most_wanted_by_name: str | None = None
+    gang_marked_by: int | None = None
+    gang_marked_at: datetime | None = None
+    gang_marked_by_name: str | None = None
 
     created_at: datetime
     updated_at: datetime
@@ -177,6 +189,8 @@ class CriminalProfileListItem(BaseModel):
     total_arrests: int
     total_firs: int
     crime_categories: Any | None = None
+    last_known_state: str | None = None
+    last_known_district: str | None = None
     primary_image_url: str | None = None
     created_at: datetime
 

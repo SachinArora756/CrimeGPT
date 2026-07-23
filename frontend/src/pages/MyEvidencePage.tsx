@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   HardDrive, Search, Filter, Eye, Calendar, FolderOpen,
-  Image, Video, FileText, Mic, Fingerprint, Database,
+  Image, Video, FileText, Mic, Fingerprint, Database, Hash,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
@@ -177,6 +177,12 @@ export default function MyEvidencePage() {
                         <span className="text-dark-500 text-xs flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
                           {new Date(ev.created_at).toLocaleDateString()}
+                        </span>
+                      )}
+                      {ev.file_hash && (
+                        <span className="text-dark-500 text-xs flex items-center gap-1 font-mono">
+                          <Hash className="w-3 h-3 text-green-500" />
+                          {ev.file_hash.slice(0, 16)}...
                         </span>
                       )}
                     </div>

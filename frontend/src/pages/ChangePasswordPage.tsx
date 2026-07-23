@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 import api from '../api/client'
 import { useAuthStore } from '../store/authStore'
 
-const ADMIN_ROLES = ['super_admin', 'commissioner']
+const ADMIN_ROLES = ['super_admin']
 
 interface PasswordRule {
   label: string

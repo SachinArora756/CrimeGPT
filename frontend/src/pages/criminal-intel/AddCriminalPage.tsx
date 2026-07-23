@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { ArrowLeft, Save, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../api/client'
+import { INDIA_STATES_DISTRICTS, getDistrictsForState } from '../../data/indiaGeo'
 
 const GENDER_OPTIONS = ['male', 'female', 'other']
 const DANGER_LEVELS = ['low', 'medium', 'high', 'critical']
@@ -45,6 +46,8 @@ export default function AddCriminalPage() {
     danger_level: 'low',
     notes: prefill?.case_fir ? `Linked to FIR: ${prefill.case_fir}` : '',
     station_id: prefill?.station_id || '',
+    last_known_state: '',
+    last_known_district: '',
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -55,6 +58,14 @@ export default function AddCriminalPage() {
     e.preventDefault()
     if (!form.full_name.trim()) {
       toast.error('Full name is required')
+      return
+    }
+    if (!form.last_known_state) {
+      toast.error('State is required')
+      return
+    }
+    if (!form.last_known_district) {
+      toast.error('District is required')
       return
     }
     setSaving(true)
@@ -68,6 +79,8 @@ export default function AddCriminalPage() {
         total_arrests: 0,
         total_convictions: 0,
         total_firs: 0,
+        last_known_state: form.last_known_state,
+        last_known_district: form.last_known_district,
       }
       if (form.father_name) payload.father_name = form.father_name
       if (form.date_of_birth) payload.date_of_birth = form.date_of_birth
@@ -175,6 +188,31 @@ export default function AddCriminalPage() {
           <div className="mt-4">
             <label className={labelClass}>Identifying Marks (comma-separated)</label>
             <input name="identifying_marks" value={form.identifying_marks} onChange={handleChange} className={inputClass} placeholder="Scar on left cheek, tattoo on right arm" />
+          </div>
+        </div>
+
+        {/* Location */}
+        <div className="bg-dark-900/80 border border-dark-700/50 rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-emerald-400 mb-4">Last Known Location *</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>State *</label>
+              <select name="last_known_state" value={form.last_known_state} onChange={(e) => { setForm(prev => ({ ...prev, last_known_state: e.target.value, last_known_district: '' })) }} className={inputClass} required>
+                <option value="">Select State</option>
+                {INDIA_STATES_DISTRICTS.map(s => (
+                  <option key={s.name} value={s.name}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>District *</label>
+              <select name="last_known_district" value={form.last_known_district} onChange={handleChange} className={inputClass} disabled={!form.last_known_state} required>
+                <option value="">Select District</option>
+                {form.last_known_state && getDistrictsForState(form.last_known_state).map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 

@@ -13,8 +13,8 @@ from app.models.user import User, UserRole, ROLE_HIERARCHY
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 security = HTTPBearer()
 
-ADMIN_ROLES = {UserRole.SUPER_ADMIN, UserRole.COMMISSIONER}
-OFFICER_ROLES = {UserRole.ACP, UserRole.SHO, UserRole.INSPECTOR, UserRole.SUB_INSPECTOR, UserRole.CONSTABLE}
+ADMIN_ROLES = {UserRole.SUPER_ADMIN}
+OFFICER_ROLES = {UserRole.COMMISSIONER, UserRole.ACP, UserRole.SHO, UserRole.INSPECTOR, UserRole.SUB_INSPECTOR, UserRole.CONSTABLE}
 
 
 def hash_password(password: str) -> str:
@@ -28,14 +28,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_access_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
-    to_encode.update({"exp": expire, "type": "access"})
+    to_encode.update({"exp": expire, "type": "access", "iat": datetime.utcnow().timestamp()})
     return jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 
 def create_refresh_token(data: dict) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
-    to_encode.update({"exp": expire, "type": "refresh"})
+    to_encode.update({"exp": expire, "type": "refresh", "iat": datetime.utcnow().timestamp()})
     return jwt.encode(to_encode, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 
@@ -73,6 +73,15 @@ async def get_current_user(
     if user is None or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
 
+    # Session invalidation: reject tokens issued before last password change
+    if user.password_changed_at:
+        iat = payload.get("iat")
+        if iat and datetime.fromtimestamp(iat) < user.password_changed_at:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Session expired. Please log in again.",
+            )
+
     return user
 
 
@@ -105,7 +114,7 @@ async def require_admin(
     """
     Enterprise admin guard: verifies BOTH:
     1. JWT was issued via admin portal (portal claim == "admin")
-    2. User has admin role (SUPER_ADMIN or COMMISSIONER)
+    2. User has SUPER_ADMIN role
     Returns 403 if either check fails.
     """
     payload = decode_token(credentials.credentials)

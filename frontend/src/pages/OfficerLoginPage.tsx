@@ -131,14 +131,27 @@ export default function OfficerLoginPage() {
       }
     } catch (err: unknown) {
       const error = err as { response?: { status?: number; data?: { detail?: string } } }
+      const detail = error.response?.data?.detail || ''
       if (error.response?.status === 429) {
         setError('Too many login attempts. Please wait a minute and try again.')
       } else if (error.response?.status === 403) {
-        setError(error.response.data?.detail || 'Wrong portal. Use Admin Login instead.')
-        toast.error('Redirecting to Admin Login...')
-        setTimeout(() => navigate('/admin/login'), 2000)
+        if (detail.toLowerCase().includes('verify your email')) {
+          setError('Please verify your email address before logging in. Check your inbox.')
+        } else if (detail.toLowerCase().includes('pending')) {
+          navigate('/pending-approval')
+        } else if (detail.toLowerCase().includes('suspended')) {
+          setError('Your account has been suspended. Contact your administrator.')
+        } else if (detail.toLowerCase().includes('declined') || detail.toLowerCase().includes('rejected')) {
+          setError('Your registration has been declined. Contact your administrator.')
+        } else if (detail.toLowerCase().includes('officer') || detail.toLowerCase().includes('admin')) {
+          setError(detail)
+          toast.error('Redirecting to Admin Login...')
+          setTimeout(() => navigate('/s9x'), 2000)
+        } else {
+          setError(detail || 'Access denied.')
+        }
       } else {
-        setError(error.response?.data?.detail || 'Invalid username or password.')
+        setError(detail || 'Invalid username or password.')
       }
     } finally {
       setLoading(false)
@@ -336,7 +349,7 @@ export default function OfficerLoginPage() {
                 <button
                   type="button"
                   className="text-sm text-blue-400/70 hover:text-blue-400 transition-colors"
-                  onClick={() => toast('Contact your Station House Officer to reset your password.', { icon: '🔐' })}
+                  onClick={() => navigate('/forgot-password')}
                 >
                   Forgot password?
                 </button>
@@ -362,11 +375,25 @@ export default function OfficerLoginPage() {
               </motion.button>
             </form>
 
+            {/* Register link */}
+            <div className="mt-6 text-center">
+              <p className="text-slate-400 text-sm">
+                Don't have an account?{' '}
+                <button
+                  type="button"
+                  onClick={() => navigate('/register')}
+                  className="text-blue-400 hover:text-blue-300 font-medium transition-colors"
+                >
+                  Register here
+                </button>
+              </p>
+            </div>
+
             {/* Footer */}
-            <div className="mt-7 pt-5 border-t border-white/[0.05]">
+            <div className="mt-5 pt-5 border-t border-white/[0.05]">
               <div className="flex items-center gap-2 text-slate-500 text-xs justify-center">
                 <Lock className="w-3.5 h-3.5" />
-                <span>Contact your Station House Officer for account access</span>
+                <span>Authorized personnel only. All access is monitored.</span>
               </div>
             </div>
           </div>

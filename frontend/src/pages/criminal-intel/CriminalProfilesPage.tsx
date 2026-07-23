@@ -6,6 +6,7 @@ import {
   UserCircle, Plus
 } from 'lucide-react'
 import api from '../../api/client'
+import { INDIA_STATES_DISTRICTS, getDistrictsForState } from '../../data/indiaGeo'
 
 interface CriminalListItem {
   id: number
@@ -19,6 +20,8 @@ interface CriminalListItem {
   total_arrests: number
   total_firs: number
   crime_categories: string[] | null
+  last_known_state: string | null
+  last_known_district: string | null
   created_at: string
 }
 
@@ -32,11 +35,13 @@ export default function CriminalProfilesPage() {
   const [search, setSearch] = useState(searchParams.get('search') || '')
   const [wantedFilter, setWantedFilter] = useState('')
   const [dangerFilter, setDangerFilter] = useState('')
+  const [stateFilter, setStateFilter] = useState('')
+  const [districtFilter, setDistrictFilter] = useState('')
   const perPage = 20
 
   useEffect(() => {
     fetchCriminals()
-  }, [page, wantedFilter, dangerFilter])
+  }, [page, wantedFilter, dangerFilter, stateFilter, districtFilter])
 
   useEffect(() => {
     const s = searchParams.get('search')
@@ -54,6 +59,8 @@ export default function CriminalProfilesPage() {
       if (q) params.search = q
       if (wantedFilter) params.wanted_status = wantedFilter
       if (dangerFilter) params.danger_level = dangerFilter
+      if (stateFilter) params.state = stateFilter
+      if (districtFilter) params.district = districtFilter
       const response = await api.get('/api/criminal-intelligence/', { params })
       setCriminals(response.data.items)
       setTotal(response.data.total)
@@ -147,6 +154,27 @@ export default function CriminalProfilesPage() {
             <option value="high">High</option>
             <option value="medium">Medium</option>
             <option value="low">Low</option>
+          </select>
+          <select
+            value={stateFilter}
+            onChange={(e) => { setStateFilter(e.target.value); setDistrictFilter(''); setPage(1) }}
+            className="bg-dark-800 border border-dark-700/50 rounded-xl px-3 py-2.5 text-sm text-white outline-none"
+          >
+            <option value="">All States</option>
+            {INDIA_STATES_DISTRICTS.map(s => (
+              <option key={s.name} value={s.name}>{s.name}</option>
+            ))}
+          </select>
+          <select
+            value={districtFilter}
+            onChange={(e) => { setDistrictFilter(e.target.value); setPage(1) }}
+            disabled={!stateFilter}
+            className="bg-dark-800 border border-dark-700/50 rounded-xl px-3 py-2.5 text-sm text-white outline-none disabled:opacity-40"
+          >
+            <option value="">All Districts</option>
+            {stateFilter && getDistrictsForState(stateFilter).map(d => (
+              <option key={d} value={d}>{d}</option>
+            ))}
           </select>
         </div>
       </div>

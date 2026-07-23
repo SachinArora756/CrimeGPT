@@ -99,25 +99,34 @@ EDUCATION_LEVELS = [
 RELIGIONS = ["Hindu", "Muslim", "Sikh", "Christian", "Buddhist", "Jain"]
 
 CITIES_DATA = [
-    ("Delhi", "Delhi", "110"),
-    ("Mumbai", "Maharashtra", "400"),
-    ("Lucknow", "Uttar Pradesh", "226"),
-    ("Patna", "Bihar", "800"),
-    ("Jaipur", "Rajasthan", "302"),
-    ("Bhopal", "Madhya Pradesh", "462"),
-    ("Indore", "Madhya Pradesh", "452"),
-    ("Pune", "Maharashtra", "411"),
-    ("Hyderabad", "Telangana", "500"),
-    ("Kolkata", "West Bengal", "700"),
-    ("Chennai", "Tamil Nadu", "600"),
-    ("Ahmedabad", "Gujarat", "380"),
-    ("Chandigarh", "Chandigarh", "160"),
-    ("Noida", "Uttar Pradesh", "201"),
-    ("Ghaziabad", "Uttar Pradesh", "201"),
-    ("Meerut", "Uttar Pradesh", "250"),
-    ("Agra", "Uttar Pradesh", "282"),
-    ("Varanasi", "Uttar Pradesh", "221"),
-    ("Kanpur", "Uttar Pradesh", "208"),
+    ("Delhi", "Delhi", "110", "New Delhi"),
+    ("Mumbai", "Maharashtra", "400", "Mumbai City"),
+    ("Lucknow", "Uttar Pradesh", "226", "Lucknow"),
+    ("Patna", "Bihar", "800", "Patna"),
+    ("Jaipur", "Rajasthan", "302", "Jaipur"),
+    ("Bhopal", "Madhya Pradesh", "462", "Bhopal"),
+    ("Indore", "Madhya Pradesh", "452", "Indore"),
+    ("Pune", "Maharashtra", "411", "Pune"),
+    ("Hyderabad", "Telangana", "500", "Hyderabad"),
+    ("Kolkata", "West Bengal", "700", "Kolkata"),
+    ("Chennai", "Tamil Nadu", "600", "Chennai"),
+    ("Ahmedabad", "Gujarat", "380", "Ahmedabad"),
+    ("Chandigarh", "Chandigarh", "160", "Chandigarh"),
+    ("Noida", "Uttar Pradesh", "201", "Gautam Buddha Nagar"),
+    ("Ghaziabad", "Uttar Pradesh", "201", "Ghaziabad"),
+    ("Meerut", "Uttar Pradesh", "250", "Meerut"),
+    ("Agra", "Uttar Pradesh", "282", "Agra"),
+    ("Varanasi", "Uttar Pradesh", "221", "Varanasi"),
+    ("Kanpur", "Uttar Pradesh", "208", "Kanpur Nagar"),
+    ("Panipat", "Haryana", "132", "Panipat"),
+    ("Karnal", "Haryana", "132", "Karnal"),
+    ("Gurugram", "Haryana", "122", "Gurugram"),
+    ("Faridabad", "Haryana", "121", "Faridabad"),
+    ("Rohtak", "Haryana", "124", "Rohtak"),
+    ("Amritsar", "Punjab", "143", "Amritsar"),
+    ("Ludhiana", "Punjab", "141", "Ludhiana"),
+    ("Bengaluru", "Karnataka", "560", "Bengaluru Urban"),
+    ("Nagpur", "Maharashtra", "440", "Nagpur"),
 ]
 
 LOCALITIES = [
@@ -490,6 +499,8 @@ async def seed_criminal_profiles():
                 is_active=True,
                 added_by=1,
                 station_id=f"{city_data[0][:3].upper()}-PS-{random.randint(1, 20):02d}",
+                last_known_state=city_data[1],
+                last_known_district=city_data[3],
             )
 
             all_profiles.append(profile)
@@ -541,6 +552,7 @@ async def seed_criminal_profiles():
                     is_current=(addr_idx == 0),
                     verified=random.choice([True, False]),
                 ))
+            # Note: addr_city tuple is (city, state, pincode_prefix, district)
 
             # Vehicles (0-2)
             num_vehicles = random.randint(0, 2)

@@ -84,6 +84,14 @@ class CriminalProfile(Base):
     added_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     station_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
+    last_known_state: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    last_known_district: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+
+    marked_most_wanted_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    marked_most_wanted_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    gang_marked_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    gang_marked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -104,6 +112,7 @@ class CriminalProfile(Base):
     __table_args__ = (
         Index("ix_criminal_profiles_wanted_danger", "wanted_status", "danger_level"),
         Index("ix_criminal_profiles_gang", "gang_name"),
+        Index("ix_criminal_profiles_location", "last_known_state", "last_known_district"),
     )
 
 

@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db, async_session
-from app.models.user import User, UserRole, ROLE_HIERARCHY
+from app.models.user import User, UserRole, UserStatus, ROLE_HIERARCHY
 from app.models.document import AuditLog
 from app.schemas.user import UserLogin, UserResponse, TokenResponse, TokenRefresh, ChangePasswordRequest
 from app.services.auth_service import (
@@ -142,9 +142,6 @@ async def _authenticate_user(
         if user.failed_login_attempts >= MAX_FAILED_ATTEMPTS:
             user.account_locked = True
         await db.commit()
-    elif not user.is_active:
-        auth_failed = True
-        failure_reason = "account_disabled"
     elif user.account_locked:
         auth_failed = True
         failure_reason = "account_locked"
@@ -163,6 +160,31 @@ async def _authenticate_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=GENERIC_AUTH_ERROR,
         )
+
+    # --- Registration workflow checks (specific error messages) ---
+    user_status = getattr(user, "status", None) or UserStatus.ACTIVE
+    email_verified = getattr(user, "email_verified", True)
+    admin_approved = getattr(user, "admin_approved", True)
+
+    if not email_verified:
+        await _log_login_attempt(user, request, portal, False, "email_not_verified", username_attempted=credentials.username)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Please verify your email address before logging in.")
+
+    if user_status == UserStatus.PENDING or not admin_approved:
+        await _log_login_attempt(user, request, portal, False, "pending_approval", username_attempted=credentials.username)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your account is pending administrator approval.")
+
+    if user_status == UserStatus.REJECTED:
+        await _log_login_attempt(user, request, portal, False, "registration_rejected", username_attempted=credentials.username)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your registration has been declined. Contact your administrator.")
+
+    if user_status == UserStatus.SUSPENDED:
+        await _log_login_attempt(user, request, portal, False, "account_suspended", username_attempted=credentials.username)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Your account has been suspended. Contact your administrator.")
+
+    if not user.is_active:
+        await _log_login_attempt(user, request, portal, False, "account_disabled", username_attempted=credentials.username)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=GENERIC_AUTH_ERROR)
 
     # --- STEP 2: Authorize (verify role matches portal) ---
     if user.role not in allowed_roles:

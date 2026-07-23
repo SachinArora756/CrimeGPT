@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import {
-  UserPlus, Edit2, Shield, X, Search, Unlock,
-  RotateCcw, Activity, Clock, Badge, Trash2,
+  Edit2, Shield, X, Search, Unlock,
+  Activity, Clock, Badge, Trash2, Users,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../../api/client'
@@ -38,7 +38,6 @@ const ROLE_COLORS: Record<string, string> = {
 const emptyForm = {
   username: '',
   email: '',
-  password: '',
   full_name: '',
   role: 'inspector' as UserRole,
   station_id: '',
@@ -69,18 +68,11 @@ export default function UserManagement() {
 
   useEffect(() => { fetchUsers() }, [])
 
-  const openCreate = () => {
-    setEditingUser(null)
-    setForm(emptyForm)
-    setShowModal(true)
-  }
-
   const openEdit = (user: AdminUser) => {
     setEditingUser(user)
     setForm({
       username: user.username,
       email: user.email,
-      password: '',
       full_name: user.full_name,
       role: user.role,
       station_id: user.station_id || '',
@@ -92,25 +84,14 @@ export default function UserManagement() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!editingUser) return
     try {
-      if (editingUser) {
-        const payload: Record<string, unknown> = { ...form }
-        delete payload.password
-        if (!payload.station_id) delete payload.station_id
-        if (!payload.badge_number) delete payload.badge_number
-        if (!payload.department) delete payload.department
-        await api.put(`/api/admin/users/${editingUser.id}`, payload)
-        toast.success('User updated')
-      } else {
-        const payload: Record<string, unknown> = { ...form }
-        if (!payload.station_id) delete payload.station_id
-        if (!payload.badge_number) delete payload.badge_number
-        if (!payload.department) delete payload.department
-        await api.post('/api/admin/users', payload)
-        const isAdminRole = form.role === 'super_admin' || form.role === 'commissioner'
-        const loginPortal = isAdminRole ? 'Admin Login (/admin/login)' : 'Officer Login (/login)'
-        toast.success(`User created! They should login via ${loginPortal}`, { duration: 5000 })
-      }
+      const payload: Record<string, unknown> = { ...form }
+      if (!payload.station_id) delete payload.station_id
+      if (!payload.badge_number) delete payload.badge_number
+      if (!payload.department) delete payload.department
+      await api.put(`/api/admin/users/${editingUser.id}`, payload)
+      toast.success('User updated')
       setShowModal(false)
       fetchUsers()
     } catch (err: unknown) {
@@ -136,16 +117,6 @@ export default function UserManagement() {
       fetchUsers()
     } catch {
       toast.error('Failed to unlock account')
-    }
-  }
-
-  const resetPassword = async (user: AdminUser) => {
-    const newPw = `Reset@${Date.now().toString().slice(-6)}`
-    try {
-      await api.post(`/api/admin/users/${user.id}/reset-password`, { new_password: newPw })
-      toast.success(`Password reset. Temp: ${newPw}`)
-    } catch {
-      toast.error('Failed to reset password')
     }
   }
 
@@ -184,12 +155,12 @@ export default function UserManagement() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">User Management</h1>
+          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+            <Users className="w-7 h-7 text-blue-400" />
+            User Management
+          </h1>
           <p className="text-dark-400 text-sm mt-1">{users.length} registered officers</p>
         </div>
-        <button onClick={openCreate} className="btn-primary flex items-center gap-2">
-          <UserPlus className="w-4 h-4" /> Create User
-        </button>
       </div>
 
       {/* Search */}
@@ -295,14 +266,8 @@ export default function UserManagement() {
                   </button>
                 )}
                 <button
-                  onClick={() => resetPassword(user)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium bg-dark-800 text-dark-300 hover:text-white hover:bg-dark-700 ml-auto"
-                >
-                  <RotateCcw className="w-3 h-3" /> Reset PW
-                </button>
-                <button
                   onClick={() => deleteUser(user)}
-                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors ml-auto"
                 >
                   <Trash2 className="w-3 h-3" /> Delete
                 </button>
@@ -321,9 +286,7 @@ export default function UserManagement() {
             className="bg-dark-900 border border-dark-700 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between p-6 border-b border-dark-700">
-              <h2 className="text-lg font-semibold text-white">
-                {editingUser ? 'Edit User' : 'Create User'}
-              </h2>
+              <h2 className="text-lg font-semibold text-white">Edit User</h2>
               <button onClick={() => setShowModal(false)} className="text-dark-400 hover:text-white p-1 rounded-lg hover:bg-dark-800">
                 <X className="w-5 h-5" />
               </button>
@@ -346,13 +309,6 @@ export default function UserManagement() {
                 <input type="email" className="input" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
               </div>
 
-              {!editingUser && (
-                <div>
-                  <label className="block text-xs font-medium text-dark-400 mb-1">Password</label>
-                  <input type="password" className="input" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required minLength={10} />
-                  <p className="text-dark-500 text-[10px] mt-1">Min 10 chars, upper, lower, digit, special char</p>
-                </div>
-              )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -382,7 +338,7 @@ export default function UserManagement() {
 
               <div className="flex justify-end gap-3 pt-4 border-t border-dark-700">
                 <button type="button" onClick={() => setShowModal(false)} className="btn-secondary">Cancel</button>
-                <button type="submit" className="btn-primary">{editingUser ? 'Update' : 'Create'}</button>
+                <button type="submit" className="btn-primary">Update</button>
               </div>
             </form>
           </motion.div>

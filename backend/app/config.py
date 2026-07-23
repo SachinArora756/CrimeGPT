@@ -34,6 +34,15 @@ class Settings(BaseSettings):
 
     min_password_length: int = 10
 
+    # Email configuration
+    email_backend: str = "console"  # "console", "resend", or "brevo"
+    resend_api_key: str = ""
+    brevo_api_key: str = ""
+    email_from_address: str = "noreply@crimegpt.system"
+    email_from_name: str = "CrimeGPT System"
+    email_verification_expire_hours: int = 24
+    password_reset_expire_hours: int = 1
+
     @field_validator("jwt_secret_key", mode="before")
     @classmethod
     def ensure_jwt_secret(cls, v: str) -> str:
