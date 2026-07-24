@@ -159,7 +159,7 @@ export default function Header() {
               initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -5 }}
-              className="absolute top-12 right-0 w-80 bg-dark-900 border border-dark-700 rounded-xl shadow-2xl z-50 overflow-hidden"
+              className="fixed top-14 right-6 w-80 bg-dark-900 border border-dark-700 rounded-xl shadow-2xl z-[100] overflow-hidden"
             >
               <div className="flex items-center justify-between p-4 border-b border-dark-700">
                 <h3 className="text-sm font-semibold text-white">Notifications</h3>
