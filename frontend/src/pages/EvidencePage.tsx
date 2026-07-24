@@ -272,6 +272,57 @@ export default function EvidencePage() {
               </div>
 
               <div className="p-4 space-y-4">
+                {/* File Preview */}
+                {selectedEvidence.file_type === 'image' && (
+                  <div className="rounded-xl overflow-hidden border border-dark-700 bg-dark-800/40">
+                    <img
+                      src={`/api/evidence/${selectedEvidence.id}/file`}
+                      alt={selectedEvidence.original_filename}
+                      className="w-full max-h-96 object-contain"
+                    />
+                  </div>
+                )}
+                {selectedEvidence.file_type === 'video' && (
+                  <div className="rounded-xl overflow-hidden border border-dark-700 bg-dark-800/40">
+                    <video
+                      src={`/api/evidence/${selectedEvidence.id}/file`}
+                      controls
+                      className="w-full max-h-96"
+                    />
+                  </div>
+                )}
+                {selectedEvidence.file_type === 'audio' && (
+                  <div className="rounded-xl overflow-hidden border border-dark-700 bg-dark-800/40 p-4">
+                    <audio
+                      src={`/api/evidence/${selectedEvidence.id}/file`}
+                      controls
+                      className="w-full"
+                    />
+                  </div>
+                )}
+                {selectedEvidence.file_type === 'pdf' && (
+                  <div className="rounded-xl overflow-hidden border border-dark-700 bg-dark-800/40">
+                    <iframe
+                      src={`/api/evidence/${selectedEvidence.id}/file`}
+                      className="w-full h-96"
+                      title={selectedEvidence.original_filename}
+                    />
+                  </div>
+                )}
+                {!['image', 'video', 'audio', 'pdf'].includes(selectedEvidence.file_type) && (
+                  <div className="rounded-xl border border-dark-700 bg-dark-800/40 p-6 text-center">
+                    <File className="w-10 h-10 text-dark-500 mx-auto mb-2" />
+                    <p className="text-dark-400 text-sm">Preview not available for this file type</p>
+                    <a
+                      href={`/api/evidence/${selectedEvidence.id}/file`}
+                      download={selectedEvidence.original_filename}
+                      className="inline-block mt-2 px-4 py-1.5 bg-primary-600 hover:bg-primary-500 text-white text-xs rounded-lg"
+                    >
+                      Download File
+                    </a>
+                  </div>
+                )}
+
                 {/* Metadata */}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="p-3 bg-dark-800/60 rounded-xl">

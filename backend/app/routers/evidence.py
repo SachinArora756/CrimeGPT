@@ -1,4 +1,6 @@
+import os
 from fastapi import APIRouter, Depends, HTTPException, Path, Query, Request, UploadFile, File, Form, status
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -180,6 +182,44 @@ async def get_evidence(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evidence not found")
     await authorize_case_access(db, evidence.case_id, current_user)
     return EvidenceResponse.model_validate(evidence)
+
+
+@router.get("/{evidence_id}/file")
+async def download_evidence_file(
+    evidence_id: int = Path(ge=1),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Serve the actual evidence file for preview/download."""
+    evidence = await get_evidence_by_id(db, evidence_id)
+    if not evidence:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evidence not found")
+    await authorize_case_access(db, evidence.case_id, current_user)
+
+    if not os.path.exists(evidence.file_path):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found on disk")
+
+    media_types = {
+        "image": "image/jpeg",
+        "pdf": "application/pdf",
+        "video": "video/mp4",
+        "audio": "audio/mpeg",
+    }
+    ext = os.path.splitext(evidence.original_filename)[1].lower()
+    ext_media = {
+        ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png",
+        ".gif": "image/gif", ".webp": "image/webp", ".svg": "image/svg+xml",
+        ".pdf": "application/pdf",
+        ".mp4": "video/mp4", ".webm": "video/webm", ".mov": "video/quicktime",
+        ".mp3": "audio/mpeg", ".wav": "audio/wav", ".ogg": "audio/ogg",
+    }
+    media_type = ext_media.get(ext, media_types.get(evidence.file_type, "application/octet-stream"))
+
+    return FileResponse(
+        path=evidence.file_path,
+        media_type=media_type,
+        filename=evidence.original_filename,
+    )
 
 
 @router.put("/{evidence_id}/tags")
