@@ -165,9 +165,9 @@ export default function DocumentsPage() {
                         {new Date(doc.generated_at).toLocaleString()}
                       </p>
                       {doc.file_hash && (
-                        <p className="text-dark-500 text-xs flex items-center gap-1 mt-0.5 font-mono">
-                          <Hash className="w-3 h-3 text-green-500" />
-                          {doc.file_hash.slice(0, 16)}...
+                        <p className="text-dark-500 text-xs flex items-start gap-1 mt-0.5 font-mono break-all">
+                          <Hash className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
+                          {doc.file_hash}
                         </p>
                       )}
                     </div>

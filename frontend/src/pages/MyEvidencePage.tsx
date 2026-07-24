@@ -180,9 +180,9 @@ export default function MyEvidencePage() {
                         </span>
                       )}
                       {ev.file_hash && (
-                        <span className="text-dark-500 text-xs flex items-center gap-1 font-mono">
-                          <Hash className="w-3 h-3 text-green-500" />
-                          {ev.file_hash.slice(0, 16)}...
+                        <span className="text-dark-500 text-xs flex items-start gap-1 font-mono break-all">
+                          <Hash className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
+                          {ev.file_hash}
                         </span>
                       )}
                     </div>

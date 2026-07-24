@@ -191,9 +191,9 @@ export default function MyDocumentsPage() {
                       </span>
                     )}
                     {doc.file_hash && (
-                      <span className="text-dark-500 flex items-center gap-1 font-mono text-xs">
-                        <Hash className="w-3 h-3 text-green-500" />
-                        {doc.file_hash.slice(0, 16)}...
+                      <span className="text-dark-500 flex items-start gap-1 font-mono text-xs break-all">
+                        <Hash className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
+                        {doc.file_hash}
                       </span>
                     )}
                   </div>

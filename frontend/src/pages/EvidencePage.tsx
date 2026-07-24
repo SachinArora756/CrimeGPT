@@ -198,10 +198,10 @@ export default function EvidencePage() {
                 {/* Metadata */}
                 <div className="mt-3 space-y-1.5">
                   {item.file_hash && (
-                    <div className="flex items-center gap-1.5 text-[10px] text-dark-500">
-                      <Hash className="w-3 h-3" />
-                      <span className="font-mono truncate">{item.file_hash.slice(0, 16)}...</span>
-                      <CheckCircle className="w-3 h-3 text-green-500 ml-auto" />
+                    <div className="flex items-start gap-1.5 text-[10px] text-dark-500">
+                      <Hash className="w-3 h-3 flex-shrink-0 mt-0.5" />
+                      <span className="font-mono break-all">{item.file_hash}</span>
+                      <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
                     </div>
                   )}
                   <div className="flex items-center gap-1.5 text-[10px] text-dark-500">
