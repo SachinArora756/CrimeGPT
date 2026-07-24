@@ -56,7 +56,7 @@ const criminalIntelItems = [
 ]
 
 const forensicsItems = [
-  { path: '/forensics', icon: Microscope, label: 'Forensics Lab' },
+  { path: '/forensics', icon: Microscope, label: 'Tool Logs' },
   { path: '/forensics/ai-investigate', icon: Brain, label: 'Crime Analyst AI' },
   { path: '/forensics/ieae', icon: Shield, label: 'IEAE Engine' },
   { path: '/forensics/iidse', icon: Lightbulb, label: 'IIDSE Intelligence' },

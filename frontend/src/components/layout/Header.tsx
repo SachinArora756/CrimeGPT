@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { Bell, Search, X } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -19,6 +20,7 @@ export default function Header() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([])
   const [showSearch, setShowSearch] = useState(false)
   const [, setSearching] = useState(false)
+  const bellRef = useRef<HTMLButtonElement>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const searchRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
@@ -43,8 +45,14 @@ export default function Header() {
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setShowDropdown(false)
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowSearch(false)
+      const target = e.target as Node
+      if (
+        dropdownRef.current && !dropdownRef.current.contains(target) &&
+        bellRef.current && !bellRef.current.contains(target)
+      ) {
+        setShowDropdown(false)
+      }
+      if (searchRef.current && !searchRef.current.contains(target)) setShowSearch(false)
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
@@ -86,8 +94,90 @@ export default function Header() {
     evidence: '🔍',
   }
 
+  const notificationDropdown = showDropdown ? createPortal(
+    <AnimatePresence>
+      <motion.div
+        ref={dropdownRef}
+        initial={{ opacity: 0, y: -8, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -8, scale: 0.96 }}
+        transition={{ duration: 0.15 }}
+        className="fixed top-14 right-4 w-96 max-w-[calc(100vw-2rem)] rounded-xl shadow-2xl shadow-black/50 overflow-hidden"
+        style={{ zIndex: 99999 }}
+      >
+        <div className="bg-dark-900 border border-dark-700 rounded-xl overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-dark-700 bg-dark-900">
+            <h3 className="text-sm font-semibold text-white">Notifications</h3>
+            {unreadCount > 0 && (
+              <button
+                onClick={markAllRead}
+                className="text-xs text-primary-400 hover:text-primary-300 transition-colors"
+              >
+                Mark all read
+              </button>
+            )}
+          </div>
+
+          {/* Notification List */}
+          <div className="max-h-[60vh] overflow-y-auto overscroll-contain bg-dark-900">
+            {notifications.length === 0 ? (
+              <div className="px-5 py-10 text-center bg-dark-900">
+                <Bell className="w-8 h-8 text-dark-600 mx-auto mb-2" />
+                <p className="text-dark-400 text-sm">No notifications yet</p>
+              </div>
+            ) : (
+              notifications.slice(0, 30).map((n) => (
+                <div
+                  key={n.id}
+                  className={`px-5 py-3.5 border-b border-dark-800/80 cursor-pointer transition-colors hover:bg-dark-800/70 ${
+                    !n.is_read ? 'bg-primary-900/10' : 'bg-dark-900'
+                  }`}
+                  onClick={() => {
+                    if (!n.is_read) markRead(n.id)
+                    if (n.case_id) { navigate(`/cases/${n.case_id}`); setShowDropdown(false) }
+                  }}
+                >
+                  <div className="flex items-start gap-3">
+                    {!n.is_read && (
+                      <div className="w-2 h-2 bg-primary-500 rounded-full mt-1.5 flex-shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm leading-snug ${!n.is_read ? 'text-white font-medium' : 'text-dark-300'}`}>
+                        {n.title}
+                      </p>
+                      <p className="text-xs text-dark-400 mt-1 leading-relaxed">
+                        {n.message}
+                      </p>
+                      <p className="text-[10px] text-dark-500 mt-1.5">
+                        {new Date(n.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Footer */}
+          {notifications.length > 0 && (
+            <div className="px-5 py-3 border-t border-dark-700 bg-dark-900">
+              <button
+                onClick={() => { navigate('/notifications'); setShowDropdown(false) }}
+                className="text-xs text-primary-400 hover:text-primary-300 transition-colors w-full text-center"
+              >
+                View All Notifications
+              </button>
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </AnimatePresence>,
+    document.body
+  ) : null
+
   return (
-    <header className="h-14 bg-dark-900/80 backdrop-blur-md border-b border-dark-700/50 flex items-center justify-between px-6">
+    <header className="h-14 bg-dark-900/80 backdrop-blur-md border-b border-dark-700/50 flex items-center justify-between px-6 relative z-30">
       {/* Search */}
       <div className="flex items-center gap-4 flex-1" ref={searchRef}>
         <div className="relative max-w-md flex-1">
@@ -135,9 +225,10 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Notifications */}
-      <div className="flex items-center gap-3 relative" ref={dropdownRef}>
+      {/* Bell Button */}
+      <div className="flex items-center gap-3">
         <button
+          ref={bellRef}
           onClick={() => setShowDropdown(!showDropdown)}
           className="relative p-2 text-dark-400 hover:text-white transition-colors rounded-lg hover:bg-dark-800/60"
         >
@@ -152,55 +243,10 @@ export default function Header() {
             </motion.span>
           )}
         </button>
-
-        <AnimatePresence>
-          {showDropdown && (
-            <motion.div
-              initial={{ opacity: 0, y: -5 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -5 }}
-              className="fixed top-14 right-6 w-80 bg-dark-900 border border-dark-700 rounded-xl shadow-2xl z-[100] overflow-hidden"
-            >
-              <div className="flex items-center justify-between p-4 border-b border-dark-700">
-                <h3 className="text-sm font-semibold text-white">Notifications</h3>
-                {unreadCount > 0 && (
-                  <button onClick={markAllRead} className="text-xs text-primary-400 hover:text-primary-300">
-                    Mark all read
-                  </button>
-                )}
-              </div>
-              <div className="max-h-80 overflow-y-auto">
-                {notifications.length === 0 ? (
-                  <div className="p-8 text-center">
-                    <Bell className="w-8 h-8 text-dark-600 mx-auto mb-2" />
-                    <p className="text-dark-400 text-sm">No notifications yet</p>
-                  </div>
-                ) : (
-                  notifications.slice(0, 20).map((n) => (
-                    <div
-                      key={n.id}
-                      className={`flex items-start gap-3 p-3 border-b border-dark-800 hover:bg-dark-800/50 cursor-pointer transition-colors ${
-                        !n.is_read ? 'bg-primary-600/5' : ''
-                      }`}
-                      onClick={() => {
-                        if (!n.is_read) markRead(n.id)
-                        if (n.case_id) { navigate(`/cases/${n.case_id}`); setShowDropdown(false) }
-                      }}
-                    >
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm ${!n.is_read ? 'text-white font-medium' : 'text-dark-300'}`}>{n.title}</p>
-                        <p className="text-xs text-dark-400 mt-0.5 truncate">{n.message}</p>
-                        <p className="text-[10px] text-dark-500 mt-1">{new Date(n.created_at).toLocaleString()}</p>
-                      </div>
-                      {!n.is_read && <div className="w-2 h-2 bg-primary-500 rounded-full mt-2 flex-shrink-0" />}
-                    </div>
-                  ))
-                )}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
+
+      {/* Portal-rendered notification dropdown */}
+      {notificationDropdown}
     </header>
   )
 }

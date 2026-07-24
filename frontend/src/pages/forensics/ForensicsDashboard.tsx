@@ -78,7 +78,7 @@ export default function ForensicsDashboard() {
             </div>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Digital Forensics Lab</h1>
+            <h1 className="text-2xl font-bold text-white">Tool Logs</h1>
             <p className="text-dark-400 text-sm">AI-powered forensic analysis & investigation toolkit</p>
           </div>
         </div>

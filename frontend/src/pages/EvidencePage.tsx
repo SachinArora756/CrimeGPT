@@ -33,6 +33,167 @@ function sanitizeForDisplay(val: unknown): unknown {
   return val
 }
 
+function AuthenticatedFilePreview({ evidenceId, fileType, filename }: { evidenceId: number, fileType: string, filename: string }) {
+  const [blobUrl, setBlobUrl] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    let revoked = false
+    const fetchFile = async () => {
+      try {
+        const response = await api.get(`/api/evidence/${evidenceId}/file`, {
+          responseType: 'blob',
+        })
+        if (revoked) return
+        const url = URL.createObjectURL(response.data)
+        setBlobUrl(url)
+      } catch {
+        if (!revoked) setError(true)
+      } finally {
+        if (!revoked) setLoading(false)
+      }
+    }
+    fetchFile()
+    return () => {
+      revoked = true
+      if (blobUrl) URL.revokeObjectURL(blobUrl)
+    }
+  }, [evidenceId])
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-dark-700 bg-dark-800/40 p-8 flex flex-col items-center justify-center">
+        <Loader2 className="w-8 h-8 text-primary-400 animate-spin mb-2" />
+        <p className="text-dark-400 text-xs">Loading preview...</p>
+      </div>
+    )
+  }
+
+  if (error || !blobUrl) {
+    return (
+      <div className="rounded-xl border border-dark-700 bg-dark-800/40 p-6 text-center">
+        <File className="w-10 h-10 text-dark-500 mx-auto mb-2" />
+        <p className="text-dark-400 text-sm">Preview unavailable</p>
+        <p className="text-dark-500 text-xs mt-1">Could not load the evidence file</p>
+      </div>
+    )
+  }
+
+  if (fileType === 'image') {
+    return (
+      <div className="rounded-xl overflow-hidden border border-dark-700 bg-dark-800/40">
+        <img
+          src={blobUrl}
+          alt={filename}
+          className="w-full max-h-96 object-contain"
+        />
+      </div>
+    )
+  }
+
+  if (fileType === 'video') {
+    return (
+      <div className="rounded-xl overflow-hidden border border-dark-700 bg-dark-800/40">
+        <video src={blobUrl} controls className="w-full max-h-96" />
+      </div>
+    )
+  }
+
+  if (fileType === 'audio') {
+    return (
+      <div className="rounded-xl border border-dark-700 bg-dark-800/40 p-4">
+        <audio src={blobUrl} controls className="w-full" />
+      </div>
+    )
+  }
+
+  if (fileType === 'pdf') {
+    return (
+      <div className="rounded-xl overflow-hidden border border-dark-700 bg-dark-800/40">
+        <iframe src={blobUrl} className="w-full h-96" title={filename} />
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-xl border border-dark-700 bg-dark-800/40 p-6 text-center">
+      <File className="w-10 h-10 text-dark-500 mx-auto mb-2" />
+      <p className="text-dark-400 text-sm">Preview not available for this file type</p>
+      <a
+        href={blobUrl}
+        download={filename}
+        className="inline-block mt-2 px-4 py-1.5 bg-primary-600 hover:bg-primary-500 text-white text-xs rounded-lg"
+      >
+        Download File
+      </a>
+    </div>
+  )
+}
+
+function ChainOfCustodyTimeline({ entries }: { entries: Array<Record<string, unknown>> }) {
+  const formatAction = (action: unknown) => {
+    const str = String(action || 'unknown')
+    return str.charAt(0).toUpperCase() + str.slice(1).replace(/_/g, ' ')
+  }
+
+  const formatDate = (timestamp: unknown) => {
+    if (!timestamp) return null
+    try {
+      const d = new Date(String(timestamp))
+      if (isNaN(d.getTime())) return null
+      return {
+        date: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+        time: d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      }
+    } catch {
+      return null
+    }
+  }
+
+  return (
+    <div className="space-y-0">
+      {entries.map((entry, i) => {
+        const action = entry.action || entry.event || 'Action'
+        const userId = entry.user_id || entry.officer_id || entry.performed_by
+        const userName = entry.user_name || entry.officer_name || entry.performed_by_name
+        const timestamp = entry.timestamp || entry.created_at || entry.date
+        const notes = entry.notes || entry.description || entry.details
+        const dt = formatDate(timestamp)
+
+        return (
+          <div key={i} className="flex gap-3">
+            {/* Timeline connector */}
+            <div className="flex flex-col items-center">
+              <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${i === 0 ? 'bg-primary-500' : 'bg-dark-600'}`} />
+              {i < entries.length - 1 && <div className="w-px flex-1 bg-dark-700 my-1" />}
+            </div>
+            {/* Content */}
+            <div className="pb-4 flex-1 min-w-0">
+              <p className="text-sm text-white font-medium">{formatAction(action)}</p>
+              <div className="mt-1 space-y-0.5">
+                {Boolean(userName || userId) && (
+                  <p className="text-xs text-dark-400">
+                    Officer: {userName ? String(userName) : `User #${String(userId)}`}
+                  </p>
+                )}
+                {dt && (
+                  <p className="text-xs text-dark-500">
+                    {dt.date} at {dt.time}
+                  </p>
+                )}
+                {Boolean(notes) && (
+                  <p className="text-xs text-dark-400 mt-1">{String(notes)}</p>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function EvidencePage() {
   const { caseId } = useParams()
   const { fetchEvidence, invalidateCase } = useEvidenceDocStore()
@@ -272,56 +433,12 @@ export default function EvidencePage() {
               </div>
 
               <div className="p-4 space-y-4">
-                {/* File Preview */}
-                {selectedEvidence.file_type === 'image' && (
-                  <div className="rounded-xl overflow-hidden border border-dark-700 bg-dark-800/40">
-                    <img
-                      src={`/api/evidence/${selectedEvidence.id}/file`}
-                      alt={selectedEvidence.original_filename}
-                      className="w-full max-h-96 object-contain"
-                    />
-                  </div>
-                )}
-                {selectedEvidence.file_type === 'video' && (
-                  <div className="rounded-xl overflow-hidden border border-dark-700 bg-dark-800/40">
-                    <video
-                      src={`/api/evidence/${selectedEvidence.id}/file`}
-                      controls
-                      className="w-full max-h-96"
-                    />
-                  </div>
-                )}
-                {selectedEvidence.file_type === 'audio' && (
-                  <div className="rounded-xl overflow-hidden border border-dark-700 bg-dark-800/40 p-4">
-                    <audio
-                      src={`/api/evidence/${selectedEvidence.id}/file`}
-                      controls
-                      className="w-full"
-                    />
-                  </div>
-                )}
-                {selectedEvidence.file_type === 'pdf' && (
-                  <div className="rounded-xl overflow-hidden border border-dark-700 bg-dark-800/40">
-                    <iframe
-                      src={`/api/evidence/${selectedEvidence.id}/file`}
-                      className="w-full h-96"
-                      title={selectedEvidence.original_filename}
-                    />
-                  </div>
-                )}
-                {!['image', 'video', 'audio', 'pdf'].includes(selectedEvidence.file_type) && (
-                  <div className="rounded-xl border border-dark-700 bg-dark-800/40 p-6 text-center">
-                    <File className="w-10 h-10 text-dark-500 mx-auto mb-2" />
-                    <p className="text-dark-400 text-sm">Preview not available for this file type</p>
-                    <a
-                      href={`/api/evidence/${selectedEvidence.id}/file`}
-                      download={selectedEvidence.original_filename}
-                      className="inline-block mt-2 px-4 py-1.5 bg-primary-600 hover:bg-primary-500 text-white text-xs rounded-lg"
-                    >
-                      Download File
-                    </a>
-                  </div>
-                )}
+                {/* Authenticated File Preview */}
+                <AuthenticatedFilePreview
+                  evidenceId={selectedEvidence.id}
+                  fileType={selectedEvidence.file_type}
+                  filename={selectedEvidence.original_filename}
+                />
 
                 {/* Metadata */}
                 <div className="grid grid-cols-2 gap-3">
@@ -372,15 +489,11 @@ export default function EvidencePage() {
                 {/* Chain of Custody */}
                 {selectedEvidence.chain_of_custody && selectedEvidence.chain_of_custody.length > 0 && (
                   <div>
-                    <h4 className="text-sm font-medium text-white flex items-center gap-2 mb-2">
+                    <h4 className="text-sm font-medium text-white flex items-center gap-2 mb-3">
                       <Shield className="w-4 h-4 text-yellow-400" /> Chain of Custody
                     </h4>
-                    <div className="space-y-2">
-                      {selectedEvidence.chain_of_custody.map((entry, i) => (
-                        <div key={i} className="p-2 bg-dark-800/60 rounded-lg text-xs text-dark-300">
-                          {JSON.stringify(sanitizeForDisplay(entry))}
-                        </div>
-                      ))}
+                    <div className="bg-dark-800/60 rounded-xl p-4">
+                      <ChainOfCustodyTimeline entries={selectedEvidence.chain_of_custody} />
                     </div>
                   </div>
                 )}
