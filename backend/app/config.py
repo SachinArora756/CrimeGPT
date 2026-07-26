@@ -34,6 +34,11 @@ class Settings(BaseSettings):
 
     min_password_length: int = 10
 
+    # ML model paths (override for custom-trained models)
+    weapon_model_path: str = "yolov8n.pt"
+    vehicle_model_path: str = "yolov8n.pt"
+    object_model_path: str = "yolov8n.pt"
+
     # Email configuration
     email_backend: str = "console"  # "console", "resend", or "brevo"
     resend_api_key: str = ""

@@ -246,13 +246,35 @@ def _build_evidence_summary(tool_results: list[dict], classification: dict, file
     )
 
 
+EVIDENCE_WEIGHT = {
+    "dna_search": 0.99,
+    "fingerprint_match": 0.95,
+    "face_recognize": 0.85,
+    "digital_hash": 0.90,
+    "license_plate_ocr": 0.80,
+    "audio_transcribe": 0.75,
+    "vehicle_detect": 0.70,
+    "weapon_detect": 0.70,
+    "face_detect": 0.65,
+    "image_object_detect": 0.60,
+    "image_ocr": 0.55,
+    "image_exif": 0.50,
+    "digital_metadata": 0.45,
+}
+
+
 def _build_tool_summary(tool_results: list[dict]) -> str:
     lines = []
-    for r in tool_results:
-        if r["status"] == "completed" and r.get("output_data"):
-            output_str = json.dumps(r["output_data"], default=str)[:1500]
-            lines.append(f"{r['tool_key']} (conf: {r.get('confidence', 'N/A')}): {output_str}")
-    return "\n".join(lines[:15]) or "No tool results available"
+    weighted = sorted(
+        [r for r in tool_results if r["status"] == "completed" and r.get("output_data")],
+        key=lambda r: EVIDENCE_WEIGHT.get(r["tool_key"], 0.4),
+        reverse=True,
+    )
+    for r in weighted[:15]:
+        weight = EVIDENCE_WEIGHT.get(r["tool_key"], 0.4)
+        output_str = json.dumps(r["output_data"], default=str)[:1500]
+        lines.append(f"{r['tool_key']} (conf: {r.get('confidence', 'N/A')}, evidential_weight: {weight}): {output_str}")
+    return "\n".join(lines) or "No tool results available"
 
 
 def _build_criminal_summary(criminal_matches: list[dict]) -> str:

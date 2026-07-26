@@ -26,6 +26,11 @@ from app.services.evidence_service import (
     verify_evidence_integrity,
 )
 from app.services.forensics_service import analyze_evidence
+from app.services.section65b_service import (
+    generate_section65b_certificate,
+    compute_perceptual_hash,
+    compare_perceptual_hashes,
+)
 from app.utils.rate_limiter import limiter
 
 router = APIRouter()
@@ -298,3 +303,106 @@ async def analyze_evidence_file(
     await db.commit()
 
     return result
+
+
+class Section65BRequest(BaseModel):
+    officer_designation: str = Field(min_length=2, max_length=200)
+    device_description: str = Field(default="CrimeGPT Forensic Platform", max_length=500)
+    additional_notes: str = Field(default="", max_length=2000)
+
+
+@router.post("/{evidence_id}/section65b-certificate")
+async def generate_certificate(
+    evidence_id: int = Path(ge=1),
+    body: Section65BRequest = Section65BRequest(officer_designation="Investigating Officer"),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Generate a Section 65B (Indian Evidence Act) certificate for digital evidence."""
+    evidence = await get_evidence_by_id(db, evidence_id)
+    if not evidence:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evidence not found")
+    await authorize_case_access(db, evidence.case_id, current_user)
+
+    certificate = await generate_section65b_certificate(
+        evidence_id=evidence.id,
+        file_path=evidence.file_path,
+        original_filename=evidence.original_filename,
+        file_hash=evidence.file_hash,
+        officer_id=current_user.id,
+        officer_name=current_user.full_name or current_user.email,
+        officer_designation=body.officer_designation,
+        device_description=body.device_description,
+        additional_notes=body.additional_notes,
+    )
+    return certificate
+
+
+@router.get("/{evidence_id}/perceptual-hash")
+async def get_perceptual_hash(
+    evidence_id: int = Path(ge=1),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Compute perceptual hash for image evidence (survives crops, compression)."""
+    evidence = await get_evidence_by_id(db, evidence_id)
+    if not evidence:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evidence not found")
+    await authorize_case_access(db, evidence.case_id, current_user)
+
+    if evidence.file_type != "image":
+        raise HTTPException(status_code=400, detail="Perceptual hashing only applies to image evidence")
+
+    result = await compute_perceptual_hash(evidence.file_path)
+    result["evidence_id"] = evidence.id
+    result["original_filename"] = evidence.original_filename
+    return result
+
+
+@router.get("/{evidence_id}/compare-phash/{other_id}")
+async def compare_evidence_phash(
+    evidence_id: int = Path(ge=1),
+    other_id: int = Path(ge=1),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Compare perceptual hashes of two image evidence items for tampering detection."""
+    ev_a = await get_evidence_by_id(db, evidence_id)
+    ev_b = await get_evidence_by_id(db, other_id)
+    if not ev_a or not ev_b:
+        raise HTTPException(status_code=404, detail="One or both evidence items not found")
+    await authorize_case_access(db, ev_a.case_id, current_user)
+    await authorize_case_access(db, ev_b.case_id, current_user)
+
+    if ev_a.file_type != "image" or ev_b.file_type != "image":
+        raise HTTPException(status_code=400, detail="Both evidence items must be images")
+
+    hash_a = await compute_perceptual_hash(ev_a.file_path)
+    hash_b = await compute_perceptual_hash(ev_b.file_path)
+
+    if hash_a.get("error") or hash_b.get("error"):
+        raise HTTPException(status_code=500, detail="Failed to compute perceptual hash")
+
+    comparison = compare_perceptual_hashes(hash_a["phash"], hash_b["phash"])
+    sha_match = ev_a.file_hash == ev_b.file_hash if ev_a.file_hash and ev_b.file_hash else None
+
+    return {
+        "evidence_a": {"id": ev_a.id, "filename": ev_a.original_filename, "phash": hash_a["phash"], "sha256": ev_a.file_hash},
+        "evidence_b": {"id": ev_b.id, "filename": ev_b.original_filename, "phash": hash_b["phash"], "sha256": ev_b.file_hash},
+        "sha256_match": sha_match,
+        "perceptual_comparison": comparison,
+        "interpretation": _interpret_comparison(sha_match, comparison),
+    }
+
+
+def _interpret_comparison(sha_match: bool | None, comparison: dict) -> str:
+    verdict = comparison.get("verdict", "unknown")
+    if sha_match is True:
+        return "Files are byte-for-byte identical."
+    if sha_match is False and verdict == "near_identical":
+        return "Files differ at byte level but appear visually identical — likely re-compressed or re-saved."
+    if sha_match is False and verdict == "visually_similar":
+        return "Files are visually similar but have been edited (cropped, color-adjusted, or watermarked)."
+    if verdict == "different":
+        return "Files are visually different — likely unrelated images."
+    return "Comparison inconclusive."

@@ -11,80 +11,43 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import api from '../../api/client'
 import { useAuthStore } from '../../store/authStore'
+import { useInvestigationStore } from '../../store/investigationStore'
 import CaseChat from '../../components/forensics/CaseChat'
-
-interface Hypothesis {
-  id: string
-  title: string
-  description: string
-  confidence: number
-  supporting_evidence: string[]
-  contradicting_evidence: string[]
-  status: string
-}
-
-interface Contradiction {
-  id: string
-  description: string
-  evidence_a: string
-  evidence_b: string
-  severity: string
-  resolution_suggestion?: string
-}
-
-interface ConfidenceDashboard {
-  overall_confidence: number
-  evidence_strength: number
-  hypothesis_coverage: number
-  contradiction_severity: number
-  recommendations: string[]
-}
 
 export default function IIDSEPage() {
   const { accessToken } = useAuthStore()
-  const [sessionId, setSessionId] = useState<string | null>(null)
-  const [isInvestigating, setIsInvestigating] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
-  const [uploadedFiles, setUploadedFiles] = useState<{ name: string; url?: string }[]>([])
-  const [hypotheses, setHypotheses] = useState<Hypothesis[]>([])
-  const [contradictions, setContradictions] = useState<Contradiction[]>([])
-  const [confidenceDashboard, setConfidenceDashboard] = useState<ConfidenceDashboard | null>(null)
-  const [report, setReport] = useState('')
-  const [toolCount, setToolCount] = useState({ completed: 0, total: 0 })
-  const [activeTab, setActiveTab] = useState<'hypotheses' | 'contradictions' | 'confidence' | 'report'>('hypotheses')
-  const [error, setError] = useState('')
+  const { iidse, setIidse, clearIidse } = useInvestigationStore()
+  const {
+    sessionId, uploadedFiles, hypotheses, contradictions,
+    confidenceDashboard, report, toolCount, activeTab,
+    isInvestigating, isUploading, error,
+  } = iidse
   const [expandedHypothesis, setExpandedHypothesis] = useState<string | null>(null)
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!acceptedFiles.length) return
-    setError('')
-    setIsUploading(true)
-    setUploadedFiles([])
-    setHypotheses([])
-    setContradictions([])
-    setConfidenceDashboard(null)
-    setReport('')
-    setToolCount({ completed: 0, total: 0 })
+    clearIidse()
+    setIidse({ isUploading: true })
 
     try {
       const title = acceptedFiles.length === 1 ? `IIDSE: ${acceptedFiles[0].name}` : `IIDSE: ${acceptedFiles.length} files`
       const sessionRes = await api.post('/api/ai-investigation/sessions', { title })
       const newSessionId = sessionRes.data.session_id
-      setSessionId(newSessionId)
+      setIidse({ sessionId: newSessionId })
 
+      const files: { name: string; url?: string }[] = []
       for (const file of acceptedFiles) {
-        const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null
+        const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
         const formData = new FormData()
         formData.append('file', file)
         await api.post(`/api/ai-investigation/sessions/${newSessionId}/upload`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
-        setUploadedFiles(prev => [...prev, { name: file.name, url: previewUrl || undefined }])
+        files.push({ name: file.name, url: previewUrl })
+        setIidse({ uploadedFiles: [...files] })
       }
 
-      setIsUploading(false)
-
-      setIsInvestigating(true)
+      setIidse({ isUploading: false, isInvestigating: true })
       const investigateForm = new FormData()
       investigateForm.append('message', '')
 
@@ -122,34 +85,35 @@ export default function IIDSEPage() {
           if (dataStr) {
             try {
               const data = JSON.parse(dataStr)
+              const store = useInvestigationStore.getState()
               switch (eventName) {
                 case 'plan':
                   if (Array.isArray(data.tools_selected)) {
                     total = data.tools_selected.length
-                    setToolCount({ completed: 0, total })
+                    store.setIidse({ toolCount: { completed: 0, total } })
                   }
                   break
                 case 'tool_complete':
                   completed++
-                  setToolCount({ completed, total })
+                  store.setIidse({ toolCount: { completed, total } })
                   break
                 case 'hypotheses':
-                  setHypotheses(data.hypotheses || [])
+                  store.setIidse({ hypotheses: data.hypotheses || [] })
                   break
                 case 'contradictions':
-                  setContradictions(data.contradictions || [])
+                  store.setIidse({ contradictions: data.contradictions || [] })
                   break
                 case 'confidence_dashboard':
-                  setConfidenceDashboard(data)
+                  store.setIidse({ confidenceDashboard: data })
                   break
                 case 'report_complete':
-                  setReport(data.report || '')
+                  store.setIidse({ report: data.report || '' })
                   break
                 case 'complete':
-                  if (data.hypotheses?.length && !hypotheses.length) setHypotheses(data.hypotheses)
+                  if (data.hypotheses?.length && !store.iidse.hypotheses.length) store.setIidse({ hypotheses: data.hypotheses })
                   break
                 case 'error':
-                  setError(data.error || 'Investigation pipeline error')
+                  store.setIidse({ error: data.error || 'Investigation pipeline error' })
                   break
               }
             } catch {}
@@ -157,12 +121,11 @@ export default function IIDSEPage() {
         }
       }
     } catch (e: any) {
-      setError(e.message || 'Analysis failed')
+      setIidse({ error: e.message || 'Analysis failed' })
     } finally {
-      setIsUploading(false)
-      setIsInvestigating(false)
+      setIidse({ isUploading: false, isInvestigating: false })
     }
-  }, [accessToken])
+  }, [accessToken, clearIidse, setIidse])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -258,7 +221,7 @@ export default function IIDSEPage() {
             ].map(tab => (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
+                onClick={() => setIidse({ activeTab: tab.key })}
                 className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
                   activeTab === tab.key
                     ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
@@ -436,7 +399,7 @@ export default function IIDSEPage() {
       )}
 
       {/* Case Discussion Chat */}
-      <CaseChat sessionId={sessionId} onSessionCreated={setSessionId} disabled={isInvestigating || isUploading} accentColor="purple" />
+      <CaseChat sessionId={sessionId} onSessionCreated={(id) => setIidse({ sessionId: id })} disabled={isInvestigating || isUploading} accentColor="purple" />
     </div>
   )
 }

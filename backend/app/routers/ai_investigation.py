@@ -39,6 +39,13 @@ from app.services.ai_investigation_service import (
     EVIDENCE_DIR,
 )
 from app.services.detective_chat_service import enhanced_detective_chat, explain_tool_result
+from app.tasks.investigation_tasks import (
+    start_investigation_task,
+    get_task,
+    get_task_by_session,
+    get_task_events_since,
+    cleanup_old_tasks,
+)
 
 router = APIRouter()
 
@@ -338,6 +345,79 @@ async def investigate(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@router.post("/sessions/{session_id}/investigate-background")
+async def investigate_background(
+    session_id: str,
+    message: str = Form(""),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """Start investigation as a background task. Poll /status for progress."""
+    stmt = select(AIInvestigationSession).where(
+        AIInvestigationSession.session_id == session_id,
+        AIInvestigationSession.user_id == current_user.id,
+    )
+    result = await db.execute(stmt)
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    last_upload_stmt = (
+        select(AIInvestigationMessage)
+        .where(
+            AIInvestigationMessage.session_id == session.id,
+            AIInvestigationMessage.role == "user",
+            AIInvestigationMessage.attachments.isnot(None),
+        )
+        .order_by(desc(AIInvestigationMessage.created_at))
+        .limit(1)
+    )
+    upload_result = await db.execute(last_upload_stmt)
+    upload_msg = upload_result.scalar_one_or_none()
+    if not upload_msg or not upload_msg.attachments:
+        raise HTTPException(status_code=400, detail="No evidence uploaded in this session yet")
+
+    attachments = upload_msg.attachments if isinstance(upload_msg.attachments, list) else [upload_msg.attachments]
+    attachment = attachments[0]
+
+    task_id = await start_investigation_task(
+        session_id=session_id,
+        file_path=attachment["file_path"],
+        original_filename=attachment["original_filename"],
+        user_message=message or None,
+        user_id=current_user.id,
+        case_id=session.case_id,
+        db_session_id=session.id,
+    )
+
+    return {"task_id": task_id, "status": "started", "poll_url": f"/api/ai-investigation/tasks/{task_id}/status"}
+
+
+@router.get("/tasks/{task_id}/status")
+async def get_investigation_status(
+    task_id: str,
+    after: int = Query(default=0, ge=0),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """Poll investigation progress. Pass ?after=N to get events since index N."""
+    cleanup_old_tasks()
+    task = get_task(task_id)
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found or expired")
+
+    new_events = get_task_events_since(task_id, after)
+    return {
+        "task_id": task_id,
+        "status": task.status,
+        "total_events": len(task.events),
+        "new_events": new_events,
+        "next_after": after + len(new_events),
+        "error": task.error,
+        "started_at": task.started_at.isoformat(),
+        "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+    }
 
 
 @router.post("/sessions/{session_id}/message")

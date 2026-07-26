@@ -7,22 +7,7 @@ import {
 } from 'lucide-react'
 import api from '../../api/client'
 import toast from 'react-hot-toast'
-
-interface OsintInvestigation {
-  id: number
-  identifier_type: string
-  identifier_value: string
-  findings: Record<string, any>
-  officer_notes: string | null
-  overall_status: string
-  finding_statuses: Record<string, string> | null
-  linked_criminal_id: number | null
-  searched_by: number
-  ai_model_used: string | null
-  ai_generation_time_ms: number | null
-  created_at: string
-  updated_at: string
-}
+import { useInvestigationStore, type OsintInvestigation } from '../../store/investigationStore'
 
 interface ListItem {
   id: number
@@ -50,24 +35,34 @@ const statusColors: Record<string, string> = {
 }
 
 export default function OsintHubPage() {
-  const [selectedType, setSelectedType] = useState('phone')
-  const [searchValue, setSearchValue] = useState('')
+  const { osint, setOsint } = useInvestigationStore()
+  const { currentInvestigation, officerNotes, selectedType, searchValue } = osint
+
   const [searching, setSearching] = useState(false)
-  const [currentInvestigation, setCurrentInvestigation] = useState<OsintInvestigation | null>(null)
   const [history, setHistory] = useState<ListItem[]>([])
-  const [officerNotes, setOfficerNotes] = useState('')
   const [savingNotes, setSavingNotes] = useState(false)
+  const [historyLoading, setHistoryLoading] = useState(true)
+
+  const setSelectedType = (v: string) => setOsint({ selectedType: v })
+  const setSearchValue = (v: string) => setOsint({ searchValue: v })
+  const setCurrentInvestigation = (v: OsintInvestigation | null) => setOsint({ currentInvestigation: v })
+  const setOfficerNotes = (v: string) => setOsint({ officerNotes: v })
 
   useEffect(() => {
     fetchHistory()
   }, [])
 
   const fetchHistory = async () => {
+    setHistoryLoading(true)
     try {
       const res = await api.get('/api/criminal-intelligence/osint', { params: { per_page: 15 } })
-      setHistory(res.data.items)
-    } catch {
-      // silent
+      const items = res.data?.items ?? res.data ?? []
+      setHistory(Array.isArray(items) ? items : [])
+    } catch (err) {
+      console.error('OSINT history fetch failed:', err)
+      toast.error('Failed to load previous investigations')
+    } finally {
+      setHistoryLoading(false)
     }
   }
 
@@ -401,11 +396,21 @@ export default function OsintHubPage() {
       )}
 
       {/* History Table */}
-      {history.length > 0 && (
-        <div className="mt-8">
-          <h3 className="text-sm font-semibold text-dark-300 mb-3 flex items-center gap-2">
-            <Clock className="w-4 h-4" /> Recent Investigations
-          </h3>
+      <div className="mt-8">
+        <h3 className="text-sm font-semibold text-dark-300 mb-3 flex items-center gap-2">
+          <Clock className="w-4 h-4" /> Recent Investigations
+        </h3>
+        {historyLoading ? (
+          <div className="space-y-2">
+            {[1, 2, 3].map(i => <div key={i} className="h-12 rounded-xl bg-dark-800/50 animate-pulse" />)}
+          </div>
+        ) : history.length === 0 ? (
+          <div className="text-center py-8 bg-dark-900/40 rounded-xl border border-dark-700/50">
+            <Globe className="w-10 h-10 text-dark-600 mx-auto mb-2" />
+            <p className="text-dark-400 text-sm">No previous investigations found</p>
+            <p className="text-dark-500 text-xs mt-1">Perform a search above to start investigating</p>
+          </div>
+        ) : (
           <div className="rounded-xl bg-dark-900/80 border border-dark-700/50 overflow-hidden">
             <table className="w-full">
               <thead className="bg-dark-900/50">
@@ -446,8 +451,8 @@ export default function OsintHubPage() {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

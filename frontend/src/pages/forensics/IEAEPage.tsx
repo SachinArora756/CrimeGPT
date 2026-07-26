@@ -12,63 +12,8 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import api from '../../api/client'
 import { useAuthStore } from '../../store/authStore'
+import { useInvestigationStore, type PassResult } from '../../store/investigationStore'
 import CaseChat from '../../components/forensics/CaseChat'
-
-interface Classification {
-  type: string
-  mime_type: string
-  confidence: number
-  ai_enhanced?: boolean
-  description?: string
-  detected_elements?: string[]
-}
-
-interface ChecklistItem {
-  category: string
-  state: 'completed' | 'not_found' | 'needs_manual_review' | 'not_applicable'
-  findings_count: number
-  confidence: number
-  details: string
-}
-
-interface CompletenessData {
-  scores: {
-    evidence_collection_score: number
-    evidence_analysis_score: number
-    evidence_verification_score: number
-    overall_completeness: number
-  }
-  missing_analyses: string[]
-  recommendations: string[]
-}
-
-interface CorrelationItem {
-  source_evidence_id: number
-  target_evidence_id: number
-  correlation_type: string
-  confidence: number
-  source_filename?: string
-  target_filename?: string
-  details?: any
-}
-
-interface PassResult {
-  pass_number: number
-  pass_name: string
-  tool_key: string
-  status: string
-  confidence: number | null
-  findings_summary: string
-  execution_time_ms: number
-}
-
-interface ToolProgress {
-  tool_key: string
-  status: 'pending' | 'running' | 'completed' | 'failed'
-  confidence?: number
-  execution_time_ms?: number
-  output?: any
-}
 
 const TOOL_META: Record<string, { icon: any; label: string; color: string; bgColor: string }> = {
   image_ocr: { icon: FileSearch, label: 'OCR Analysis', color: 'text-blue-400', bgColor: 'bg-blue-500/10' },
@@ -97,33 +42,19 @@ function getToolMeta(toolKey: string) {
 
 export default function IEAEPage() {
   const { accessToken } = useAuthStore()
-  const [sessionId, setSessionId] = useState<string | null>(null)
-  const [isInvestigating, setIsInvestigating] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
-  const [uploadedFiles, setUploadedFiles] = useState<{ name: string; classification?: Classification; url?: string }[]>([])
-  const [toolProgress, setToolProgress] = useState<ToolProgress[]>([])
-  const [checklist, setChecklist] = useState<{ items: ChecklistItem[]; completed_count: number; needs_review_count: number } | null>(null)
-  const [completeness, setCompleteness] = useState<CompletenessData | null>(null)
-  const [correlations, setCorrelations] = useState<CorrelationItem[]>([])
-  const [passResults, setPassResults] = useState<PassResult[]>([])
-  const [aiPlanReasoning, setAiPlanReasoning] = useState('')
-  const [report, setReport] = useState('')
+  const { ieae, setIeae, clearIeae } = useInvestigationStore()
+  const {
+    sessionId, uploadedFiles, toolProgress, checklist, completeness,
+    correlations, passResults, aiPlanReasoning, report, isInvestigating,
+    isUploading, error,
+  } = ieae
   const [expandedTools, setExpandedTools] = useState<Set<string>>(new Set())
-  const [error, setError] = useState('')
   const filePreviewRef = useRef<string | null>(null)
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (!acceptedFiles.length) return
-    setError('')
-    setIsUploading(true)
-    setUploadedFiles([])
-    setToolProgress([])
-    setChecklist(null)
-    setCompleteness(null)
-    setCorrelations([])
-    setPassResults([])
-    setAiPlanReasoning('')
-    setReport('')
+    clearIeae()
+    setIeae({ isUploading: true })
 
     const lastPreview = acceptedFiles[acceptedFiles.length - 1].type.startsWith('image/')
       ? URL.createObjectURL(acceptedFiles[acceptedFiles.length - 1])
@@ -134,25 +65,21 @@ export default function IEAEPage() {
       const title = acceptedFiles.length === 1 ? `IEAE: ${acceptedFiles[0].name}` : `IEAE: ${acceptedFiles.length} files`
       const sessionRes = await api.post('/api/ai-investigation/sessions', { title })
       const newSessionId = sessionRes.data.session_id
-      setSessionId(newSessionId)
+      setIeae({ sessionId: newSessionId })
 
+      const files: { name: string; classification?: any; url?: string }[] = []
       for (const file of acceptedFiles) {
-        const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null
+        const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
         const formData = new FormData()
         formData.append('file', file)
         const uploadRes = await api.post(`/api/ai-investigation/sessions/${newSessionId}/upload`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         })
-        setUploadedFiles(prev => [...prev, {
-          name: uploadRes.data.original_filename,
-          classification: uploadRes.data.classification,
-          url: previewUrl || undefined,
-        }])
+        files.push({ name: uploadRes.data.original_filename, classification: uploadRes.data.classification, url: previewUrl })
+        setIeae({ uploadedFiles: [...files] })
       }
 
-      setIsUploading(false)
-
-      setIsInvestigating(true)
+      setIeae({ isUploading: false, isInvestigating: true })
       const investigateForm = new FormData()
       investigateForm.append('message', '')
 
@@ -194,62 +121,67 @@ export default function IEAEPage() {
         }
       }
     } catch (e: any) {
-      setError(e.message || 'Analysis failed')
+      setIeae({ error: e.message || 'Analysis failed' })
     } finally {
-      setIsUploading(false)
-      setIsInvestigating(false)
+      setIeae({ isUploading: false, isInvestigating: false })
     }
-  }, [accessToken])
+  }, [accessToken, clearIeae, setIeae])
 
-  const handleSSE = (event: string, data: any) => {
+  const handleSSE = useCallback((event: string, data: any) => {
+    const store = useInvestigationStore.getState()
+    const current = store.ieae
     switch (event) {
       case 'classification':
       case 'ai_classification':
-        setUploadedFiles(prev => prev.length ? [...prev.slice(0, -1), { ...prev[prev.length - 1], classification: data }] : prev)
+        if (current.uploadedFiles.length) {
+          const updated = [...current.uploadedFiles]
+          updated[updated.length - 1] = { ...updated[updated.length - 1], classification: data }
+          store.setIeae({ uploadedFiles: updated })
+        }
         break
       case 'plan':
         if (Array.isArray(data.tools_selected)) {
-          setToolProgress(data.tools_selected.map((t: string) => ({ tool_key: t, status: 'pending' as const })))
+          store.setIeae({ toolProgress: data.tools_selected.map((t: string) => ({ tool_key: t, status: 'pending' as const })) })
         }
-        if (data.ai_reasoning) setAiPlanReasoning(data.ai_reasoning)
+        if (data.ai_reasoning) store.setIeae({ aiPlanReasoning: data.ai_reasoning })
         break
       case 'tool_start':
-        setToolProgress(prev => prev.map(t => t.tool_key === data.tool_key ? { ...t, status: 'running' as const } : t))
+        store.setIeae({ toolProgress: current.toolProgress.map(t => t.tool_key === data.tool_key ? { ...t, status: 'running' as const } : t) })
         break
       case 'tool_complete':
-        setToolProgress(prev => prev.map(t => t.tool_key === data.tool_key ? {
+        store.setIeae({ toolProgress: current.toolProgress.map(t => t.tool_key === data.tool_key ? {
           ...t,
           status: data.status === 'completed' ? 'completed' as const : 'failed' as const,
           confidence: data.confidence,
           execution_time_ms: data.execution_time_ms,
           output: data.output,
-        } : t))
+        } : t) })
         break
       case 'pass_complete':
-        setPassResults(prev => [...prev, data as PassResult])
+        store.setIeae({ passResults: [...current.passResults, data as PassResult] })
         break
       case 'checklist':
-        setChecklist(data)
+        store.setIeae({ checklist: data })
         break
       case 'completeness':
-        setCompleteness(data)
+        store.setIeae({ completeness: data })
         break
       case 'correlations':
-        setCorrelations(data.correlations || [])
+        store.setIeae({ correlations: data.correlations || [] })
         break
       case 'report_complete':
-        setReport(data.report || '')
+        store.setIeae({ report: data.report || '' })
         break
       case 'error':
-        setError(data.error || 'Investigation pipeline error')
+        store.setIeae({ error: data.error || 'Investigation pipeline error' })
         break
       case 'complete':
-        if (data.checklist && !checklist) setChecklist(data.checklist)
-        if (data.completeness && !completeness) setCompleteness(data.completeness)
-        if (data.correlations?.length) setCorrelations(data.correlations)
+        if (data.checklist && !current.checklist) store.setIeae({ checklist: data.checklist })
+        if (data.completeness && !current.completeness) store.setIeae({ completeness: data.completeness })
+        if (data.correlations?.length) store.setIeae({ correlations: data.correlations })
         break
     }
-  }
+  }, [])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -553,7 +485,7 @@ export default function IEAEPage() {
       )}
 
       {/* Case Discussion Chat */}
-      <CaseChat sessionId={sessionId} onSessionCreated={setSessionId} disabled={isInvestigating || isUploading} accentColor="emerald" />
+      <CaseChat sessionId={sessionId} onSessionCreated={(id) => setIeae({ sessionId: id })} disabled={isInvestigating || isUploading} accentColor="emerald" />
     </div>
   )
 }

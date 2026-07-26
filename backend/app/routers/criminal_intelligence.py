@@ -34,6 +34,7 @@ from app.schemas.criminal_intelligence import (
 from app.utils.rate_limiter import limiter
 
 router = APIRouter()
+osint_router = APIRouter(prefix="/osint", tags=["OSINT"])
 
 role_dependency = Depends(require_min_role(UserRole.SUB_INSPECTOR))
 
@@ -261,9 +262,9 @@ async def get_criminal_stats(
     )
 
 
-# ─── OSINT Investigation (must be before /{criminal_id} to avoid route conflict) ─
+# ─── OSINT Investigation (on osint_router to avoid /{criminal_id} route conflict) ─
 
-@router.post("/osint/search", response_model=OsintInvestigationResponse, status_code=status.HTTP_201_CREATED)
+@osint_router.post("/search", response_model=OsintInvestigationResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("10/minute")
 async def osint_search(
     request: Request,
@@ -273,10 +274,22 @@ async def osint_search(
 ):
     """Run an AI-powered OSINT search and save results."""
     import time
-    from app.services.osint_service import generate_osint_findings
+    import logging
+    logger = logging.getLogger(__name__)
 
     start_time = time.time()
-    findings, model_used = await generate_osint_findings(data.identifier_type, data.identifier_value)
+    try:
+        from app.services.osint_service import generate_osint_findings
+        findings, model_used = await generate_osint_findings(data.identifier_type, data.identifier_value)
+    except Exception as e:
+        logger.error(f"OSINT search failed for {data.identifier_type}={data.identifier_value}: {e}")
+        findings = {
+            "summary": f"AI analysis failed: {str(e)[:200]}",
+            "risk_indicators": [],
+            "recommended_actions": ["Check API key configuration", "Retry the search"],
+            "disclaimer": "AI generation error - manual investigation required",
+        }
+        model_used = None
     generation_time_ms = int((time.time() - start_time) * 1000)
 
     client_ip = request.client.host if request.client else None
@@ -297,7 +310,7 @@ async def osint_search(
     return OsintInvestigationResponse.model_validate(investigation)
 
 
-@router.get("/osint", response_model=OsintInvestigationListResponse)
+@osint_router.get("", response_model=OsintInvestigationListResponse)
 @limiter.limit("60/minute")
 async def list_osint_investigations(
     request: Request,
@@ -324,7 +337,7 @@ async def list_osint_investigations(
     return OsintInvestigationListResponse(items=items, total=total)
 
 
-@router.get("/osint/{id}", response_model=OsintInvestigationResponse)
+@osint_router.get("/{id}", response_model=OsintInvestigationResponse)
 @limiter.limit("60/minute")
 async def get_osint_investigation(
     request: Request,
@@ -342,7 +355,7 @@ async def get_osint_investigation(
     return OsintInvestigationResponse.model_validate(investigation)
 
 
-@router.patch("/osint/{id}", response_model=OsintInvestigationResponse)
+@osint_router.patch("/{id}", response_model=OsintInvestigationResponse)
 @limiter.limit("30/minute")
 async def update_osint_investigation(
     request: Request,
@@ -374,7 +387,7 @@ async def update_osint_investigation(
     return OsintInvestigationResponse.model_validate(investigation)
 
 
-@router.post("/osint/{id}/link-profile", response_model=OsintInvestigationResponse)
+@osint_router.post("/{id}/link-profile", response_model=OsintInvestigationResponse)
 @limiter.limit("20/minute")
 async def link_osint_to_profile(
     request: Request,
@@ -404,7 +417,7 @@ async def link_osint_to_profile(
     return OsintInvestigationResponse.model_validate(investigation)
 
 
-@router.delete("/osint/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@osint_router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 @limiter.limit("20/minute")
 async def delete_osint_investigation(
     request: Request,
@@ -424,6 +437,9 @@ async def delete_osint_investigation(
     await db.commit()
     return None
 
+
+# ─── Mount OSINT sub-router BEFORE the catch-all /{criminal_id} ─────────────────
+router.include_router(osint_router)
 
 # ─── Get Criminal Profile Detail ────────────────────────────────────────────────
 

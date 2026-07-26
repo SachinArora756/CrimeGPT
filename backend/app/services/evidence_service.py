@@ -35,7 +35,7 @@ def is_allowed_file(filename: str) -> bool:
     return ext in all_extensions
 
 
-async def save_upload_file(file: UploadFile, case_id: int) -> tuple[str, int]:
+async def save_upload_file(file: UploadFile, case_id: int) -> tuple[str, int, str]:
     case_dir = os.path.join(settings.upload_dir, str(case_id))
     os.makedirs(case_dir, exist_ok=True)
 

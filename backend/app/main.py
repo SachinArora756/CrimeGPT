@@ -96,8 +96,9 @@ async def _ensure_schema_columns():
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_expiry TIMESTAMP",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token_hash VARCHAR(64)",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_expiry TIMESTAMP",
-        # Document hash column
+        # Hash columns for integrity verification
         "ALTER TABLE documents ADD COLUMN IF NOT EXISTS file_hash VARCHAR(64)",
+        "ALTER TABLE evidence ADD COLUMN IF NOT EXISTS file_hash VARCHAR(64)",
         # Criminal Intelligence location & accountability columns
         "ALTER TABLE criminal_profiles ADD COLUMN IF NOT EXISTS last_known_state VARCHAR(100)",
         "ALTER TABLE criminal_profiles ADD COLUMN IF NOT EXISTS last_known_district VARCHAR(100)",
@@ -107,6 +108,25 @@ async def _ensure_schema_columns():
         "ALTER TABLE criminal_profiles ADD COLUMN IF NOT EXISTS gang_marked_at TIMESTAMP",
         # Remove old watchlist table (replaced by osint_investigations)
         "DROP TABLE IF EXISTS criminal_watchlist",
+        # Ensure osint_investigations table exists with all columns
+        """CREATE TABLE IF NOT EXISTS osint_investigations (
+            id SERIAL PRIMARY KEY,
+            identifier_type VARCHAR(20) NOT NULL,
+            identifier_value VARCHAR(500) NOT NULL,
+            findings JSON NOT NULL DEFAULT '{}',
+            officer_notes TEXT,
+            overall_status VARCHAR(20) NOT NULL DEFAULT 'unverified',
+            finding_statuses JSON,
+            linked_criminal_id INTEGER REFERENCES criminal_profiles(id) ON DELETE SET NULL,
+            searched_by INTEGER NOT NULL REFERENCES users(id),
+            ip_address VARCHAR(45),
+            ai_model_used VARCHAR(50),
+            ai_generation_time_ms INTEGER,
+            created_at TIMESTAMP DEFAULT now(),
+            updated_at TIMESTAMP DEFAULT now()
+        )""",
+        "CREATE INDEX IF NOT EXISTS ix_osint_investigations_type_value ON osint_investigations(identifier_type, identifier_value)",
+        "CREATE INDEX IF NOT EXISTS ix_osint_investigations_searched_by ON osint_investigations(searched_by)",
     ]
     async with engine.begin() as conn:
         for stmt in migrations:
@@ -124,6 +144,37 @@ async def _ensure_schema_columns():
         ))
 
 
+async def _backfill_document_hashes():
+    """Compute SHA-256 hashes for any documents/evidence that are missing one."""
+    import hashlib
+    async with async_session() as db:
+        result = await db.execute(
+            select(Document).where(Document.file_hash.is_(None))
+        )
+        docs = result.scalars().all()
+        for doc in docs:
+            if os.path.exists(doc.file_path):
+                sha = hashlib.sha256()
+                with open(doc.file_path, "rb") as f:
+                    for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                        sha.update(chunk)
+                doc.file_hash = sha.hexdigest()
+
+        ev_result = await db.execute(
+            select(Evidence).where(Evidence.file_hash.is_(None))
+        )
+        evidences = ev_result.scalars().all()
+        for ev in evidences:
+            if os.path.exists(ev.file_path):
+                sha = hashlib.sha256()
+                with open(ev.file_path, "rb") as f:
+                    for chunk in iter(lambda: f.read(1024 * 1024), b""):
+                        sha.update(chunk)
+                ev.file_hash = sha.hexdigest()
+
+        await db.commit()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
@@ -132,6 +183,7 @@ async def lifespan(app: FastAPI):
     await seed_admin()
     await _seed_criminal_data()
     await _auto_ingest_legal_docs()
+    await _backfill_document_hashes()
     yield
     await engine.dispose()
 

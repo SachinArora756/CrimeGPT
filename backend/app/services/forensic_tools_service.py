@@ -31,6 +31,10 @@ _insightface_app = None
 _clip_model = None
 _clip_preprocess = None
 _clip_tokenizer = None
+_yolo_models: dict[str, Any] = {}
+_whisper_model = None
+_whisper_model_size: str | None = None
+_easyocr_readers: dict[str, Any] = {}
 
 
 def _get_insightface():
@@ -54,6 +58,37 @@ def _get_clip_model():
         )
         _clip_model.eval()
     return _clip_model, _clip_preprocess
+
+
+def _get_yolo(model_path: str = "yolov8n.pt"):
+    global _yolo_models
+    if model_path not in _yolo_models:
+        from ultralytics import YOLO
+        _yolo_models[model_path] = YOLO(model_path)
+        logger.info(f"YOLO model loaded: {model_path}")
+    return _yolo_models[model_path]
+
+
+def _get_whisper(model_size: str = "base"):
+    global _whisper_model, _whisper_model_size
+    if _whisper_model is None or _whisper_model_size != model_size:
+        from faster_whisper import WhisperModel
+        _whisper_model = WhisperModel(model_size, device="cpu", compute_type="int8")
+        _whisper_model_size = model_size
+        logger.info(f"Whisper model loaded: {model_size}")
+    return _whisper_model
+
+
+def _get_easyocr(langs: list[str] | None = None):
+    global _easyocr_readers
+    if langs is None:
+        langs = ["en"]
+    key = ",".join(sorted(langs))
+    if key not in _easyocr_readers:
+        import easyocr
+        _easyocr_readers[key] = easyocr.Reader(langs, gpu=False, verbose=False)
+        logger.info(f"EasyOCR reader loaded: {langs}")
+    return _easyocr_readers[key]
 
 
 # ---------------------------------------------------------------------------
@@ -318,10 +353,9 @@ async def run_image_ocr(file_path: str, params: dict) -> tuple[dict, float | Non
 
         # Strategy 1: EasyOCR (deep learning — works on scene text in photos)
         try:
-            import easyocr
             lang_map = {"eng": "en", "hin": "hi", "en": "en", "hi": "hi"}
             ocr_lang = lang_map.get(lang, "en")
-            reader = easyocr.Reader([ocr_lang], gpu=False, verbose=False)
+            reader = _get_easyocr([ocr_lang])
             results = reader.readtext(file_path)
 
             if results:
@@ -396,14 +430,14 @@ async def run_object_detection(file_path: str, params: dict) -> tuple[dict, floa
 
     def _detect_yolo():
         try:
-            from ultralytics import YOLO
+            from ultralytics import YOLO  # noqa: F401
         except ImportError:
             return None
 
         try:
             model_path = params.get("model", "yolov8n.pt")
             confidence_threshold = float(params.get("confidence", 0.15))
-            model = YOLO(model_path)
+            model = _get_yolo(model_path)
             results = model(file_path, conf=confidence_threshold)
 
             objects = []
@@ -561,11 +595,11 @@ async def run_audio_transcribe(file_path: str, params: dict) -> tuple[dict, floa
     def _transcribe():
         # Try faster-whisper first (if ctranslate2 works)
         try:
-            from faster_whisper import WhisperModel
+            from faster_whisper import WhisperModel  # noqa: F401
             model_size = params.get("model", "base")
             language = params.get("language", None)
 
-            model = WhisperModel(model_size, device="cpu", compute_type="int8")
+            model = _get_whisper(model_size)
 
             transcribe_kwargs = {}
             if language:
@@ -696,10 +730,9 @@ async def run_document_ocr(file_path: str, params: dict) -> tuple[dict, float | 
 
         # For image files — use EasyOCR first
         try:
-            import easyocr
             lang_map = {"eng": "en", "hin": "hi", "en": "en", "hi": "hi"}
             ocr_lang = lang_map.get(lang, "en")
-            reader = easyocr.Reader([ocr_lang], gpu=False, verbose=False)
+            reader = _get_easyocr([ocr_lang])
             results = reader.readtext(file_path)
             if results:
                 text_parts = [text for (_, text, _) in results]
@@ -1694,7 +1727,7 @@ async def run_vehicle_detect(file_path: str, params: dict) -> tuple[dict, float 
 
     def _detect_yolo():
         try:
-            from ultralytics import YOLO
+            from ultralytics import YOLO  # noqa: F401
         except ImportError:
             return None
 
@@ -1703,7 +1736,7 @@ async def run_vehicle_detect(file_path: str, params: dict) -> tuple[dict, float 
 
             model_path = params.get("model", "yolov8n.pt")
             confidence_threshold = float(params.get("confidence", 0.15))
-            model = YOLO(model_path)
+            model = _get_yolo(model_path)
             results = model(file_path, conf=confidence_threshold)
 
             vehicles = []
@@ -1847,9 +1880,8 @@ async def run_license_plate_ocr(file_path: str, params: dict) -> tuple[dict, flo
     def _plate_ocr_easyocr():
         """Use EasyOCR (deep learning) — works on real-world photos unlike Tesseract."""
         try:
-            import easyocr
             import cv2
-            import numpy as np
+            import numpy as np  # noqa: F401
         except ImportError:
             return None
 
@@ -1859,7 +1891,7 @@ async def run_license_plate_ocr(file_path: str, params: dict) -> tuple[dict, flo
                 return None
 
             h_img, w_img = img.shape[:2]
-            reader = easyocr.Reader(['en'], gpu=False, verbose=False)
+            reader = _get_easyocr(["en"])
             results = reader.readtext(file_path)
 
             plates = []
@@ -1961,13 +1993,20 @@ async def run_license_plate_ocr(file_path: str, params: dict) -> tuple[dict, flo
             return {"error": f"License plate OCR failed: {str(e)}", "plates": []}, None
 
     def _run():
-        result = _plate_ocr_gemini()
-        if result is not None:
-            return result
+        # Priority: EasyOCR (deterministic, auditable) → Tesseract → Gemini (last resort)
         result = _plate_ocr_easyocr()
         if result is not None:
             return result
-        return _plate_ocr_tesseract()
+        result = _plate_ocr_tesseract()
+        if result is not None and result[0].get("plates_detected", 0) > 0:
+            return result
+        gemini_result = _plate_ocr_gemini()
+        if gemini_result is not None:
+            return gemini_result
+        # If tesseract ran but found nothing, return its result anyway
+        if result is not None:
+            return result
+        return {"plates_detected": 0, "plates": [], "method": "none_available"}, None
 
     return await asyncio.to_thread(_run)
 
@@ -1977,14 +2016,15 @@ async def run_weapon_detect(file_path: str, params: dict) -> tuple[dict, float |
 
     def _detect_yolo():
         try:
-            from ultralytics import YOLO
+            from ultralytics import YOLO  # noqa: F401
         except ImportError:
             return None
 
         try:
-            model_path = params.get("model", "yolov8n.pt")
+            from app.config import settings as _cfg
+            model_path = params.get("model", _cfg.weapon_model_path)
             confidence_threshold = float(params.get("confidence", 0.25))
-            model = YOLO(model_path)
+            model = _get_yolo(model_path)
             results = model(file_path, conf=confidence_threshold)
 
             weapon_keywords = {"knife", "scissors", "baseball bat", "gun", "rifle", "pistol", "sword"}

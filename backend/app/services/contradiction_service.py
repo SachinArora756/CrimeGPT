@@ -74,13 +74,30 @@ async def detect_contradictions(
     }
 
 
+EVIDENCE_WEIGHT = {
+    "dna_search": 0.99,
+    "fingerprint_match": 0.95,
+    "face_recognize": 0.85,
+    "digital_hash": 0.90,
+    "license_plate_ocr": 0.80,
+    "audio_transcribe": 0.75,
+    "vehicle_detect": 0.70,
+    "weapon_detect": 0.70,
+    "face_detect": 0.65,
+    "image_object_detect": 0.60,
+    "image_ocr": 0.55,
+    "image_exif": 0.50,
+    "digital_metadata": 0.45,
+}
+
+
 def build_confidence_dashboard(
     tool_results: list[dict],
     criminal_matches: list[dict],
     contradictions: list[dict],
     hypotheses: list[dict] | None = None,
 ) -> dict:
-    """Build an overall confidence dashboard from all evidence analyses."""
+    """Build an overall confidence dashboard from all evidence analyses with evidence weighting."""
     scores = {}
 
     face_results = [r for r in tool_results if r["tool_key"] in ("face_detect", "face_recognize") and r["status"] == "completed"]
@@ -88,6 +105,7 @@ def build_confidence_dashboard(
         scores["face_match"] = {
             "confidence": max(r.get("confidence", 0) or 0 for r in face_results),
             "tools_used": len(face_results),
+            "evidential_weight": EVIDENCE_WEIGHT.get("face_recognize", 0.85),
             "status": "analyzed",
         }
 
@@ -96,6 +114,7 @@ def build_confidence_dashboard(
         scores["fingerprint"] = {
             "confidence": max(r.get("confidence", 0) or 0 for r in fingerprint_results),
             "tools_used": len(fingerprint_results),
+            "evidential_weight": EVIDENCE_WEIGHT.get("fingerprint_match", 0.95),
             "status": "analyzed",
         }
 
@@ -104,6 +123,7 @@ def build_confidence_dashboard(
         scores["dna"] = {
             "confidence": max(r.get("confidence", 0) or 0 for r in dna_results),
             "tools_used": len(dna_results),
+            "evidential_weight": EVIDENCE_WEIGHT.get("dna_search", 0.99),
             "status": "analyzed",
         }
 
@@ -112,6 +132,7 @@ def build_confidence_dashboard(
         scores["vehicle"] = {
             "confidence": max(r.get("confidence", 0) or 0 for r in vehicle_results),
             "tools_used": len(vehicle_results),
+            "evidential_weight": EVIDENCE_WEIGHT.get("vehicle_detect", 0.70),
             "status": "analyzed",
         }
 
@@ -120,6 +141,7 @@ def build_confidence_dashboard(
         scores["ocr"] = {
             "confidence": max(r.get("confidence", 0) or 0 for r in ocr_results),
             "tools_used": len(ocr_results),
+            "evidential_weight": EVIDENCE_WEIGHT.get("image_ocr", 0.55),
             "status": "analyzed",
         }
 
@@ -128,6 +150,7 @@ def build_confidence_dashboard(
         scores["weapon"] = {
             "confidence": max(r.get("confidence", 0) or 0 for r in weapon_results),
             "tools_used": len(weapon_results),
+            "evidential_weight": EVIDENCE_WEIGHT.get("weapon_detect", 0.70),
             "status": "analyzed",
         }
 
@@ -136,13 +159,24 @@ def build_confidence_dashboard(
         scores["crime_scene"] = {
             "confidence": max(r.get("confidence", 0) or 0 for r in scene_results),
             "tools_used": len(scene_results),
+            "evidential_weight": 0.75,
             "status": "analyzed",
         }
 
-    all_confidences = [s["confidence"] for s in scores.values() if s["confidence"] and s["confidence"] > 0]
-    overall_evidence_confidence = sum(all_confidences) / len(all_confidences) if all_confidences else 0
+    # Weighted confidence: physical evidence (DNA, fingerprints) counts more than digital
+    weighted_sum = 0.0
+    weight_total = 0.0
+    for s in scores.values():
+        conf = s["confidence"]
+        w = s.get("evidential_weight", 0.5)
+        if conf and conf > 0:
+            weighted_sum += conf * w
+            weight_total += w
 
-    contradiction_penalty = min(len(contradictions) * 5, 20)
+    overall_evidence_confidence = (weighted_sum / weight_total) if weight_total > 0 else 0
+
+    high_severity_count = sum(1 for c in contradictions if c.get("severity") == "high")
+    contradiction_penalty = min(high_severity_count * 8 + (len(contradictions) - high_severity_count) * 3, 30)
     overall_investigation_confidence = max(0, overall_evidence_confidence * 100 - contradiction_penalty)
 
     return {
@@ -151,9 +185,11 @@ def build_confidence_dashboard(
         "category_scores": scores,
         "contradiction_penalty": contradiction_penalty,
         "contradictions_count": len(contradictions),
+        "high_severity_contradictions": high_severity_count,
         "tools_executed": len(tool_results),
         "tools_successful": sum(1 for r in tool_results if r["status"] == "completed"),
         "criminal_matches_found": len(criminal_matches),
+        "evidence_weighting": "physical > biometric > digital > metadata",
     }
 
 
@@ -161,6 +197,7 @@ def _detect_basic_contradictions(tool_results: list[dict]) -> list[dict]:
     """Detect obvious contradictions using rules-based logic."""
     contradictions = []
 
+    # --- Vehicle color conflicts ---
     vehicle_detections = []
     for r in tool_results:
         if r["tool_key"] == "vehicle_detect" and r["status"] == "completed" and r.get("output_data"):
@@ -186,6 +223,7 @@ def _detect_basic_contradictions(tool_results: list[dict]) -> list[dict]:
             "recommendation": "Verify if multiple vehicles are present or if detection is inconsistent",
         })
 
+    # --- Identity conflicts ---
     face_ids = []
     for r in tool_results:
         if r["tool_key"] == "face_recognize" and r["status"] == "completed" and r.get("output_data"):
@@ -204,6 +242,82 @@ def _detect_basic_contradictions(tool_results: list[dict]) -> list[dict]:
             "finding_b": f"Suspect ID: {face_ids[1] if len(face_ids) > 1 else 'N/A'}",
             "recommendation": "Review all face recognition results — multiple suspects or misidentification possible",
         })
+
+    # --- Temporal conflicts (timestamps that are impossible) ---
+    timestamps = []
+    for r in tool_results:
+        if r["status"] != "completed" or not r.get("output_data"):
+            continue
+        output = r["output_data"]
+        ts = output.get("datetime_original") or output.get("timestamp") or output.get("date_taken")
+        if ts:
+            try:
+                parsed_ts = datetime.fromisoformat(str(ts).replace("Z", "+00:00")) if "T" in str(ts) else datetime.strptime(str(ts)[:19], "%Y:%m:%d %H:%M:%S")
+                timestamps.append({"ts": parsed_ts, "tool": r["tool_key"], "source": r.get("execution_id", "")})
+            except (ValueError, TypeError):
+                pass
+
+    if len(timestamps) >= 2:
+        timestamps.sort(key=lambda x: x["ts"])
+        first, last = timestamps[0], timestamps[-1]
+        delta = (last["ts"] - first["ts"]).total_seconds()
+        if delta < 0:
+            contradictions.append({
+                "id": len(contradictions) + 1,
+                "type": "timeline_conflict",
+                "severity": "high",
+                "description": "Evidence timestamps are in reverse chronological order — possible tampering or clock mismatch",
+                "source_a": first["tool"],
+                "source_b": last["tool"],
+                "finding_a": str(first["ts"]),
+                "finding_b": str(last["ts"]),
+                "recommendation": "Verify device clocks and chain of custody timestamps",
+            })
+
+    # --- Location conflicts (EXIF GPS from different evidence items) ---
+    gps_locations = []
+    for r in tool_results:
+        if r["status"] != "completed" or not r.get("output_data"):
+            continue
+        output = r["output_data"]
+        lat = output.get("gps_latitude") or output.get("latitude")
+        lon = output.get("gps_longitude") or output.get("longitude")
+        if lat and lon:
+            try:
+                gps_locations.append({
+                    "lat": float(lat), "lon": float(lon),
+                    "tool": r["tool_key"], "source": r.get("execution_id", ""),
+                })
+            except (ValueError, TypeError):
+                pass
+
+    if len(gps_locations) >= 2:
+        from math import radians, sin, cos, sqrt, atan2
+        for i in range(len(gps_locations)):
+            for j in range(i + 1, len(gps_locations)):
+                a, b = gps_locations[i], gps_locations[j]
+                R = 6371000
+                lat1, lat2 = radians(a["lat"]), radians(b["lat"])
+                dlat = lat2 - lat1
+                dlon = radians(b["lon"] - a["lon"])
+                h = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
+                distance_m = R * 2 * atan2(sqrt(h), sqrt(1 - h))
+                if distance_m > 5000:
+                    contradictions.append({
+                        "id": len(contradictions) + 1,
+                        "type": "location_conflict",
+                        "severity": "high" if distance_m > 50000 else "medium",
+                        "description": f"Evidence items are {distance_m / 1000:.1f} km apart — verify if same incident",
+                        "source_a": a["tool"],
+                        "source_b": b["tool"],
+                        "finding_a": f"GPS: {a['lat']:.5f}, {a['lon']:.5f}",
+                        "finding_b": f"GPS: {b['lat']:.5f}, {b['lon']:.5f}",
+                        "recommendation": "Confirm whether evidence items belong to the same crime scene or incident",
+                    })
+                    break
+            else:
+                continue
+            break
 
     return contradictions
 
