@@ -130,9 +130,14 @@ export default function OfficerLoginPage() {
         navigate('/dashboard')
       }
     } catch (err: unknown) {
-      const error = err as { response?: { status?: number; data?: { detail?: string } } }
+      const error = err as { response?: { status?: number; data?: { detail?: string } }; code?: string; message?: string }
       const detail = error.response?.data?.detail || ''
-      if (error.response?.status === 429) {
+
+      if (error.code === 'ECONNABORTED' || error.code === 'ERR_CANCELED' || error.message?.includes('timeout')) {
+        setError('Server is not responding. Please check that the backend service is running.')
+      } else if (!error.response) {
+        setError('Network error — cannot reach the server. Please check your connection.')
+      } else if (error.response?.status === 429) {
         setError('Too many login attempts. Please wait a minute and try again.')
       } else if (error.response?.status === 403) {
         if (detail.toLowerCase().includes('verify your email')) {

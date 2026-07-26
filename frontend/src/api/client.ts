@@ -6,6 +6,7 @@ const NO_RETRY_URLS = ['/api/auth/login', '/api/auth/admin/login', '/api/auth/re
 const api = axios.create({
   baseURL: '',
   headers: { 'Content-Type': 'application/json' },
+  timeout: 30000,
 })
 
 api.interceptors.request.use((config) => {

@@ -90,19 +90,31 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (username, password, portal) => {
         const endpoint = portal === 'admin' ? '/api/auth/admin/login' : '/api/auth/login'
-        const response = await api.post(endpoint, { username, password })
-        const { access_token, refresh_token, user, force_password_change } = response.data
-        set({
-          user: { ...user, force_password_change: !!force_password_change },
-          accessToken: access_token,
-          refreshToken: refresh_token,
-          isAuthenticated: true,
-          forcePasswordChange: !!force_password_change,
-          portal,
-          sessionValidated: true,
-          sessionValidating: false,
-          lastActivity: Date.now(),
-        })
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 15000)
+        try {
+          const response = await api.post(endpoint, { username, password }, { signal: controller.signal })
+          const { access_token, refresh_token, user, force_password_change } = response.data
+          set({
+            user: { ...user, force_password_change: !!force_password_change },
+            accessToken: access_token,
+            refreshToken: refresh_token,
+            isAuthenticated: true,
+            forcePasswordChange: !!force_password_change,
+            portal,
+            sessionValidated: true,
+            sessionValidating: false,
+            lastActivity: Date.now(),
+          })
+        } catch (err: unknown) {
+          const e = err as { name?: string; code?: string }
+          if (e.name === 'CanceledError' || e.name === 'AbortError' || e.code === 'ERR_CANCELED') {
+            throw { response: { status: 0, data: { detail: 'Server not responding. Please ensure the backend is running.' } } }
+          }
+          throw err
+        } finally {
+          clearTimeout(timeout)
+        }
       },
 
       logout: () => {
