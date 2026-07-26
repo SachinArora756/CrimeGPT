@@ -4,11 +4,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useDropzone } from 'react-dropzone'
 import {
   Upload, File, Image, FileAudio, FileVideo, Eye, Loader2,
-  Shield, Hash, Clock, X, CheckCircle, Brain, FileText,
+  Shield, Hash, Clock, X, CheckCircle, Brain, FileText, Camera,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
 import { useEvidenceDocStore, EvidenceItem } from '../store/evidenceDocStore'
+import CameraCapture from '../components/common/CameraCapture'
 
 function sanitizeForDisplay(val: unknown): unknown {
   if (typeof val === 'string') {
@@ -236,6 +237,8 @@ export default function EvidencePage() {
     setEvidence(items)
   }, [caseId])
 
+  const [showCamera, setShowCamera] = useState(false)
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
@@ -310,7 +313,24 @@ export default function EvidencePage() {
             </div>
           </div>
         </div>
+        <button
+          onClick={() => setShowCamera(true)}
+          className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-primary-500/30 bg-primary-500/5 hover:bg-primary-500/10 text-primary-300 text-sm font-medium transition-all"
+        >
+          <Camera className="w-4 h-4" /> Open Camera to Capture Evidence
+        </button>
       </motion.div>
+
+      {/* Camera Modal */}
+      <AnimatePresence>
+        {showCamera && (
+          <CameraCapture
+            onCapture={(file) => { onDrop([file]); setShowCamera(false) }}
+            onClose={() => setShowCamera(false)}
+            facingMode="environment"
+          />
+        )}
+      </AnimatePresence>
 
       {/* Evidence Grid */}
       {loading ? (
@@ -358,13 +378,17 @@ export default function EvidencePage() {
 
                 {/* Metadata */}
                 <div className="mt-3 space-y-1.5">
-                  {item.file_hash && (
-                    <div className="flex items-start gap-1.5 text-[10px] text-dark-500">
-                      <Hash className="w-3 h-3 flex-shrink-0 mt-0.5" />
-                      <span className="font-mono break-all">{item.file_hash}</span>
-                      <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
-                    </div>
-                  )}
+                    <div className="flex items-start gap-1.5 text-[10px]">
+                    <Hash className="w-3 h-3 flex-shrink-0 mt-0.5 text-green-500" />
+                    {item.file_hash ? (
+                      <>
+                        <span className="font-mono break-all text-dark-200">{item.file_hash}</span>
+                        <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
+                      </>
+                    ) : (
+                      <span className="text-dark-500 italic">Hash pending</span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5 text-[10px] text-dark-500">
                     <Clock className="w-3 h-3" />
                     <span>{new Date(item.created_at).toLocaleString()}</span>

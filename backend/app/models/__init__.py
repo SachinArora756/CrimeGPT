@@ -14,3 +14,6 @@ from app.models.forensic_toolkit import (
 )
 from app.models.ai_investigation import AIInvestigationSession, AIInvestigationMessage
 from app.models.investigation_memory import InvestigationMemory, EvidenceCorrelation
+from app.models.forensic_photography import (
+    ForensicPhoto, PhotoAnnotation, SceneCoverageZone, PhotoEnhancementHistory,
+)

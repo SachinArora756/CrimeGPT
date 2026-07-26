@@ -65,6 +65,11 @@ const AIInvestigationPage = lazyRetry(() => import('./pages/forensics/AIInvestig
 const InvestigationIntelligencePage = lazyRetry(() => import('./pages/forensics/InvestigationIntelligencePage'))
 const IEAEPage = lazyRetry(() => import('./pages/forensics/IEAEPage'))
 const IIDSEPage = lazyRetry(() => import('./pages/forensics/IIDSEPage'))
+const ForensicPhotographyPage = lazyRetry(() => import('./pages/forensics/ForensicPhotographyPage'))
+const PhotoGalleryPage = lazyRetry(() => import('./pages/forensics/PhotoGalleryPage'))
+const PhotoAnnotationPage = lazyRetry(() => import('./pages/forensics/PhotoAnnotationPage'))
+const PhotoComparisonPage = lazyRetry(() => import('./pages/forensics/PhotoComparisonPage'))
+const SceneCoveragePage = lazyRetry(() => import('./pages/forensics/SceneCoveragePage'))
 
 function PageLoader() {
   return (
@@ -277,6 +282,11 @@ export default function App() {
             <Route path="/forensics/ieae" element={<ForensicsRoute><Layout><IEAEPage /></Layout></ForensicsRoute>} />
             <Route path="/forensics/iidse" element={<ForensicsRoute><Layout><IIDSEPage /></Layout></ForensicsRoute>} />
             <Route path="/forensics/intelligence/:caseId" element={<ForensicsRoute><Layout><InvestigationIntelligencePage /></Layout></ForensicsRoute>} />
+            <Route path="/forensics/photography" element={<ForensicsRoute><Layout><ForensicPhotographyPage /></Layout></ForensicsRoute>} />
+            <Route path="/forensics/photography/gallery/:caseId" element={<ForensicsRoute><Layout><PhotoGalleryPage /></Layout></ForensicsRoute>} />
+            <Route path="/forensics/photography/annotate/:photoId" element={<ForensicsRoute><Layout><PhotoAnnotationPage /></Layout></ForensicsRoute>} />
+            <Route path="/forensics/photography/compare" element={<ForensicsRoute><Layout><PhotoComparisonPage /></Layout></ForensicsRoute>} />
+            <Route path="/forensics/photography/coverage/:caseId" element={<ForensicsRoute><Layout><SceneCoveragePage /></Layout></ForensicsRoute>} />
 
             {/* Catch-all — redirect to dashboard or login, never expose unknown routes */}
             <Route path="*" element={<RootRedirect />} />

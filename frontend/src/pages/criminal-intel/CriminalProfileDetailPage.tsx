@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, MapPin, Phone, Car, Users,
   FileText, Clock, Fingerprint, Dna, Globe, Eye,
   User, BadgeAlert, ExternalLink, Image, ChevronDown, ChevronUp,
-  Upload, Plus, Loader2, Trash2, Pen, Save, X
+  Upload, Plus, Loader2, Trash2, Pen, Save, X, Camera
 } from 'lucide-react'
 import api from '../../api/client'
 import toast from 'react-hot-toast'
+import CameraCapture from '../../components/common/CameraCapture'
 import { INDIA_STATES_DISTRICTS, getDistrictsForState } from '../../data/indiaGeo'
 
 interface CriminalDetail {
@@ -83,6 +84,7 @@ export default function CriminalProfileDetailPage() {
   const [dnaData, setDnaData] = useState<Array<{ id: number; dna_id: string; sample_number: string | null; laboratory: string | null; collection_date: string | null; profile_data: Record<string, unknown> | null; loci_markers: Record<string, unknown> | null; created_at: string | null }>>([])
   const [bioLoading, setBioLoading] = useState(false)
   const [uploading, setUploading] = useState<'face' | 'fingerprint' | null>(null)
+  const [showFaceCamera, setShowFaceCamera] = useState(false)
   const [showDnaForm, setShowDnaForm] = useState(false)
   const [dnaForm, setDnaForm] = useState({ dna_id: '', sample_number: '', laboratory: '', collection_date: '' })
   const faceInputRef = useRef<HTMLInputElement>(null)
@@ -915,6 +917,12 @@ export default function CriminalProfileDetailPage() {
                   {uploading === 'face' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                   Upload Face
                 </button>
+                <button
+                  onClick={() => setShowFaceCamera(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xs font-medium hover:bg-purple-500/20 transition-colors"
+                >
+                  <Camera className="w-3.5 h-3.5" /> Capture
+                </button>
                 <span className="text-2xl font-bold text-emerald-400">{criminal.face_embeddings_count}</span>
                 <button onClick={() => toggleBiometric('face')}>
                   {expandedBio === 'face' ? <ChevronUp className="w-5 h-5 text-dark-400" /> : <ChevronDown className="w-5 h-5 text-dark-400" />}
@@ -1288,6 +1296,34 @@ export default function CriminalProfileDetailPage() {
           </div>
         </motion.div>
       )}
+      {/* Face Camera Capture Modal */}
+      <AnimatePresence>
+        {showFaceCamera && (
+          <CameraCapture
+            onCapture={async (file) => {
+              setShowFaceCamera(false)
+              if (!criminalId) return
+              setUploading('face')
+              try {
+                const formData = new FormData()
+                formData.append('file', file)
+                await api.post(`/api/criminal-intelligence/${criminalId}/biometrics/faces`, formData)
+                toast.success('Face captured and embedding generated')
+                const res = await api.get(`/api/criminal-intelligence/${criminalId}/biometrics/faces`)
+                setFaceData(res.data)
+                fetchCriminal()
+              } catch (err: any) {
+                toast.error(err?.response?.data?.detail || 'Face capture failed')
+              } finally {
+                setUploading(null)
+              }
+            }}
+            onClose={() => setShowFaceCamera(false)}
+            facingMode="user"
+            maxPhotos={5}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

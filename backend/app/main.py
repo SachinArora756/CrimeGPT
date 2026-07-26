@@ -13,7 +13,7 @@ from app.routers import auth, cases, evidence, documents, agents
 from app.routers import admin, notifications, timeline, chat, dashboard, legal
 from app.routers import legal_reasoning, users, registration
 from app.routers import criminal_intelligence, forensic_toolkit, ai_investigation
-from app.routers import knowledge_base
+from app.routers import knowledge_base, forensic_photography
 from app.middleware.audit import AuditMiddleware
 from app.middleware.security import SecurityHeadersMiddleware
 from app.utils.rate_limiter import limiter
@@ -28,6 +28,7 @@ from app.models.ingestion_log import IngestionLog, KBActivityLog  # noqa: F401
 from app.models.legal_recommendation import LegalRecommendation  # noqa: F401
 from app.models.criminal_intelligence import CriminalProfile  # noqa: F401
 from app.models.forensic_toolkit import ForensicToolDefinition  # noqa: F401
+from app.models.forensic_photography import ForensicPhoto, PhotoAnnotation, SceneCoverageZone, PhotoEnhancementHistory  # noqa: F401
 from app.models.ai_investigation import AIInvestigationSession, AIInvestigationMessage  # noqa: F401
 from app.models.legal_chat import LegalChatMessage  # noqa: F401
 from app.services.auth_service import hash_password
@@ -244,6 +245,7 @@ app.include_router(criminal_intelligence.router, prefix="/api/criminal-intellige
 app.include_router(forensic_toolkit.router, prefix="/api/forensic-toolkit", tags=["Digital Forensics Toolkit"])
 app.include_router(ai_investigation.router, prefix="/api/ai-investigation", tags=["AI Investigation"])
 app.include_router(knowledge_base.router, prefix="/api/knowledge-base", tags=["Knowledge Base Management"])
+app.include_router(forensic_photography.router, prefix="/api/forensic-photography", tags=["Forensic Photography"])
 
 
 @app.get("/api/health")
