@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
 
 export interface Classification {
   type: string
@@ -186,33 +185,16 @@ const INITIAL_OSINT: OsintState = {
 }
 
 export const useInvestigationStore = create<InvestigationStore>()(
-  persist(
-    (set) => ({
-      ieae: { ...INITIAL_IEAE },
-      iidse: { ...INITIAL_IIDSE },
-      osint: { ...INITIAL_OSINT },
+  (set) => ({
+    ieae: { ...INITIAL_IEAE },
+    iidse: { ...INITIAL_IIDSE },
+    osint: { ...INITIAL_OSINT },
 
-      setIeae: (patch) => set((s) => ({ ieae: { ...s.ieae, ...patch } })),
-      setIidse: (patch) => set((s) => ({ iidse: { ...s.iidse, ...patch } })),
-      setOsint: (patch) => set((s) => ({ osint: { ...s.osint, ...patch } })),
-      clearIeae: () => set({ ieae: { ...INITIAL_IEAE } }),
-      clearIidse: () => set({ iidse: { ...INITIAL_IIDSE } }),
-      clearOsint: () => set({ osint: { ...INITIAL_OSINT } }),
-    }),
-    {
-      name: 'crimegpt_investigations',
-      storage: createJSONStorage(() => sessionStorage),
-      partialize: (state) => ({
-        ieae: {
-          ...state.ieae,
-          isUploading: false,
-        },
-        iidse: {
-          ...state.iidse,
-          isUploading: false,
-        },
-        osint: state.osint,
-      }),
-    }
-  )
+    setIeae: (patch) => set((s) => ({ ieae: { ...s.ieae, ...patch } })),
+    setIidse: (patch) => set((s) => ({ iidse: { ...s.iidse, ...patch } })),
+    setOsint: (patch) => set((s) => ({ osint: { ...s.osint, ...patch } })),
+    clearIeae: () => set({ ieae: { ...INITIAL_IEAE } }),
+    clearIidse: () => set({ iidse: { ...INITIAL_IIDSE } }),
+    clearOsint: () => set({ osint: { ...INITIAL_OSINT } }),
+  })
 )
