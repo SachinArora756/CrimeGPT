@@ -44,6 +44,8 @@ class ForensicPhoto(Base):
     capture_source: Mapped[str] = mapped_column(String(20), default="upload")
     is_original: Mapped[bool] = mapped_column(Boolean, default=True)
     parent_photo_id: Mapped[int | None] = mapped_column(ForeignKey("forensic_photos.id", ondelete="SET NULL"), nullable=True)
+    auto_enhanced: Mapped[bool] = mapped_column(Boolean, default=False)
+    auto_enhance_status: Mapped[str] = mapped_column(String(20), default="pending")
     chain_of_custody: Mapped[list | None] = mapped_column(JSON, nullable=True)
     section_65b_certificate: Mapped[dict | None] = mapped_column(JSON, nullable=True)
 

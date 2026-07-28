@@ -36,7 +36,9 @@ from app.services.photo_ai_service import (
 from app.services.photo_enhancement_service import (
     enhance_photo, render_annotations_on_image,
 )
+from app.services.photo_auto_enhance_service import run_auto_enhance
 from app.utils.rate_limiter import limiter
+import asyncio
 import uuid
 import os
 import hashlib
@@ -76,6 +78,9 @@ async def upload_photos(
                 category=category,
                 scene_zone=scene_zone,
                 description=description,
+            )
+            asyncio.create_task(
+                run_auto_enhance(photo.id, photo.file_path, case_id, current_user.id)
             )
             results.append(PhotoUploadResponse(
                 photo_id=photo.photo_id,
@@ -119,6 +124,9 @@ async def capture_photo_endpoint(
             longitude=body.longitude,
             device_info=body.device_info,
         )
+        asyncio.create_task(
+            run_auto_enhance(photo.id, photo.file_path, case_id, current_user.id)
+        )
         return PhotoUploadResponse(
             photo_id=photo.photo_id,
             original_filename=photo.original_filename,
@@ -138,6 +146,44 @@ async def capture_photo_endpoint(
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# Auto-Enhancement Status
+# ---------------------------------------------------------------------------
+
+@router.get("/photos/{photo_id}/auto-enhance-status")
+async def get_auto_enhance_status(
+    photo_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.CONSTABLE)),
+):
+    stmt = select(ForensicPhoto).where(ForensicPhoto.photo_id == photo_id)
+    result = await db.execute(stmt)
+    photo = result.scalar_one_or_none()
+    if not photo:
+        raise HTTPException(status_code=404, detail="Photo not found")
+
+    response = {
+        "photo_id": photo.photo_id,
+        "status": photo.auto_enhance_status,
+        "auto_enhanced": photo.auto_enhanced,
+        "quality_score": photo.quality_score,
+        "issues": photo.quality_assessment.get("issues", []) if photo.quality_assessment else [],
+        "enhanced_photo_id": None,
+    }
+
+    if photo.auto_enhanced:
+        stmt2 = select(ForensicPhoto).where(
+            ForensicPhoto.parent_photo_id == photo.id,
+            ForensicPhoto.auto_enhanced == True,
+        )
+        result2 = await db.execute(stmt2)
+        enhanced = result2.scalar_one_or_none()
+        if enhanced:
+            response["enhanced_photo_id"] = enhanced.photo_id
+
+    return response
 
 
 # ---------------------------------------------------------------------------

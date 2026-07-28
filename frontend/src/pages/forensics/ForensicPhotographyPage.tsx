@@ -5,10 +5,11 @@ import {
   Camera, Upload, Brain, Shield, Eye, Grid3x3,
   ChevronUp, AlertTriangle,
   Loader2, Image as ImageIcon, MapPin, Zap,
-  Target, ArrowRight
+  Target, ArrowRight, Sparkles
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import PhotoDropzone from '../../components/common/PhotoDropzone'
+import AutoEnhanceResult from '../../components/forensic-photo/AutoEnhanceResult'
 import { useForensicPhotoStore } from '../../store/forensicPhotoStore'
 import api from '../../api/client'
 
@@ -22,8 +23,8 @@ export default function ForensicPhotographyPage() {
   const navigate = useNavigate()
   const {
     photos, guidanceData, coverageZones, loading, uploadingCount,
-    fetchPhotos, uploadPhotos, fetchGuidance, fetchCoverage,
-    assessQuality, initCoverage,
+    autoEnhanceResults, fetchPhotos, uploadPhotos, fetchGuidance, fetchCoverage,
+    assessQuality, initCoverage, pollAutoEnhance, clearAutoEnhanceResult,
   } = useForensicPhotoStore()
 
   const [selectedCaseId, setSelectedCaseId] = useState<number | null>(null)
@@ -33,6 +34,7 @@ export default function ForensicPhotographyPage() {
   const [guidanceLoading, setGuidanceLoading] = useState(false)
   const [assessingId, setAssessingId] = useState<string | null>(null)
   const [category, setCategory] = useState('')
+  const [comparePhotoId, setComparePhotoId] = useState<string | null>(null)
 
   useEffect(() => {
     api.get('/api/cases', { params: { page: 1, page_size: 50 } })
@@ -47,6 +49,19 @@ export default function ForensicPhotographyPage() {
     }
   }, [selectedCaseId, fetchPhotos, fetchCoverage])
 
+  useEffect(() => {
+    const enhanced = Object.values(autoEnhanceResults).filter(
+      r => r.status === 'completed' && r.auto_enhanced
+    )
+    if (enhanced.length > 0) {
+      const latest = enhanced[enhanced.length - 1]
+      if (latest.enhanced_photo_id) {
+        toast('Quality issues detected — enhanced version ready', { icon: '✨', duration: 5000 })
+        setComparePhotoId(latest.photo_id)
+      }
+    }
+  }, [Object.keys(autoEnhanceResults).filter(k => autoEnhanceResults[k]?.status === 'completed').length])
+
   const handleFilesReady = useCallback(async (files: File[]) => {
     if (!selectedCaseId) {
       toast.error('Please select a case first')
@@ -54,9 +69,10 @@ export default function ForensicPhotographyPage() {
     }
     const uploaded = await uploadPhotos(selectedCaseId, files, category || undefined)
     if (uploaded.length > 0) {
-      toast.success(`${uploaded.length} photo(s) uploaded successfully`)
+      toast.success(`${uploaded.length} photo(s) uploaded — analyzing quality...`)
+      pollAutoEnhance(uploaded.map((p: any) => p.photo_id))
     }
-  }, [selectedCaseId, uploadPhotos, category])
+  }, [selectedCaseId, uploadPhotos, category, pollAutoEnhance])
 
   const handleGenerateGuidance = async () => {
     if (!crimeType) {
@@ -395,8 +411,23 @@ export default function ForensicPhotographyPage() {
                   className="w-full aspect-square object-cover"
                   loading="lazy"
                 />
+                {/* Auto-enhance status indicator */}
+                {autoEnhanceResults[photo.photo_id]?.status === 'processing' && (
+                  <div className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-purple-500/90 text-[9px] text-white font-bold flex items-center gap-1">
+                    <Loader2 className="w-2.5 h-2.5 animate-spin" /> Analyzing
+                  </div>
+                )}
+                {autoEnhanceResults[photo.photo_id]?.status === 'completed' && autoEnhanceResults[photo.photo_id]?.auto_enhanced && (
+                  <button
+                    onClick={e => { e.stopPropagation(); setComparePhotoId(photo.photo_id) }}
+                    className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded bg-amber-500/90 text-[9px] text-white font-bold flex items-center gap-1 hover:bg-amber-400 transition-colors"
+                    title="Quality issues found — view enhanced version"
+                  >
+                    <Sparkles className="w-2.5 h-2.5" /> Enhanced
+                  </button>
+                )}
                 {/* Quality indicator */}
-                {photo.quality_score != null && (
+                {!autoEnhanceResults[photo.photo_id]?.auto_enhanced && photo.quality_score != null && (
                   <div className={`absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold ${
                     photo.quality_score >= 70 ? 'bg-green-500/90 text-white' :
                     photo.quality_score >= 40 ? 'bg-amber-500/90 text-white' :
@@ -443,6 +474,33 @@ export default function ForensicPhotographyPage() {
           <p className="text-dark-500 text-xs mt-1">Upload or capture crime scene photos above</p>
         </div>
       )}
+
+      {/* Auto-Enhance Comparison Modal */}
+      <AnimatePresence>
+        {comparePhotoId && autoEnhanceResults[comparePhotoId] && (
+          <AutoEnhanceResult
+            originalUrl={`/api/forensic-photography/photos/${comparePhotoId}/file`}
+            enhancedUrl={`/api/forensic-photography/photos/${autoEnhanceResults[comparePhotoId].enhanced_photo_id}/file`}
+            issues={autoEnhanceResults[comparePhotoId].issues}
+            onAcceptEnhanced={() => {
+              toast.success('Enhanced version accepted')
+              clearAutoEnhanceResult(comparePhotoId)
+              setComparePhotoId(null)
+              if (selectedCaseId) fetchPhotos(selectedCaseId)
+            }}
+            onKeepOriginal={() => {
+              clearAutoEnhanceResult(comparePhotoId)
+              setComparePhotoId(null)
+            }}
+            onRetake={() => {
+              clearAutoEnhanceResult(comparePhotoId)
+              setComparePhotoId(null)
+              toast('Open camera or upload a new photo', { icon: '📷' })
+            }}
+            onClose={() => setComparePhotoId(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

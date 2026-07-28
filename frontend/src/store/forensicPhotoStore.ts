@@ -60,6 +60,15 @@ interface QualityResult {
   suggestions: string[]
 }
 
+interface AutoEnhanceStatus {
+  photo_id: string
+  status: 'pending' | 'processing' | 'completed' | 'no_issues'
+  auto_enhanced: boolean
+  quality_score: number | null
+  issues: Array<{ type: string; severity: string; score?: number; brightness?: number }>
+  enhanced_photo_id: string | null
+}
+
 interface ForensicPhotoStore {
   photos: ForensicPhoto[]
   selectedPhoto: ForensicPhoto | null
@@ -67,12 +76,16 @@ interface ForensicPhotoStore {
   guidanceData: GuidanceData | null
   loading: boolean
   uploadingCount: number
+  autoEnhanceResults: Record<string, AutoEnhanceStatus>
 
   setSelectedPhoto: (photo: ForensicPhoto | null) => void
   fetchPhotos: (caseId: number, page?: number) => Promise<void>
   uploadPhotos: (caseId: number, files: File[], category?: string, sceneZone?: string) => Promise<ForensicPhoto[]>
   capturePhoto: (caseId: number, imageData: string, latitude?: number, longitude?: number, deviceInfo?: string) => Promise<ForensicPhoto | null>
   assessQuality: (photoId: string) => Promise<QualityResult | null>
+  checkAutoEnhanceStatus: (photoId: string) => Promise<AutoEnhanceStatus | null>
+  pollAutoEnhance: (photoIds: string[]) => void
+  clearAutoEnhanceResult: (photoId: string) => void
   fetchGuidance: (crimeType: string, sceneDescription?: string) => Promise<void>
   fetchCoverage: (caseId: number) => Promise<void>
   initCoverage: (caseId: number, crimeType: string) => Promise<void>
@@ -83,13 +96,14 @@ interface ForensicPhotoStore {
 
 export const useForensicPhotoStore = create<ForensicPhotoStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       photos: [],
       selectedPhoto: null,
       coverageZones: [],
       guidanceData: null,
       loading: false,
       uploadingCount: 0,
+      autoEnhanceResults: {},
 
       setSelectedPhoto: (photo) => set({ selectedPhoto: photo }),
 
@@ -164,6 +178,45 @@ export const useForensicPhotoStore = create<ForensicPhotoStore>()(
         }
       },
 
+      checkAutoEnhanceStatus: async (photoId) => {
+        try {
+          const res = await api.get(`/api/forensic-photography/photos/${photoId}/auto-enhance-status`)
+          const status = res.data as AutoEnhanceStatus
+          set(state => ({
+            autoEnhanceResults: { ...state.autoEnhanceResults, [photoId]: status },
+          }))
+          return status
+        } catch {
+          return null
+        }
+      },
+
+      pollAutoEnhance: (photoIds) => {
+        const poll = async () => {
+          const pending = [...photoIds]
+          let attempts = 0
+          while (pending.length > 0 && attempts < 20) {
+            await new Promise(r => setTimeout(r, 3000))
+            attempts++
+            for (let i = pending.length - 1; i >= 0; i--) {
+              const status = await get().checkAutoEnhanceStatus(pending[i])
+              if (status && (status.status === 'completed' || status.status === 'no_issues')) {
+                pending.splice(i, 1)
+              }
+            }
+          }
+        }
+        poll()
+      },
+
+      clearAutoEnhanceResult: (photoId) => {
+        set(state => {
+          const updated = { ...state.autoEnhanceResults }
+          delete updated[photoId]
+          return { autoEnhanceResults: updated }
+        })
+      },
+
       fetchGuidance: async (crimeType, sceneDescription) => {
         try {
           const res = await api.post('/api/forensic-photography/guidance/generate', {
@@ -221,7 +274,7 @@ export const useForensicPhotoStore = create<ForensicPhotoStore>()(
         }
       },
 
-      reset: () => set({ photos: [], selectedPhoto: null, coverageZones: [], guidanceData: null, loading: false, uploadingCount: 0 }),
+      reset: () => set({ photos: [], selectedPhoto: null, coverageZones: [], guidanceData: null, loading: false, uploadingCount: 0, autoEnhanceResults: {} }),
     }),
     {
       name: 'crimegpt_forensic_photo',
