@@ -1,5 +1,5 @@
 from typing import Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 from datetime import datetime, date
 from app.models.document import DocType
 
@@ -20,11 +20,14 @@ class DocumentResponse(BaseModel):
     generated_by: int
     generated_at: datetime
 
+    @field_serializer('generated_at')
+    def serialize_generated_at(self, v: datetime) -> str | None:
+        if not v:
+            return None
+        return v.isoformat() + "Z"
+
     class Config:
         from_attributes = True
-        json_encoders = {
-            datetime: lambda v: v.isoformat() + "Z" if v else None
-        }
 
 
 class CaseDiaryCreate(BaseModel):
