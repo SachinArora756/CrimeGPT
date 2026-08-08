@@ -13,7 +13,8 @@ from app.routers import auth, cases, evidence, documents, agents
 from app.routers import admin, notifications, timeline, chat, dashboard, legal
 from app.routers import legal_reasoning, users, registration
 from app.routers import criminal_intelligence, forensic_toolkit, ai_investigation
-from app.routers import knowledge_base, forensic_photography
+from app.routers import knowledge_base, forensic_photography, scene_reconstruction
+from app.routers import forensic_report
 from app.middleware.audit import AuditMiddleware
 from app.middleware.security import SecurityHeadersMiddleware
 from app.utils.rate_limiter import limiter
@@ -246,6 +247,8 @@ app.include_router(forensic_toolkit.router, prefix="/api/forensic-toolkit", tags
 app.include_router(ai_investigation.router, prefix="/api/ai-investigation", tags=["AI Investigation"])
 app.include_router(knowledge_base.router, prefix="/api/knowledge-base", tags=["Knowledge Base Management"])
 app.include_router(forensic_photography.router, prefix="/api/forensic-photography", tags=["Forensic Photography"])
+app.include_router(scene_reconstruction.router)
+app.include_router(forensic_report.router, prefix="/api", tags=["Forensic Report"])
 
 
 @app.get("/api/health")

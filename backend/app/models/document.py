@@ -17,6 +17,7 @@ class DocType(str, enum.Enum):
     WITNESS_STATEMENT = "witness_statement"
     SEARCH_MEMO = "search_memo"
     NOTICE = "notice"
+    FORENSIC_REPORT = "forensic_report"
 
 
 class Document(Base):

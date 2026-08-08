@@ -37,6 +37,7 @@ const NotificationsPage = lazyRetry(() => import('./pages/NotificationsPage'))
 const CaseDiaryPage = lazyRetry(() => import('./pages/CaseDiaryPage'))
 const MyDocumentsPage = lazyRetry(() => import('./pages/MyDocumentsPage'))
 const MyEvidencePage = lazyRetry(() => import('./pages/MyEvidencePage'))
+const ForensicReportPage = lazyRetry(() => import('./pages/ForensicReportPage'))
 const AdminDashboard = lazyRetry(() => import('./pages/admin/AdminDashboard'))
 const UserManagement = lazyRetry(() => import('./pages/admin/UserManagement'))
 const AuditLogs = lazyRetry(() => import('./pages/admin/AuditLogs'))
@@ -70,6 +71,7 @@ const PhotoGalleryPage = lazyRetry(() => import('./pages/forensics/PhotoGalleryP
 const PhotoAnnotationPage = lazyRetry(() => import('./pages/forensics/PhotoAnnotationPage'))
 const PhotoComparisonPage = lazyRetry(() => import('./pages/forensics/PhotoComparisonPage'))
 const SceneCoveragePage = lazyRetry(() => import('./pages/forensics/SceneCoveragePage'))
+const SceneReconstructionPage = lazyRetry(() => import('./pages/forensics/SceneReconstructionPage'))
 
 function PageLoader() {
   return (
@@ -245,6 +247,7 @@ export default function App() {
             <Route path="/admin/documents/:caseId" element={<AdminRoute><Layout><DocumentsPage /></Layout></AdminRoute>} />
             <Route path="/admin/legal/:caseId" element={<AdminRoute><Layout><LegalRecommendationsPage /></Layout></AdminRoute>} />
             <Route path="/admin/diary/:caseId" element={<AdminRoute><Layout><CaseDiaryPage /></Layout></AdminRoute>} />
+            <Route path="/admin/report/:caseId" element={<AdminRoute><Layout><ForensicReportPage /></Layout></AdminRoute>} />
             <Route path="/admin/*" element={<AdminRoute><Navigate to="/admin" replace /></AdminRoute>} />
 
             {/* Officer-only routes */}
@@ -257,6 +260,7 @@ export default function App() {
             <Route path="/documents/:caseId" element={<OfficerRoute><Layout><DocumentsPage /></Layout></OfficerRoute>} />
             <Route path="/legal/:caseId" element={<OfficerRoute><Layout><LegalRecommendationsPage /></Layout></OfficerRoute>} />
             <Route path="/diary/:caseId" element={<OfficerRoute><Layout><CaseDiaryPage /></Layout></OfficerRoute>} />
+            <Route path="/report/:caseId" element={<OfficerRoute><Layout><ForensicReportPage /></Layout></OfficerRoute>} />
             <Route path="/my-documents" element={<OfficerRoute><Layout><MyDocumentsPage /></Layout></OfficerRoute>} />
             <Route path="/my-evidence" element={<OfficerRoute><Layout><MyEvidencePage /></Layout></OfficerRoute>} />
             <Route path="/notifications" element={<OfficerRoute><Layout><NotificationsPage /></Layout></OfficerRoute>} />
@@ -287,6 +291,7 @@ export default function App() {
             <Route path="/forensics/photography/annotate/:photoId" element={<ForensicsRoute><Layout><PhotoAnnotationPage /></Layout></ForensicsRoute>} />
             <Route path="/forensics/photography/compare" element={<ForensicsRoute><Layout><PhotoComparisonPage /></Layout></ForensicsRoute>} />
             <Route path="/forensics/photography/coverage/:caseId" element={<ForensicsRoute><Layout><SceneCoveragePage /></Layout></ForensicsRoute>} />
+            <Route path="/forensics/3d-reconstruction" element={<ForensicsRoute><Layout><SceneReconstructionPage /></Layout></ForensicsRoute>} />
 
             {/* Catch-all — redirect to dashboard or login, never expose unknown routes */}
             <Route path="*" element={<RootRedirect />} />
