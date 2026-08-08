@@ -40,7 +40,13 @@ OPENROUTER_VISION_MODEL = "google/gemini-2.5-flash"
 
 
 def _has_gemini_key() -> bool:
-    return bool(settings.gemini_api_key and len(settings.gemini_api_key) >= 10)
+    key = settings.gemini_api_key
+    if not key or len(key) < 10:
+        return False
+    if key.startswith("AIza"):
+        return True
+    logger.warning("GEMINI_API_KEY is set but doesn't look like a valid API key (expected AIza... format). Skipping Gemini.")
+    return False
 
 
 def _has_openrouter_key() -> bool:

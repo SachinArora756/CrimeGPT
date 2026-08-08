@@ -70,9 +70,15 @@ async def create_recommendation(
 ):
     case = await authorize_case_access(db, case_id, current_user)
 
-    rec = await generate_recommendations(
-        db, case.id, current_user.id, rec_request.focus_area
-    )
+    try:
+        rec = await generate_recommendations(
+            db, case.id, current_user.id, rec_request.focus_area
+        )
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate legal recommendations. Please try again.",
+        )
     return _build_response(rec)
 
 
