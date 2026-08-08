@@ -45,6 +45,7 @@ interface EvidenceDocState {
   fetchDocuments: (caseId: string, force?: boolean) => Promise<DocumentItem[]>
   addEvidenceItem: (caseId: string, item: EvidenceItem) => void
   addDocumentItem: (caseId: string, item: DocumentItem) => void
+  deleteDocument: (caseId: string, docId: number) => Promise<void>
   invalidateCase: (caseId: string) => void
 }
 
@@ -152,6 +153,23 @@ export const useEvidenceDocStore = create<EvidenceDocState>((set, get) => ({
           [caseId]: {
             ...cached,
             items: [...cached.items, item],
+          },
+        },
+      }
+    })
+  },
+
+  deleteDocument: async (caseId, docId) => {
+    await api.delete(`/api/documents/${docId}`)
+    set((state) => {
+      const cached = state.documents[caseId]
+      if (!cached) return state
+      return {
+        documents: {
+          ...state.documents,
+          [caseId]: {
+            ...cached,
+            items: cached.items.filter((d) => d.id !== docId),
           },
         },
       }

@@ -78,7 +78,7 @@ async def list_my_documents(
             "file_path": d.file_path,
             "file_hash": d.file_hash,
             "generated_by": d.generated_by,
-            "generated_at": d.generated_at.isoformat() if d.generated_at else None,
+            "generated_at": (d.generated_at.isoformat() + "Z") if d.generated_at else None,
         })
 
     return {"documents": docs_with_case, "total": total}
@@ -182,6 +182,25 @@ async def download_document(
         filename=f"{doc.doc_type.value}_{doc.case_id}.{ext}",
         media_type=media_type,
     )
+
+
+@router.delete("/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_document(
+    doc_id: int = Path(ge=1),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(select(Document).where(Document.id == doc_id))
+    doc = result.scalar_one_or_none()
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+    await authorize_case_access(db, doc.case_id, current_user)
+
+    if os.path.exists(doc.file_path):
+        os.remove(doc.file_path)
+
+    await db.delete(doc)
+    await db.commit()
 
 
 @router.post("/diary/{case_id}", response_model=CaseDiaryResponse, status_code=status.HTTP_201_CREATED)
