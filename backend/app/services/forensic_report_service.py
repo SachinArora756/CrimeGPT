@@ -77,7 +77,8 @@ async def check_report_readiness(db: AsyncSession, case_id: int) -> dict:
     }
 
 
-_generating_cases: set[int] = set()
+_generating_cases: dict[int, float] = {}
+_GENERATION_TIMEOUT = 300  # 5 minutes max lock
 
 
 async def generate_forensic_report_doc(
@@ -88,11 +89,18 @@ async def generate_forensic_report_doc(
 
     Returns dict with document metadata including file_path, file_hash, sections_generated.
     """
+    import time
+
+    now = time.time()
     if case_id in _generating_cases:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Report generation is already in progress for this case.",
-        )
+        elapsed = now - _generating_cases[case_id]
+        if elapsed < _GENERATION_TIMEOUT:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Report generation is already in progress for this case. Please wait.",
+            )
+        else:
+            _generating_cases.pop(case_id, None)
 
     # 1. Validate readiness
     readiness = await check_report_readiness(db, case_id)
@@ -102,7 +110,7 @@ async def generate_forensic_report_doc(
             detail=readiness["message"],
         )
 
-    _generating_cases.add(case_id)
+    _generating_cases[case_id] = time.time()
     try:
         # 2. Load case
         result = await db.execute(select(Case).where(Case.id == case_id))
@@ -164,7 +172,7 @@ async def generate_forensic_report_doc(
             "sections_generated": len([s for s in REPORT_SECTIONS if s.is_llm_generated]),
         }
     finally:
-        _generating_cases.discard(case_id)
+        _generating_cases.pop(case_id, None)
 
 
 async def _aggregate_case_data(db: AsyncSession, case: Case, officer_name: str) -> dict:

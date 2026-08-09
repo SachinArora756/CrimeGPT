@@ -29,6 +29,7 @@ interface ForensicReportState {
   fetchReports: (caseId: string) => Promise<void>
   generateReport: (caseId: string, outputFormat?: string) => Promise<void>
   downloadReport: (caseId: string, docId: number) => Promise<void>
+  deleteReport: (caseId: string, docId: number) => Promise<void>
   reset: () => void
 }
 
@@ -66,10 +67,14 @@ export const useForensicReportStore = create<ForensicReportState>((set) => ({
       const res = await api.get(`/api/report/${caseId}/list`)
       set({ reports: Array.isArray(res.data) ? res.data : [] })
     } catch (err: any) {
+      const detail = err.response?.data?.detail || 'Failed to generate report'
       set({
         generating: false,
-        error: err.response?.data?.detail || 'Failed to generate report',
+        error: err.response?.status === 409 ? null : detail,
       })
+      if (err.response?.status === 409) {
+        throw new Error(detail)
+      }
     }
   },
 
@@ -88,6 +93,15 @@ export const useForensicReportStore = create<ForensicReportState>((set) => ({
       window.URL.revokeObjectURL(url)
     } catch (err: any) {
       set({ error: err.response?.data?.detail || 'Failed to download report' })
+    }
+  },
+
+  deleteReport: async (caseId: string, docId: number) => {
+    try {
+      await api.delete(`/api/report/${caseId}/${docId}`)
+      set((state) => ({ reports: state.reports.filter((r) => r.id !== docId) }))
+    } catch (err: any) {
+      set({ error: err.response?.data?.detail || 'Failed to delete report' })
     }
   },
 

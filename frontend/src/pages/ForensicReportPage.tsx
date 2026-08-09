@@ -12,6 +12,7 @@ import {
   Clock,
   Hash,
   ArrowLeft,
+  Trash2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useForensicReportStore } from '../store/forensicReportStore'
@@ -28,6 +29,7 @@ export default function ForensicReportPage() {
     fetchReports,
     generateReport,
     downloadReport,
+    deleteReport,
     reset,
   } = useForensicReportStore()
 
@@ -42,17 +44,33 @@ export default function ForensicReportPage() {
   const handleGenerate = async () => {
     if (!caseId) return
     toast.loading('Generating forensic report... This may take a few minutes.', { id: 'report-gen' })
-    await generateReport(caseId)
-    toast.dismiss('report-gen')
-    if (!useForensicReportStore.getState().error) {
-      toast.success('Forensic investigation report generated successfully!')
-    } else {
-      toast.error(useForensicReportStore.getState().error || 'Generation failed')
+    try {
+      await generateReport(caseId)
+      toast.dismiss('report-gen')
+      if (!useForensicReportStore.getState().error) {
+        toast.success('Forensic investigation report generated successfully!')
+      } else {
+        toast.error(useForensicReportStore.getState().error || 'Generation failed')
+      }
+    } catch (err: any) {
+      toast.dismiss('report-gen')
+      toast('Report generation is already in progress. Please wait.', { icon: '⏳' })
     }
   }
 
   const handleDownload = (docId: number) => {
     if (caseId) downloadReport(caseId, docId)
+  }
+
+  const handleDelete = async (docId: number) => {
+    if (!caseId) return
+    if (!window.confirm('Are you sure you want to delete this report? This action cannot be undone.')) return
+    await deleteReport(caseId, docId)
+    if (!useForensicReportStore.getState().error) {
+      toast.success('Report deleted successfully')
+    } else {
+      toast.error(useForensicReportStore.getState().error || 'Failed to delete report')
+    }
   }
 
   const formatDate = (dateStr: string) => {
@@ -245,13 +263,22 @@ export default function ForensicReportPage() {
                   </div>
                 </div>
 
-                <button
-                  onClick={() => handleDownload(report.id)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-lg text-sm hover:bg-indigo-600/30 transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  Download
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleDownload(report.id)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 rounded-lg text-sm hover:bg-indigo-600/30 transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    Download
+                  </button>
+                  <button
+                    onClick={() => handleDelete(report.id)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-red-600/20 text-red-400 border border-red-500/30 rounded-lg text-sm hover:bg-red-600/30 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Delete
+                  </button>
+                </div>
               </div>
             ))}
           </div>

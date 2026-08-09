@@ -39,13 +39,19 @@ OPENROUTER_TEXT_MODEL = "google/gemini-2.5-flash"
 OPENROUTER_VISION_MODEL = "google/gemini-2.5-flash"
 
 
+_gemini_key_warned = False
+
+
 def _has_gemini_key() -> bool:
+    global _gemini_key_warned
     key = settings.gemini_api_key
     if not key or len(key) < 10:
         return False
     if key.startswith("AIza"):
         return True
-    logger.warning("GEMINI_API_KEY is set but doesn't look like a valid API key (expected AIza... format). Skipping Gemini.")
+    if not _gemini_key_warned:
+        logger.warning("GEMINI_API_KEY is set but doesn't look like a valid API key (expected AIza... format). Skipping Gemini.")
+        _gemini_key_warned = True
     return False
 
 

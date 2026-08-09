@@ -144,3 +144,39 @@ async def download_report(
         filename=filename,
         media_type=media_type,
     )
+
+
+@router.delete("/report/{case_id}/{doc_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_report(
+    case_id: str = Path(),
+    doc_id: int = Path(),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete a generated forensic report."""
+    case = await authorize_case_access(db, case_id, current_user)
+
+    result = await db.execute(
+        select(Document).where(
+            Document.id == doc_id,
+            Document.case_id == case.id,
+            Document.doc_type == DocType.FORENSIC_REPORT,
+        )
+    )
+    doc = result.scalar_one_or_none()
+    if not doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Report not found",
+        )
+
+    file_path = doc.file_path
+    if not os.path.isabs(file_path):
+        file_path = os.path.join(settings.upload_dir, file_path)
+
+    real_path = os.path.realpath(file_path)
+    if os.path.exists(real_path):
+        os.remove(real_path)
+
+    await db.delete(doc)
+    await db.commit()
