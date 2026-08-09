@@ -10,7 +10,7 @@ interface UseVoiceRecorderResult {
   error: string | null
 }
 
-export function useVoiceRecorder(onTranscript: (text: string) => void): UseVoiceRecorderResult {
+export function useVoiceRecorder(onTranscript: (text: string) => void, onAudioBlob?: (blob: Blob) => void): UseVoiceRecorderResult {
   const [isRecording, setIsRecording] = useState(false)
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -83,6 +83,8 @@ export function useVoiceRecorder(onTranscript: (text: string) => void): UseVoice
           return
         }
 
+        if (onAudioBlob) onAudioBlob(blob)
+
         const formData = new FormData()
         const ext = mimeType.includes('mp4') ? '.mp4' : '.webm'
         formData.append('audio', blob, `recording${ext}`)
@@ -106,7 +108,7 @@ export function useVoiceRecorder(onTranscript: (text: string) => void): UseVoice
     }
 
     recorder.stop()
-  }, [onTranscript, cleanup])
+  }, [onTranscript, onAudioBlob, cleanup])
 
   const cancelRecording = useCallback(() => {
     const recorder = mediaRecorderRef.current

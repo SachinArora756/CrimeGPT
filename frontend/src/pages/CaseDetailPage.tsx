@@ -1,14 +1,16 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   FileText, Upload, Brain, BookOpen, Calendar, User, Shield,
   Clock, MessageSquare, CheckCircle, Send, AlertTriangle, TrendingUp,
   Eye, BarChart3, Users, Zap, Pencil, Check, X, Plus, Trash2, Search, UserPlus, Heart,
+  Mic, Square, Volume2,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
 import { useCaseStore, CaseDetail } from '../store/caseStore'
+import { useVoiceRecorder } from '../hooks/useVoiceRecorder'
 
 interface TimelineEvent {
   id: number
@@ -60,6 +62,7 @@ export default function CaseDetailPage() {
   const [witnessContact, setWitnessContact] = useState('')
   const [witnessAddress, setWitnessAddress] = useState('')
   const [witnessStatement, setWitnessStatement] = useState('')
+  const [witnessAudioPath, setWitnessAudioPath] = useState('')
   const [savingWitness, setSavingWitness] = useState(false)
 
   // Victims management
@@ -70,6 +73,7 @@ export default function CaseDetailPage() {
   const [victimAddress, setVictimAddress] = useState('')
   const [victimInjuries, setVictimInjuries] = useState('')
   const [victimStatement, setVictimStatement] = useState('')
+  const [victimAudioPath, setVictimAudioPath] = useState('')
   const [savingVictim, setSavingVictim] = useState(false)
 
   // Investigation team management
@@ -78,6 +82,33 @@ export default function CaseDetailPage() {
   const [showTeamSearch, setShowTeamSearch] = useState(false)
   const [savingTeam, setSavingTeam] = useState(false)
   const teamSearchRef = useRef<HTMLDivElement>(null)
+
+  // Voice recording for witness statement
+  const uploadAudio = useCallback(async (blob: Blob, target: 'witness' | 'victim') => {
+    if (!id) return
+    const formData = new FormData()
+    const ext = blob.type.includes('mp4') ? '.mp4' : '.webm'
+    formData.append('audio', blob, `statement${ext}`)
+    try {
+      const res = await api.post(`/api/cases/${id}/statement-audio`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      if (target === 'witness') setWitnessAudioPath(res.data.audio_path)
+      else setVictimAudioPath(res.data.audio_path)
+      toast.success('Audio recorded & saved')
+    } catch {
+      toast.error('Failed to upload audio recording')
+    }
+  }, [id])
+
+  const witnessRecorder = useVoiceRecorder(
+    (text) => setWitnessStatement(prev => prev ? prev + ' ' + text : text),
+    (blob) => uploadAudio(blob, 'witness'),
+  )
+  const victimRecorder = useVoiceRecorder(
+    (text) => setVictimStatement(prev => prev ? prev + ' ' + text : text),
+    (blob) => uploadAudio(blob, 'victim'),
+  )
 
   const saveTitle = async () => {
     if (!titleDraft.trim() || !caseData) return
@@ -148,14 +179,15 @@ export default function CaseDetailPage() {
   const addWitness = async () => {
     if (!witnessName.trim() || !caseData || savingWitness) return
     setSavingWitness(true)
-    const newWitness = { name: witnessName.trim(), contact: witnessContact.trim(), address: witnessAddress.trim(), statement: witnessStatement.trim() }
+    const newWitness: Record<string, string> = { name: witnessName.trim(), contact: witnessContact.trim(), address: witnessAddress.trim(), statement: witnessStatement.trim() }
+    if (witnessAudioPath) newWitness.audio_path = witnessAudioPath
     const updated = [...(caseData.witnesses || []), newWitness]
     try {
       await api.put(`/api/cases/${id}`, { witnesses: updated })
       const updatedCase = { ...caseData, witnesses: updated }
       setCaseData(updatedCase)
       updateCaseInStore(id!, { witnesses: updated })
-      setWitnessName(''); setWitnessContact(''); setWitnessAddress(''); setWitnessStatement('')
+      setWitnessName(''); setWitnessContact(''); setWitnessAddress(''); setWitnessStatement(''); setWitnessAudioPath('')
       setShowWitnessForm(false)
       toast.success('Witness added')
       loadCompleteness()
@@ -179,14 +211,15 @@ export default function CaseDetailPage() {
   const addVictim = async () => {
     if (!victimName.trim() || !caseData || savingVictim) return
     setSavingVictim(true)
-    const newVictim = { name: victimName.trim(), age: victimAge.trim(), gender: victimGender.trim(), address: victimAddress.trim(), injuries: victimInjuries.trim(), statement: victimStatement.trim() }
+    const newVictim: Record<string, string> = { name: victimName.trim(), age: victimAge.trim(), gender: victimGender.trim(), address: victimAddress.trim(), injuries: victimInjuries.trim(), statement: victimStatement.trim() }
+    if (victimAudioPath) newVictim.audio_path = victimAudioPath
     const updated = [...(caseData.victims || []), newVictim]
     try {
       await api.put(`/api/cases/${id}`, { victims: updated })
       const updatedCase = { ...caseData, victims: updated }
       setCaseData(updatedCase)
       updateCaseInStore(id!, { victims: updated })
-      setVictimName(''); setVictimAge(''); setVictimGender(''); setVictimAddress(''); setVictimInjuries(''); setVictimStatement('')
+      setVictimName(''); setVictimAge(''); setVictimGender(''); setVictimAddress(''); setVictimInjuries(''); setVictimStatement(''); setVictimAudioPath('')
       setShowVictimForm(false)
       toast.success('Victim added')
       loadCompleteness()
@@ -491,7 +524,24 @@ export default function CaseDetailPage() {
                 <input type="text" placeholder="Name *" value={witnessName} onChange={e => setWitnessName(e.target.value)} className="input w-full text-sm" />
                 <input type="text" placeholder="Contact" value={witnessContact} onChange={e => setWitnessContact(e.target.value)} className="input w-full text-sm" />
                 <input type="text" placeholder="Address" value={witnessAddress} onChange={e => setWitnessAddress(e.target.value)} className="input w-full text-sm" />
-                <textarea placeholder="Witness Statement" value={witnessStatement} onChange={e => setWitnessStatement(e.target.value)} className="input w-full text-sm min-h-[80px] resize-y" />
+                <div className="relative">
+                  <textarea placeholder="Witness Statement (type or use mic to record)" value={witnessStatement} onChange={e => setWitnessStatement(e.target.value)} className="input w-full text-sm min-h-[80px] resize-y pr-12" />
+                  <div className="absolute right-2 top-2 flex flex-col gap-1">
+                    {witnessRecorder.isRecording ? (
+                      <button onClick={witnessRecorder.stopAndTranscribe} className="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors animate-pulse" title="Stop recording">
+                        <Square className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button onClick={witnessRecorder.startRecording} disabled={witnessRecorder.isTranscribing} className="p-1.5 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50" title="Record statement">
+                        <Mic className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {witnessRecorder.isRecording && <p className="text-red-400 text-xs animate-pulse flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> Recording... Click stop when done</p>}
+                {witnessRecorder.isTranscribing && <p className="text-amber-400 text-xs">Transcribing audio...</p>}
+                {witnessRecorder.error && <p className="text-red-400 text-xs">{witnessRecorder.error}</p>}
+                {witnessAudioPath && <p className="text-green-400 text-xs flex items-center gap-1"><Volume2 className="w-3 h-3" /> Audio recording saved</p>}
                 <div className="flex gap-2">
                   <button onClick={addWitness} disabled={!witnessName.trim() || savingWitness} className="btn-primary text-xs px-3 py-1.5 disabled:opacity-50">
                     {savingWitness ? 'Saving...' : 'Save'}
@@ -516,6 +566,9 @@ export default function CaseDetailPage() {
                         </button>
                       </div>
                       {witness.statement && <p className="text-dark-400 text-xs mt-1.5 italic border-l-2 border-dark-600 pl-2">"{witness.statement}"</p>}
+                      {witness.audio_path && (
+                        <audio controls className="mt-2 w-full h-8 opacity-80" src={`/api/cases/${id}/statement-audio/${witness.audio_path.split('/').pop()}`} />
+                      )}
                     </div>
                   )
                 })}
@@ -552,7 +605,24 @@ export default function CaseDetailPage() {
                 </div>
                 <input type="text" placeholder="Address" value={victimAddress} onChange={e => setVictimAddress(e.target.value)} className="input w-full text-sm" />
                 <input type="text" placeholder="Injuries / Details" value={victimInjuries} onChange={e => setVictimInjuries(e.target.value)} className="input w-full text-sm" />
-                <textarea placeholder="Victim Statement" value={victimStatement} onChange={e => setVictimStatement(e.target.value)} className="input w-full text-sm min-h-[80px] resize-y" />
+                <div className="relative">
+                  <textarea placeholder="Victim Statement (type or use mic to record)" value={victimStatement} onChange={e => setVictimStatement(e.target.value)} className="input w-full text-sm min-h-[80px] resize-y pr-12" />
+                  <div className="absolute right-2 top-2 flex flex-col gap-1">
+                    {victimRecorder.isRecording ? (
+                      <button onClick={victimRecorder.stopAndTranscribe} className="p-1.5 rounded-lg bg-red-500/20 text-red-400 hover:bg-red-500/30 transition-colors animate-pulse" title="Stop recording">
+                        <Square className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button onClick={victimRecorder.startRecording} disabled={victimRecorder.isTranscribing} className="p-1.5 rounded-lg bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50" title="Record statement">
+                        <Mic className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {victimRecorder.isRecording && <p className="text-red-400 text-xs animate-pulse flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> Recording... Click stop when done</p>}
+                {victimRecorder.isTranscribing && <p className="text-amber-400 text-xs">Transcribing audio...</p>}
+                {victimRecorder.error && <p className="text-red-400 text-xs">{victimRecorder.error}</p>}
+                {victimAudioPath && <p className="text-green-400 text-xs flex items-center gap-1"><Volume2 className="w-3 h-3" /> Audio recording saved</p>}
                 <div className="flex gap-2">
                   <button onClick={addVictim} disabled={!victimName.trim() || savingVictim} className="btn-primary text-xs px-3 py-1.5 disabled:opacity-50">
                     {savingVictim ? 'Saving...' : 'Save'}
@@ -579,6 +649,9 @@ export default function CaseDetailPage() {
                         </button>
                       </div>
                       {victim.statement && <p className="text-dark-400 text-xs mt-1.5 italic border-l-2 border-dark-600 pl-2">"{victim.statement}"</p>}
+                      {victim.audio_path && (
+                        <audio controls className="mt-2 w-full h-8 opacity-80" src={`/api/cases/${id}/statement-audio/${victim.audio_path.split('/').pop()}`} />
+                      )}
                     </div>
                   )
                 })}

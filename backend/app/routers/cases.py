@@ -1,6 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+import os
+import uuid
+
+from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, UploadFile, status
+from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import get_db
 from app.models.user import User
 from app.models.case import CaseStatus
@@ -125,3 +130,64 @@ async def get_evidence_correlations(
 
     case = await authorize_case_access(db, case_id, current_user)
     return await generate_correlation_report(case.id, db)
+
+
+ALLOWED_AUDIO_TYPES = {
+    "audio/webm", "audio/ogg", "audio/wav", "audio/mp4",
+    "audio/mpeg", "audio/x-wav", "audio/wave", "video/webm",
+}
+MAX_AUDIO_SIZE = 25 * 1024 * 1024  # 25MB
+
+
+@router.post("/{case_id}/statement-audio")
+async def upload_statement_audio(
+    case_id: str = Path(),
+    audio: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    case = await authorize_case_access(db, case_id, current_user)
+
+    content_type = audio.content_type or ""
+    if content_type not in ALLOWED_AUDIO_TYPES:
+        raise HTTPException(400, f"Unsupported audio format: {content_type}")
+
+    statements_dir = os.path.join(settings.upload_dir, str(case.id), "statements")
+    os.makedirs(statements_dir, exist_ok=True)
+
+    ext = ".webm" if "webm" in content_type else ".mp4" if "mp4" in content_type else ".wav"
+    filename = f"{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(statements_dir, filename)
+
+    content = await audio.read()
+    if len(content) > MAX_AUDIO_SIZE:
+        raise HTTPException(413, "Audio file too large (max 25MB)")
+
+    with open(file_path, "wb") as f:
+        f.write(content)
+
+    return {"audio_path": f"statements/{filename}", "filename": filename}
+
+
+@router.get("/{case_id}/statement-audio/{filename}")
+async def get_statement_audio(
+    case_id: str = Path(),
+    filename: str = Path(),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    case = await authorize_case_access(db, case_id, current_user)
+
+    safe_filename = os.path.basename(filename)
+    file_path = os.path.join(settings.upload_dir, str(case.id), "statements", safe_filename)
+
+    real_path = os.path.realpath(file_path)
+    allowed_dir = os.path.realpath(os.path.join(settings.upload_dir, str(case.id), "statements"))
+    if not real_path.startswith(allowed_dir):
+        raise HTTPException(403, "Access denied")
+
+    if not os.path.exists(file_path):
+        raise HTTPException(404, "Audio file not found")
+
+    media_type = "audio/webm" if file_path.endswith(".webm") else "audio/mp4" if file_path.endswith(".mp4") else "audio/wav"
+    return FileResponse(file_path, media_type=media_type)
