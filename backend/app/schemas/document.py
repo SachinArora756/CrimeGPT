@@ -7,14 +7,14 @@ from app.models.document import DocType
 class DocumentGenerateRequest(BaseModel):
     doc_type: DocType
     additional_context: str | None = Field(default=None, max_length=5000)
-    output_format: Literal["docx", "pdf"] = "docx"
+    output_format: Literal["docx", "pdf"] = "pdf"
 
 
 class DocumentResponse(BaseModel):
     id: int
     case_id: int
     doc_type: DocType
-    output_format: str = "docx"
+    output_format: str = "pdf"
     file_path: str
     file_hash: str | None = None
     generated_by: int

@@ -90,7 +90,7 @@ def generate_text(prompt: str, temperature: float = 0.3, max_tokens: int = 2048)
         import google.generativeai as genai
 
         genai.configure(api_key=settings.gemini_api_key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        model = genai.GenerativeModel("gemini-2.5-flash")
         try:
             response = model.generate_content(
                 prompt,
@@ -137,7 +137,7 @@ def generate_vision(image_path: str, prompt: str, temperature: float = 0.1, max_
         from PIL import Image
 
         genai.configure(api_key=settings.gemini_api_key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        model = genai.GenerativeModel("gemini-2.5-flash")
         img = Image.open(image_path)
         try:
             response = model.generate_content(
@@ -205,7 +205,7 @@ def generate_vision_base64(image_b64: str, mime_type: str, prompt: str, temperat
         import google.generativeai as genai
 
         genai.configure(api_key=settings.gemini_api_key)
-        model = genai.GenerativeModel("gemini-2.0-flash")
+        model = genai.GenerativeModel("gemini-2.5-flash")
         try:
             response = model.generate_content(
                 [

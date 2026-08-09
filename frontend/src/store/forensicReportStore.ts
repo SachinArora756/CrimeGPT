@@ -58,7 +58,7 @@ export const useForensicReportStore = create<ForensicReportState>((set) => ({
     }
   },
 
-  generateReport: async (caseId: string, outputFormat = 'docx') => {
+  generateReport: async (caseId: string, outputFormat = 'pdf') => {
     set({ generating: true, error: null })
     try {
       await api.post(`/api/report/${caseId}/generate`, { output_format: outputFormat })
@@ -81,7 +81,7 @@ export const useForensicReportStore = create<ForensicReportState>((set) => ({
       const url = window.URL.createObjectURL(new Blob([res.data]))
       const link = document.createElement('a')
       link.href = url
-      link.setAttribute('download', `TRACE_Forensic_Report.docx`)
+      link.setAttribute('download', `TRACE_Forensic_Report.pdf`)
       document.body.appendChild(link)
       link.click()
       link.remove()

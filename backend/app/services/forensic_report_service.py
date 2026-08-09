@@ -29,6 +29,7 @@ from app.models.user import User
 from app.services.completeness_service import calculate_completeness
 from app.services.forensic_report_sections import REPORT_SECTIONS, get_llm_sections
 from app.services.forensic_report_renderer import render_forensic_report
+from app.services.forensic_report_pdf_renderer import render_forensic_report_pdf
 
 logger = logging.getLogger(__name__)
 
@@ -76,14 +77,23 @@ async def check_report_readiness(db: AsyncSession, case_id: int) -> dict:
     }
 
 
+_generating_cases: set[int] = set()
+
+
 async def generate_forensic_report_doc(
-    db: AsyncSession, case_id: int, user_id: int, output_format: str = "docx"
+    db: AsyncSession, case_id: int, user_id: int, output_format: str = "pdf"
 ) -> dict:
     """
     Generate the complete TRACE forensic investigation report.
 
     Returns dict with document metadata including file_path, file_hash, sections_generated.
     """
+    if case_id in _generating_cases:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Report generation is already in progress for this case.",
+        )
+
     # 1. Validate readiness
     readiness = await check_report_readiness(db, case_id)
     if not readiness["ready"]:
@@ -92,65 +102,69 @@ async def generate_forensic_report_doc(
             detail=readiness["message"],
         )
 
-    # 2. Load case
-    result = await db.execute(select(Case).where(Case.id == case_id))
-    case = result.scalar_one()
+    _generating_cases.add(case_id)
+    try:
+        # 2. Load case
+        result = await db.execute(select(Case).where(Case.id == case_id))
+        case = result.scalar_one()
 
-    # 3. Load officer
-    officer_name = "Investigating Officer"
-    if case.assigned_officer_id:
-        officer_result = await db.execute(
-            select(User).where(User.id == case.assigned_officer_id)
+        # 3. Load officer
+        officer_name = "Investigating Officer"
+        if case.assigned_officer_id:
+            officer_result = await db.execute(
+                select(User).where(User.id == case.assigned_officer_id)
+            )
+            officer = officer_result.scalar_one_or_none()
+            if officer:
+                officer_name = officer.full_name or officer.email
+
+        # 4. Aggregate all case data
+        case_data = await _aggregate_case_data(db, case, officer_name)
+
+        # 5. Generate LLM content for each section
+        sections_content = await _generate_all_sections(case_data)
+
+        # 6. Render document
+        output_dir = os.path.join(settings.upload_dir, str(case_id), "documents")
+        os.makedirs(output_dir, exist_ok=True)
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        filename = f"forensic_report_{timestamp}.{output_format}"
+        file_path = os.path.join(output_dir, filename)
+
+        if output_format == "pdf":
+            render_forensic_report_pdf(sections_content, case_data, file_path)
+        else:
+            render_forensic_report(sections_content, case_data, file_path)
+
+        # 7. Compute hash
+        file_hash = _compute_file_hash(file_path)
+
+        # 8. Create document record
+        doc_record = Document(
+            case_id=case_id,
+            doc_type=DocType.FORENSIC_REPORT,
+            output_format=output_format,
+            file_path=file_path,
+            file_hash=file_hash,
+            generated_by=user_id,
+            generated_at=datetime.utcnow(),
         )
-        officer = officer_result.scalar_one_or_none()
-        if officer:
-            officer_name = officer.full_name or officer.email
+        db.add(doc_record)
+        await db.commit()
+        await db.refresh(doc_record)
 
-    # 4. Aggregate all case data
-    case_data = await _aggregate_case_data(db, case, officer_name)
-
-    # 5. Generate LLM content for each section
-    sections_content = await _generate_all_sections(case_data)
-
-    # 6. Render document
-    output_dir = os.path.join(settings.upload_dir, str(case_id), "documents")
-    os.makedirs(output_dir, exist_ok=True)
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-    filename = f"forensic_report_{timestamp}.{output_format}"
-    file_path = os.path.join(output_dir, filename)
-
-    if output_format == "docx":
-        render_forensic_report(sections_content, case_data, file_path)
-    else:
-        render_forensic_report(sections_content, case_data, file_path)
-
-    # 7. Compute hash
-    file_hash = _compute_file_hash(file_path)
-
-    # 8. Create document record
-    doc_record = Document(
-        case_id=case_id,
-        doc_type=DocType.FORENSIC_REPORT,
-        output_format=output_format,
-        file_path=file_path,
-        file_hash=file_hash,
-        generated_by=user_id,
-        generated_at=datetime.utcnow(),
-    )
-    db.add(doc_record)
-    await db.commit()
-    await db.refresh(doc_record)
-
-    return {
-        "id": doc_record.id,
-        "case_id": case_id,
-        "file_path": file_path,
-        "file_hash": file_hash,
-        "generated_by": user_id,
-        "generated_at": doc_record.generated_at,
-        "output_format": output_format,
-        "sections_generated": len([s for s in REPORT_SECTIONS if s.is_llm_generated]),
-    }
+        return {
+            "id": doc_record.id,
+            "case_id": case_id,
+            "file_path": file_path,
+            "file_hash": file_hash,
+            "generated_by": user_id,
+            "generated_at": doc_record.generated_at,
+            "output_format": output_format,
+            "sections_generated": len([s for s in REPORT_SECTIONS if s.is_llm_generated]),
+        }
+    finally:
+        _generating_cases.discard(case_id)
 
 
 async def _aggregate_case_data(db: AsyncSession, case: Case, officer_name: str) -> dict:
@@ -363,8 +377,9 @@ async def _aggregate_case_data(db: AsyncSession, case: Case, officer_name: str) 
         "timeline_events": timeline_text or "No timeline events recorded.",
         "timeline_count": len(timeline_events),
 
-        # Diary
-        "diary_entries": [
+        # Diary (list for renderer, text for LLM prompts)
+        "diary_entries": diary_text or "No case diary entries recorded.",
+        "diary_entries_list": [
             {
                 "entry_date": e.entry_date,
                 "entry_type": e.entry_type,
@@ -388,26 +403,44 @@ async def _aggregate_case_data(db: AsyncSession, case: Case, officer_name: str) 
     }
 
 
+def _safe_format(template: str, data: dict) -> str:
+    """Format a template string safely, handling curly braces in values.
+
+    Uses string.Template-style replacement to avoid issues with { } in user data.
+    Falls back to replacing {key} patterns manually.
+    """
+    import re
+
+    def replacer(match):
+        key = match.group(1)
+        if key in data:
+            val = data[key]
+            return str(val) if val is not None else "---"
+        return match.group(0)
+
+    return re.sub(r"\{(\w+)\}", replacer, template)
+
+
 async def _generate_all_sections(case_data: dict) -> dict:
     """Generate LLM content for all sections that require it."""
+    import asyncio
+
     sections_content = {}
     llm_sections = get_llm_sections()
 
     for section in llm_sections:
         try:
-            prompt = section.prompt_template.format(**case_data)
-            content = generate_text(
+            prompt = _safe_format(section.prompt_template, case_data)
+            content = await asyncio.to_thread(
+                generate_text,
                 prompt,
-                temperature=0.3,
-                max_tokens=section.max_tokens,
+                0.3,
+                section.max_tokens,
             )
             sections_content[section.section_id] = content
             logger.info(f"Generated section: {section.section_id} ({len(content)} chars)")
-        except KeyError as e:
-            logger.warning(f"Missing data key for section {section.section_id}: {e}")
-            sections_content[section.section_id] = f"[Section could not be generated — missing data: {e}]"
         except Exception as e:
-            logger.error(f"Error generating section {section.section_id}: {e}")
+            logger.error(f"Error generating section {section.section_id}: {e}", exc_info=True)
             sections_content[section.section_id] = "[Section generation failed due to an error. Manual review required.]"
 
     return sections_content

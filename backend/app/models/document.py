@@ -26,7 +26,7 @@ class Document(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     case_id: Mapped[int] = mapped_column(ForeignKey("cases.id", ondelete="CASCADE"), index=True)
     doc_type: Mapped[DocType] = mapped_column(SAEnum(DocType, native_enum=False, length=30))
-    output_format: Mapped[str] = mapped_column(String(10), default="docx")
+    output_format: Mapped[str] = mapped_column(String(10), default="pdf")
     file_path: Mapped[str] = mapped_column(String(500))
     file_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
     generated_by: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)

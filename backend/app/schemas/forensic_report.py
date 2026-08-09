@@ -12,7 +12,7 @@ class ReportReadinessResponse(BaseModel):
 
 
 class ReportGenerateRequest(BaseModel):
-    output_format: Literal["docx", "pdf"] = "docx"
+    output_format: Literal["docx", "pdf"] = "pdf"
 
 
 class ReportGenerateResponse(BaseModel):

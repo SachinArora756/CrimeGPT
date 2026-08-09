@@ -18,7 +18,7 @@ async def generate_legal_document(
     case_id: int,
     doc_type: DocType,
     additional_context: str | None = None,
-    output_format: str = "docx",
+    output_format: str = "pdf",
 ) -> str:
     result = await db.execute(select(Case).where(Case.id == case_id))
     case = result.scalar_one_or_none()

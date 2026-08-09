@@ -628,7 +628,7 @@ def _render_appendices(doc, case_data):
     # Appendix C: Case Diary Summary
     _add_page_break(doc)
     doc.add_heading("Appendix C — Case Diary Summary", level=2)
-    diary_entries = case_data.get("diary_entries", [])
+    diary_entries = case_data.get("diary_entries_list", [])
     if diary_entries:
         for entry in diary_entries:
             p = doc.add_paragraph()

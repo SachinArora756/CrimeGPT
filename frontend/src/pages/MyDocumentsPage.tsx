@@ -81,7 +81,7 @@ export default function MyDocumentsPage() {
       const contentDisposition = res.headers['content-disposition']
       const filename = contentDisposition
         ? contentDisposition.split('filename=')[1]?.replace(/"/g, '')
-        : `document_${docId}.docx`
+        : `document_${docId}.pdf`
       link.setAttribute('download', filename)
       document.body.appendChild(link)
       link.click()
