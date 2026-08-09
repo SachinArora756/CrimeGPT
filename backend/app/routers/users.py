@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -10,6 +10,34 @@ from app.models.document import Document
 from app.services.auth_service import get_current_user
 
 router = APIRouter()
+
+
+@router.get("/search")
+async def search_users(
+    q: str = Query("", min_length=0),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    query = select(User).where(User.is_active == True)
+    if q.strip():
+        safe = q.strip().replace("%", r"\%").replace("_", r"\_")
+        query = query.where(
+            User.full_name.ilike(f"%{safe}%", escape="\\")
+            | User.badge_number.ilike(f"%{safe}%", escape="\\")
+        )
+    query = query.order_by(User.full_name).limit(20)
+    result = await db.execute(query)
+    users = result.scalars().all()
+    return [
+        {
+            "id": u.id,
+            "full_name": u.full_name or u.username,
+            "badge_number": u.badge_number,
+            "role": u.role.value,
+            "station_id": u.station_id,
+        }
+        for u in users
+    ]
 
 
 def _authorize_user_access(current_user: User, target_user_id: int):

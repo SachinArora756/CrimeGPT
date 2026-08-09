@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   FileText, Upload, Brain, BookOpen, Calendar, User, Shield,
   Clock, MessageSquare, CheckCircle, Send, AlertTriangle, TrendingUp,
-  Eye, BarChart3, Users, Zap, Pencil, Check, X,
+  Eye, BarChart3, Users, Zap, Pencil, Check, X, Plus, Trash2, Search, UserPlus, Heart,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
@@ -53,6 +53,29 @@ export default function CaseDetailPage() {
   const [editingTitle, setEditingTitle] = useState(false)
   const [titleDraft, setTitleDraft] = useState('')
   const [savingTitle, setSavingTitle] = useState(false)
+
+  // Witnesses management
+  const [showWitnessForm, setShowWitnessForm] = useState(false)
+  const [witnessName, setWitnessName] = useState('')
+  const [witnessContact, setWitnessContact] = useState('')
+  const [witnessAddress, setWitnessAddress] = useState('')
+  const [savingWitness, setSavingWitness] = useState(false)
+
+  // Victims management
+  const [showVictimForm, setShowVictimForm] = useState(false)
+  const [victimName, setVictimName] = useState('')
+  const [victimAge, setVictimAge] = useState('')
+  const [victimGender, setVictimGender] = useState('')
+  const [victimAddress, setVictimAddress] = useState('')
+  const [victimInjuries, setVictimInjuries] = useState('')
+  const [savingVictim, setSavingVictim] = useState(false)
+
+  // Investigation team management
+  const [teamSearch, setTeamSearch] = useState('')
+  const [teamSearchResults, setTeamSearchResults] = useState<Array<{ id: number; full_name: string; badge_number: string | null; role: string; station_id: string | null }>>([])
+  const [showTeamSearch, setShowTeamSearch] = useState(false)
+  const [savingTeam, setSavingTeam] = useState(false)
+  const teamSearchRef = useRef<HTMLDivElement>(null)
 
   const saveTitle = async () => {
     if (!titleDraft.trim() || !caseData) return
@@ -118,6 +141,114 @@ export default function CaseDetailPage() {
     } catch {
       setChatMessages((prev) => [...prev, { id: Date.now() + 1, role: 'assistant', content: 'Error processing request.', created_at: new Date().toISOString() }])
     } finally { setChatLoading(false) }
+  }
+
+  const addWitness = async () => {
+    if (!witnessName.trim() || !caseData || savingWitness) return
+    setSavingWitness(true)
+    const newWitness = { name: witnessName.trim(), contact: witnessContact.trim(), address: witnessAddress.trim() }
+    const updated = [...(caseData.witnesses || []), newWitness]
+    try {
+      await api.put(`/api/cases/${id}`, { witnesses: updated })
+      const updatedCase = { ...caseData, witnesses: updated }
+      setCaseData(updatedCase)
+      updateCaseInStore(id!, { witnesses: updated })
+      setWitnessName(''); setWitnessContact(''); setWitnessAddress('')
+      setShowWitnessForm(false)
+      toast.success('Witness added')
+      loadCompleteness()
+    } catch { toast.error('Failed to add witness') }
+    finally { setSavingWitness(false) }
+  }
+
+  const removeWitness = async (index: number) => {
+    if (!caseData) return
+    const updated = (caseData.witnesses || []).filter((_, i) => i !== index)
+    try {
+      await api.put(`/api/cases/${id}`, { witnesses: updated })
+      const updatedCase = { ...caseData, witnesses: updated }
+      setCaseData(updatedCase)
+      updateCaseInStore(id!, { witnesses: updated })
+      toast.success('Witness removed')
+      loadCompleteness()
+    } catch { toast.error('Failed to remove witness') }
+  }
+
+  const addVictim = async () => {
+    if (!victimName.trim() || !caseData || savingVictim) return
+    setSavingVictim(true)
+    const newVictim = { name: victimName.trim(), age: victimAge.trim(), gender: victimGender.trim(), address: victimAddress.trim(), injuries: victimInjuries.trim() }
+    const updated = [...(caseData.victims || []), newVictim]
+    try {
+      await api.put(`/api/cases/${id}`, { victims: updated })
+      const updatedCase = { ...caseData, victims: updated }
+      setCaseData(updatedCase)
+      updateCaseInStore(id!, { victims: updated })
+      setVictimName(''); setVictimAge(''); setVictimGender(''); setVictimAddress(''); setVictimInjuries('')
+      setShowVictimForm(false)
+      toast.success('Victim added')
+      loadCompleteness()
+    } catch { toast.error('Failed to add victim') }
+    finally { setSavingVictim(false) }
+  }
+
+  const removeVictim = async (index: number) => {
+    if (!caseData) return
+    const updated = (caseData.victims || []).filter((_, i) => i !== index)
+    try {
+      await api.put(`/api/cases/${id}`, { victims: updated })
+      const updatedCase = { ...caseData, victims: updated }
+      setCaseData(updatedCase)
+      updateCaseInStore(id!, { victims: updated })
+      toast.success('Victim removed')
+      loadCompleteness()
+    } catch { toast.error('Failed to remove victim') }
+  }
+
+  const searchTeamMembers = async (query: string) => {
+    setTeamSearch(query)
+    if (!query.trim()) { setTeamSearchResults([]); return }
+    try {
+      const res = await api.get('/api/users/search', { params: { q: query } })
+      const currentTeam = (caseData?.investigation_team || []) as Array<Record<string, unknown>>
+      const currentIds = currentTeam.map(m => typeof m === 'number' ? m : (m as Record<string, unknown>).id || m)
+      setTeamSearchResults((res.data || []).filter((u: { id: number }) => !currentIds.includes(u.id)))
+    } catch { setTeamSearchResults([]) }
+  }
+
+  const addTeamMember = async (user: { id: number; full_name: string; badge_number: string | null; role: string }) => {
+    if (!caseData || savingTeam) return
+    setSavingTeam(true)
+    const currentTeam = (caseData.investigation_team || []) as Array<Record<string, unknown>>
+    const currentIds = currentTeam.map(m => typeof m === 'number' ? m : Number((m as Record<string, unknown>).id) || m)
+    const updatedIds = [...currentIds.filter(x => typeof x === 'number'), user.id] as number[]
+    try {
+      await api.put(`/api/cases/${id}`, { investigation_team: updatedIds })
+      const updatedCase = { ...caseData, investigation_team: updatedIds.map(uid => uid === user.id ? { id: user.id, full_name: user.full_name, badge_number: user.badge_number, role: user.role } : currentTeam.find(m => (typeof m === 'number' ? m : (m as Record<string, unknown>).id) === uid) || { id: uid }) }
+      setCaseData(updatedCase)
+      updateCaseInStore(id!, { investigation_team: updatedCase.investigation_team })
+      setTeamSearch(''); setTeamSearchResults([]); setShowTeamSearch(false)
+      toast.success(`${user.full_name} added to team`)
+      loadCompleteness()
+    } catch { toast.error('Failed to add team member') }
+    finally { setSavingTeam(false) }
+  }
+
+  const removeTeamMember = async (memberId: number) => {
+    if (!caseData) return
+    const currentTeam = (caseData.investigation_team || []) as Array<Record<string, unknown>>
+    const updatedIds = currentTeam
+      .map(m => typeof m === 'number' ? m : Number((m as Record<string, unknown>).id) || 0)
+      .filter(uid => uid !== memberId) as number[]
+    try {
+      await api.put(`/api/cases/${id}`, { investigation_team: updatedIds })
+      const updatedTeam = currentTeam.filter(m => (typeof m === 'number' ? m : (m as Record<string, unknown>).id) !== memberId)
+      const updatedCase = { ...caseData, investigation_team: updatedTeam }
+      setCaseData(updatedCase)
+      updateCaseInStore(id!, { investigation_team: updatedTeam })
+      toast.success('Team member removed')
+      loadCompleteness()
+    } catch { toast.error('Failed to remove team member') }
   }
 
   if (loading) return (
@@ -340,20 +471,180 @@ export default function CaseDetailPage() {
             </motion.div>
           )}
 
-          {caseData.witnesses && caseData.witnesses.length > 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card">
-              <h2 className="text-base font-semibold text-white mb-3 flex items-center gap-2">
+          {/* Witnesses Management */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold text-white flex items-center gap-2">
                 <Users className="w-4 h-4 text-green-400" /> Witnesses
               </h2>
-              <div className="space-y-2">
-                {caseData.witnesses.map((w, i) => (
-                  <div key={i} className="p-2 bg-dark-900/60 rounded-lg text-sm text-dark-300">
-                    {(w as Record<string, string>).name || JSON.stringify(w)}
-                  </div>
-                ))}
+              <button
+                onClick={() => setShowWitnessForm(!showWitnessForm)}
+                className="text-xs px-2.5 py-1 rounded-lg bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 transition-colors flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" /> Add
+              </button>
+            </div>
+            {showWitnessForm && (
+              <div className="mb-3 p-3 bg-dark-900/60 rounded-lg border border-dark-700 space-y-2">
+                <input type="text" placeholder="Name *" value={witnessName} onChange={e => setWitnessName(e.target.value)} className="input w-full text-sm" />
+                <input type="text" placeholder="Contact" value={witnessContact} onChange={e => setWitnessContact(e.target.value)} className="input w-full text-sm" />
+                <input type="text" placeholder="Address" value={witnessAddress} onChange={e => setWitnessAddress(e.target.value)} className="input w-full text-sm" />
+                <div className="flex gap-2">
+                  <button onClick={addWitness} disabled={!witnessName.trim() || savingWitness} className="btn-primary text-xs px-3 py-1.5 disabled:opacity-50">
+                    {savingWitness ? 'Saving...' : 'Save'}
+                  </button>
+                  <button onClick={() => setShowWitnessForm(false)} className="btn-secondary text-xs px-3 py-1.5">Cancel</button>
+                </div>
               </div>
-            </motion.div>
-          )}
+            )}
+            {caseData.witnesses && caseData.witnesses.length > 0 ? (
+              <div className="space-y-2">
+                {caseData.witnesses.map((w, i) => {
+                  const witness = w as Record<string, string>
+                  return (
+                    <div key={i} className="p-2.5 bg-dark-900/60 rounded-lg flex items-center justify-between group">
+                      <div className="text-sm">
+                        <span className="text-dark-200 font-medium">{witness.name || JSON.stringify(w)}</span>
+                        {witness.contact && <span className="text-dark-400 ml-2 text-xs">({witness.contact})</span>}
+                      </div>
+                      <button onClick={() => removeWitness(i)} className="text-dark-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-dark-500 text-sm text-center py-4">No witnesses recorded</p>
+            )}
+          </motion.div>
+
+          {/* Victims Management */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold text-white flex items-center gap-2">
+                <Heart className="w-4 h-4 text-pink-400" /> Victims
+              </h2>
+              <button
+                onClick={() => setShowVictimForm(!showVictimForm)}
+                className="text-xs px-2.5 py-1 rounded-lg bg-pink-500/10 text-pink-400 border border-pink-500/20 hover:bg-pink-500/20 transition-colors flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" /> Add
+              </button>
+            </div>
+            {showVictimForm && (
+              <div className="mb-3 p-3 bg-dark-900/60 rounded-lg border border-dark-700 space-y-2">
+                <input type="text" placeholder="Name *" value={victimName} onChange={e => setVictimName(e.target.value)} className="input w-full text-sm" />
+                <div className="grid grid-cols-2 gap-2">
+                  <input type="text" placeholder="Age" value={victimAge} onChange={e => setVictimAge(e.target.value)} className="input w-full text-sm" />
+                  <select value={victimGender} onChange={e => setVictimGender(e.target.value)} className="input w-full text-sm">
+                    <option value="">Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <input type="text" placeholder="Address" value={victimAddress} onChange={e => setVictimAddress(e.target.value)} className="input w-full text-sm" />
+                <input type="text" placeholder="Injuries / Details" value={victimInjuries} onChange={e => setVictimInjuries(e.target.value)} className="input w-full text-sm" />
+                <div className="flex gap-2">
+                  <button onClick={addVictim} disabled={!victimName.trim() || savingVictim} className="btn-primary text-xs px-3 py-1.5 disabled:opacity-50">
+                    {savingVictim ? 'Saving...' : 'Save'}
+                  </button>
+                  <button onClick={() => setShowVictimForm(false)} className="btn-secondary text-xs px-3 py-1.5">Cancel</button>
+                </div>
+              </div>
+            )}
+            {caseData.victims && caseData.victims.length > 0 ? (
+              <div className="space-y-2">
+                {caseData.victims.map((v, i) => {
+                  const victim = v as Record<string, string>
+                  return (
+                    <div key={i} className="p-2.5 bg-dark-900/60 rounded-lg flex items-center justify-between group">
+                      <div className="text-sm">
+                        <span className="text-dark-200 font-medium">{victim.name}</span>
+                        {victim.age && <span className="text-dark-400 ml-2 text-xs">{victim.age}y</span>}
+                        {victim.gender && <span className="text-dark-400 ml-1 text-xs">• {victim.gender}</span>}
+                        {victim.injuries && <p className="text-dark-500 text-xs mt-0.5">{victim.injuries}</p>}
+                      </div>
+                      <button onClick={() => removeVictim(i)} className="text-dark-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-dark-500 text-sm text-center py-4">No victims recorded</p>
+            )}
+          </motion.div>
+
+          {/* Investigation Team Management */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card lg:col-span-2">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold text-white flex items-center gap-2">
+                <UserPlus className="w-4 h-4 text-cyan-400" /> Investigation Team
+              </h2>
+              <button
+                onClick={() => setShowTeamSearch(!showTeamSearch)}
+                className="text-xs px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 hover:bg-cyan-500/20 transition-colors flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3" /> Add Member
+              </button>
+            </div>
+            {showTeamSearch && (
+              <div className="mb-3 relative" ref={teamSearchRef}>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-500" />
+                  <input
+                    type="text"
+                    placeholder="Search officers by name or badge..."
+                    value={teamSearch}
+                    onChange={e => searchTeamMembers(e.target.value)}
+                    className="input w-full text-sm pl-9"
+                    autoFocus
+                  />
+                </div>
+                {teamSearchResults.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-dark-800 border border-dark-600 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+                    {teamSearchResults.map(user => (
+                      <button
+                        key={user.id}
+                        onClick={() => addTeamMember(user)}
+                        disabled={savingTeam}
+                        className="w-full px-3 py-2 text-left hover:bg-dark-700 transition-colors flex items-center justify-between"
+                      >
+                        <div>
+                          <span className="text-dark-200 text-sm">{user.full_name}</span>
+                          <span className="text-dark-500 text-xs ml-2">{user.role}</span>
+                        </div>
+                        {user.badge_number && <span className="text-dark-500 text-xs">#{user.badge_number}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {caseData.investigation_team && (caseData.investigation_team as Array<Record<string, unknown>>).length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {(caseData.investigation_team as Array<Record<string, unknown>>).map((m, i) => {
+                  const member = typeof m === 'number' ? { id: m, full_name: `Officer #${m}` } : m as Record<string, unknown>
+                  const memberId = Number(member.id) || 0
+                  return (
+                    <div key={i} className="inline-flex items-center gap-2 px-3 py-1.5 bg-cyan-500/10 border border-cyan-500/20 rounded-lg text-sm group">
+                      <User className="w-3.5 h-3.5 text-cyan-400" />
+                      <span className="text-dark-200">{String(member.full_name || `Officer #${memberId}`)}</span>
+                      {member.badge_number ? <span className="text-dark-500 text-xs">#{String(member.badge_number)}</span> : null}
+                      <button onClick={() => removeTeamMember(memberId)} className="text-dark-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all">
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-dark-500 text-sm text-center py-4">No team members assigned</p>
+            )}
+          </motion.div>
 
           {caseData.accused_persons && caseData.accused_persons.length > 0 && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card">
