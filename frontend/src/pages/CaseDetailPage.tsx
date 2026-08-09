@@ -59,6 +59,7 @@ export default function CaseDetailPage() {
   const [witnessName, setWitnessName] = useState('')
   const [witnessContact, setWitnessContact] = useState('')
   const [witnessAddress, setWitnessAddress] = useState('')
+  const [witnessStatement, setWitnessStatement] = useState('')
   const [savingWitness, setSavingWitness] = useState(false)
 
   // Victims management
@@ -68,6 +69,7 @@ export default function CaseDetailPage() {
   const [victimGender, setVictimGender] = useState('')
   const [victimAddress, setVictimAddress] = useState('')
   const [victimInjuries, setVictimInjuries] = useState('')
+  const [victimStatement, setVictimStatement] = useState('')
   const [savingVictim, setSavingVictim] = useState(false)
 
   // Investigation team management
@@ -146,14 +148,14 @@ export default function CaseDetailPage() {
   const addWitness = async () => {
     if (!witnessName.trim() || !caseData || savingWitness) return
     setSavingWitness(true)
-    const newWitness = { name: witnessName.trim(), contact: witnessContact.trim(), address: witnessAddress.trim() }
+    const newWitness = { name: witnessName.trim(), contact: witnessContact.trim(), address: witnessAddress.trim(), statement: witnessStatement.trim() }
     const updated = [...(caseData.witnesses || []), newWitness]
     try {
       await api.put(`/api/cases/${id}`, { witnesses: updated })
       const updatedCase = { ...caseData, witnesses: updated }
       setCaseData(updatedCase)
       updateCaseInStore(id!, { witnesses: updated })
-      setWitnessName(''); setWitnessContact(''); setWitnessAddress('')
+      setWitnessName(''); setWitnessContact(''); setWitnessAddress(''); setWitnessStatement('')
       setShowWitnessForm(false)
       toast.success('Witness added')
       loadCompleteness()
@@ -177,14 +179,14 @@ export default function CaseDetailPage() {
   const addVictim = async () => {
     if (!victimName.trim() || !caseData || savingVictim) return
     setSavingVictim(true)
-    const newVictim = { name: victimName.trim(), age: victimAge.trim(), gender: victimGender.trim(), address: victimAddress.trim(), injuries: victimInjuries.trim() }
+    const newVictim = { name: victimName.trim(), age: victimAge.trim(), gender: victimGender.trim(), address: victimAddress.trim(), injuries: victimInjuries.trim(), statement: victimStatement.trim() }
     const updated = [...(caseData.victims || []), newVictim]
     try {
       await api.put(`/api/cases/${id}`, { victims: updated })
       const updatedCase = { ...caseData, victims: updated }
       setCaseData(updatedCase)
       updateCaseInStore(id!, { victims: updated })
-      setVictimName(''); setVictimAge(''); setVictimGender(''); setVictimAddress(''); setVictimInjuries('')
+      setVictimName(''); setVictimAge(''); setVictimGender(''); setVictimAddress(''); setVictimInjuries(''); setVictimStatement('')
       setShowVictimForm(false)
       toast.success('Victim added')
       loadCompleteness()
@@ -489,6 +491,7 @@ export default function CaseDetailPage() {
                 <input type="text" placeholder="Name *" value={witnessName} onChange={e => setWitnessName(e.target.value)} className="input w-full text-sm" />
                 <input type="text" placeholder="Contact" value={witnessContact} onChange={e => setWitnessContact(e.target.value)} className="input w-full text-sm" />
                 <input type="text" placeholder="Address" value={witnessAddress} onChange={e => setWitnessAddress(e.target.value)} className="input w-full text-sm" />
+                <textarea placeholder="Witness Statement" value={witnessStatement} onChange={e => setWitnessStatement(e.target.value)} className="input w-full text-sm min-h-[80px] resize-y" />
                 <div className="flex gap-2">
                   <button onClick={addWitness} disabled={!witnessName.trim() || savingWitness} className="btn-primary text-xs px-3 py-1.5 disabled:opacity-50">
                     {savingWitness ? 'Saving...' : 'Save'}
@@ -502,14 +505,17 @@ export default function CaseDetailPage() {
                 {caseData.witnesses.map((w, i) => {
                   const witness = w as Record<string, string>
                   return (
-                    <div key={i} className="p-2.5 bg-dark-900/60 rounded-lg flex items-center justify-between group">
-                      <div className="text-sm">
-                        <span className="text-dark-200 font-medium">{witness.name || JSON.stringify(w)}</span>
-                        {witness.contact && <span className="text-dark-400 ml-2 text-xs">({witness.contact})</span>}
+                    <div key={i} className="p-2.5 bg-dark-900/60 rounded-lg group">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm">
+                          <span className="text-dark-200 font-medium">{witness.name || JSON.stringify(w)}</span>
+                          {witness.contact && <span className="text-dark-400 ml-2 text-xs">({witness.contact})</span>}
+                        </div>
+                        <button onClick={() => removeWitness(i)} className="text-dark-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                      <button onClick={() => removeWitness(i)} className="text-dark-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {witness.statement && <p className="text-dark-400 text-xs mt-1.5 italic border-l-2 border-dark-600 pl-2">"{witness.statement}"</p>}
                     </div>
                   )
                 })}
@@ -546,6 +552,7 @@ export default function CaseDetailPage() {
                 </div>
                 <input type="text" placeholder="Address" value={victimAddress} onChange={e => setVictimAddress(e.target.value)} className="input w-full text-sm" />
                 <input type="text" placeholder="Injuries / Details" value={victimInjuries} onChange={e => setVictimInjuries(e.target.value)} className="input w-full text-sm" />
+                <textarea placeholder="Victim Statement" value={victimStatement} onChange={e => setVictimStatement(e.target.value)} className="input w-full text-sm min-h-[80px] resize-y" />
                 <div className="flex gap-2">
                   <button onClick={addVictim} disabled={!victimName.trim() || savingVictim} className="btn-primary text-xs px-3 py-1.5 disabled:opacity-50">
                     {savingVictim ? 'Saving...' : 'Save'}
@@ -559,16 +566,19 @@ export default function CaseDetailPage() {
                 {caseData.victims.map((v, i) => {
                   const victim = v as Record<string, string>
                   return (
-                    <div key={i} className="p-2.5 bg-dark-900/60 rounded-lg flex items-center justify-between group">
-                      <div className="text-sm">
-                        <span className="text-dark-200 font-medium">{victim.name}</span>
-                        {victim.age && <span className="text-dark-400 ml-2 text-xs">{victim.age}y</span>}
-                        {victim.gender && <span className="text-dark-400 ml-1 text-xs">• {victim.gender}</span>}
-                        {victim.injuries && <p className="text-dark-500 text-xs mt-0.5">{victim.injuries}</p>}
+                    <div key={i} className="p-2.5 bg-dark-900/60 rounded-lg group">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm">
+                          <span className="text-dark-200 font-medium">{victim.name}</span>
+                          {victim.age && <span className="text-dark-400 ml-2 text-xs">{victim.age}y</span>}
+                          {victim.gender && <span className="text-dark-400 ml-1 text-xs">• {victim.gender}</span>}
+                          {victim.injuries && <p className="text-dark-500 text-xs mt-0.5">Injuries: {victim.injuries}</p>}
+                        </div>
+                        <button onClick={() => removeVictim(i)} className="text-dark-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
-                      <button onClick={() => removeVictim(i)} className="text-dark-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all p-1">
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {victim.statement && <p className="text-dark-400 text-xs mt-1.5 italic border-l-2 border-dark-600 pl-2">"{victim.statement}"</p>}
                     </div>
                   )
                 })}
