@@ -83,6 +83,10 @@ export default function CaseDetailPage() {
   const [savingTeam, setSavingTeam] = useState(false)
   const teamSearchRef = useRef<HTMLDivElement>(null)
 
+  // Status change
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false)
+  const [savingStatus, setSavingStatus] = useState(false)
+
   // Voice recording for witness statement
   const uploadAudio = useCallback(async (blob: Blob, target: 'witness' | 'victim') => {
     if (!id) return
@@ -124,6 +128,23 @@ export default function CaseDetailPage() {
       toast.error('Failed to update title')
     } finally {
       setSavingTitle(false)
+    }
+  }
+
+  const changeStatus = async (newStatus: string) => {
+    if (!caseData || newStatus === caseData.status) { setShowStatusDropdown(false); return }
+    setSavingStatus(true)
+    try {
+      await api.put(`/api/cases/${id}`, { status: newStatus })
+      const updated = { ...caseData, status: newStatus }
+      setCaseData(updated)
+      updateCaseInStore(id!, { status: newStatus })
+      toast.success(`Status changed to ${newStatus.replace('_', ' ')}`)
+    } catch {
+      toast.error('Failed to update status')
+    } finally {
+      setSavingStatus(false)
+      setShowStatusDropdown(false)
     }
   }
 
@@ -358,9 +379,35 @@ export default function CaseDetailPage() {
                   </button>
                 </div>
               )}
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${sc.bg} ${sc.text} ${sc.border}`}>
-                {caseData.status.replace('_', ' ').toUpperCase()}
-              </span>
+              <div className="relative">
+                <button
+                  onClick={() => setShowStatusDropdown(!showStatusDropdown)}
+                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity ${sc.bg} ${sc.text} ${sc.border}`}
+                >
+                  {savingStatus ? 'Updating...' : caseData.status.replace('_', ' ').toUpperCase()}
+                </button>
+                {showStatusDropdown && (
+                  <div className="absolute top-full left-0 mt-1 z-50 bg-dark-800 border border-dark-700 rounded-lg shadow-xl py-1 min-w-[180px]">
+                    {['registered', 'investigating', 'chargesheet_filed', 'closed'].map(s => {
+                      const colors = statusColors[s]
+                      return (
+                        <button
+                          key={s}
+                          onClick={() => changeStatus(s)}
+                          className={`w-full text-left px-3 py-2 text-xs hover:bg-dark-700 transition-colors flex items-center gap-2 ${
+                            s === caseData.status ? 'opacity-50 cursor-default' : ''
+                          }`}
+                          disabled={s === caseData.status}
+                        >
+                          <span className={`w-2 h-2 rounded-full ${colors.bg} ${colors.border} border`} />
+                          <span className={colors.text}>{s.replace('_', ' ').toUpperCase()}</span>
+                          {s === caseData.status && <CheckCircle className="w-3 h-3 ml-auto text-green-400" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
               {caseData.priority && (
                 <span className={`px-2 py-0.5 rounded text-xs font-semibold uppercase ${
                   caseData.priority === 'critical' ? 'bg-red-500/10 text-red-400 border border-red-500/30' :

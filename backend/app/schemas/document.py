@@ -33,7 +33,11 @@ class DocumentResponse(BaseModel):
 class CaseDiaryCreate(BaseModel):
     entry_date: date
     content: str = Field(min_length=1, max_length=50000)
-    entry_type: Literal["investigation", "arrest", "search", "seizure", "forensic", "witness", "other"] = "investigation"
+    entry_type: Literal[
+        "investigation", "arrest", "search", "seizure", "forensic", "witness", "other",
+        "investigation_step", "evidence_collected", "witness_statement", "arrest_details",
+        "court_appearance", "supervisor_note",
+    ] = "investigation_step"
 
 
 class CaseDiaryResponse(BaseModel):
