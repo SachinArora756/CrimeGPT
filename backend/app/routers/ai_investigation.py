@@ -30,6 +30,8 @@ from app.schemas.ai_investigation import (
     SessionResponse,
     SessionDetailResponse,
     UploadResponse,
+    AttachEvidenceRequest,
+    AttachEvidenceResponse,
 )
 from app.services.ai_investigation_service import (
     classify_evidence,
@@ -252,16 +254,86 @@ async def upload_evidence(
     )
 
 
+@router.post("/sessions/{session_id}/attach-evidence", response_model=AttachEvidenceResponse)
+async def attach_evidence(
+    session_id: str,
+    body: AttachEvidenceRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
+):
+    """Attach an existing case evidence item to an investigation session."""
+    from app.models.evidence import Evidence
+    from app.services.authorization import authorize_case_access
+
+    stmt = select(AIInvestigationSession).where(
+        AIInvestigationSession.session_id == session_id,
+        AIInvestigationSession.user_id == current_user.id,
+    )
+    result = await db.execute(stmt)
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+
+    evidence_stmt = select(Evidence).where(Evidence.id == body.evidence_id)
+    ev_result = await db.execute(evidence_stmt)
+    evidence = ev_result.scalar_one_or_none()
+    if not evidence:
+        raise HTTPException(status_code=404, detail="Evidence not found")
+
+    await authorize_case_access(db, evidence.case_id, current_user)
+
+    if session.case_id and session.case_id != evidence.case_id:
+        raise HTTPException(status_code=400, detail="Evidence does not belong to session's case")
+    if not session.case_id:
+        session.case_id = evidence.case_id
+
+    file_path = evidence.file_path
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Evidence file not found on disk")
+
+    classification = classify_evidence(file_path, evidence.original_filename)
+
+    message_id = str(uuid.uuid4())
+    msg = AIInvestigationMessage(
+        message_id=message_id,
+        session_id=session.id,
+        role="user",
+        content=f"Attached case evidence: {evidence.original_filename}",
+        attachments=[{
+            "file_path": file_path,
+            "original_filename": evidence.original_filename,
+            "file_type": classification["type"],
+            "mime_type": classification["mime_type"],
+            "classification": classification,
+            "evidence_id": evidence.id,
+        }],
+    )
+    db.add(msg)
+    session.updated_at = datetime.utcnow()
+    await db.commit()
+
+    return AttachEvidenceResponse(
+        file_path=file_path,
+        original_filename=evidence.original_filename,
+        file_type=classification["type"],
+        evidence_id=evidence.id,
+        classification=classification,
+        message_id=message_id,
+    )
+
+
 @router.post("/sessions/{session_id}/investigate")
 async def investigate(
     session_id: str,
     message: str = Form(""),
+    evidence_id: int | None = Form(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
 ):
     """
     Trigger investigation on the most recent upload in this session.
     Returns SSE stream with live progress events.
+    Optionally accepts evidence_id to link tool executions to a specific evidence record.
     """
     stmt = select(AIInvestigationSession).where(
         AIInvestigationSession.session_id == session_id,
@@ -296,6 +368,11 @@ async def investigate(
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Evidence file not found on disk")
 
+    resolved_evidence_id = evidence_id
+    if not resolved_evidence_id and upload_msg and upload_msg.attachments:
+        att_list = upload_msg.attachments if isinstance(upload_msg.attachments, list) else [upload_msg.attachments]
+        resolved_evidence_id = att_list[0].get("evidence_id") if att_list else None
+
     async def sse_generator():
         all_events = []
         try:
@@ -306,6 +383,7 @@ async def investigate(
                 user_id=current_user.id,
                 case_id=session.case_id,
                 db=db,
+                evidence_id=resolved_evidence_id,
             ):
                 all_events.append(event)
                 event_name = event.get("event", "message")
@@ -351,6 +429,7 @@ async def investigate(
 async def investigate_background(
     session_id: str,
     message: str = Form(""),
+    evidence_id: int | None = Form(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(require_min_role(UserRole.SUB_INSPECTOR)),
 ):
@@ -382,6 +461,8 @@ async def investigate_background(
     attachments = upload_msg.attachments if isinstance(upload_msg.attachments, list) else [upload_msg.attachments]
     attachment = attachments[0]
 
+    bg_evidence_id = evidence_id or attachment.get("evidence_id")
+
     task_id = await start_investigation_task(
         session_id=session_id,
         file_path=attachment["file_path"],
@@ -389,6 +470,7 @@ async def investigate_background(
         user_message=message or None,
         user_id=current_user.id,
         case_id=session.case_id,
+        evidence_id=bg_evidence_id,
         db_session_id=session.id,
     )
 

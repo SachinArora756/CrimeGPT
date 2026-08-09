@@ -323,6 +323,7 @@ async def execute_single_tool(
     file_path: str,
     user_id: int,
     case_id: int | None,
+    evidence_id: int | None = None,
     db: AsyncSession | None = None,
 ) -> dict:
     """Execute a single forensic tool and record the result.
@@ -338,6 +339,7 @@ async def execute_single_tool(
             tool_key=tool_key,
             user_id=user_id,
             case_id=case_id,
+            evidence_id=evidence_id,
             status=ExecutionStatus.PENDING,
             input_filename=filename,
             input_file_path=file_path,
@@ -401,6 +403,7 @@ async def execute_tool_groups(
     file_path: str,
     user_id: int,
     case_id: int | None,
+    evidence_id: int | None = None,
     db: AsyncSession | None = None,
 ) -> list[dict]:
     """Execute tool groups — tools within a group run in parallel."""
@@ -410,7 +413,7 @@ async def execute_tool_groups(
         if not group:
             continue
         tasks = [
-            execute_single_tool(tool_key, file_path, user_id, case_id)
+            execute_single_tool(tool_key, file_path, user_id, case_id, evidence_id)
             for tool_key in group
         ]
         group_results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -679,7 +682,7 @@ async def run_investigation(
             yield {"event": "tool_start", "data": {"tool_key": tool_key}}
 
         tasks = [
-            execute_single_tool(tool_key, file_path, user_id, case_id)
+            execute_single_tool(tool_key, file_path, user_id, case_id, evidence_id)
             for tool_key in group
         ]
         group_results = await asyncio.gather(*tasks, return_exceptions=True)

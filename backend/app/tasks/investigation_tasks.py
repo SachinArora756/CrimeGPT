@@ -58,7 +58,8 @@ async def start_investigation_task(
     user_message: str | None,
     user_id: int,
     case_id: int | None,
-    db_session_id: int,
+    evidence_id: int | None = None,
+    db_session_id: int = 0,
 ) -> str:
     """Launch investigation as a background asyncio task. Returns task_id for polling."""
     existing = get_task_by_session(session_id)
@@ -82,6 +83,7 @@ async def start_investigation_task(
                     user_id=user_id,
                     case_id=case_id,
                     db=db,
+                    evidence_id=evidence_id,
                 ):
                     inv_task.events.append(event)
 

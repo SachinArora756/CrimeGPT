@@ -283,6 +283,7 @@ export default function App() {
             <Route path="/forensics/history" element={<ForensicsRoute><Layout><ExecutionHistoryPage /></Layout></ForensicsRoute>} />
             <Route path="/forensics/saved" element={<ForensicsRoute><Layout><SavedResultsPage /></Layout></ForensicsRoute>} />
             <Route path="/forensics/ai-investigate" element={<ForensicsRoute><Layout><AIInvestigationPage /></Layout></ForensicsRoute>} />
+            <Route path="/forensics/ai-investigate/:casePublicId" element={<ForensicsRoute><Layout><AIInvestigationPage /></Layout></ForensicsRoute>} />
             <Route path="/forensics/ieae" element={<ForensicsRoute><Layout><IEAEPage /></Layout></ForensicsRoute>} />
             <Route path="/forensics/iidse" element={<ForensicsRoute><Layout><IIDSEPage /></Layout></ForensicsRoute>} />
             <Route path="/forensics/intelligence/:caseId" element={<ForensicsRoute><Layout><InvestigationIntelligencePage /></Layout></ForensicsRoute>} />

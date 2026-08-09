@@ -57,3 +57,16 @@ class UploadResponse(BaseModel):
     file_type: str
     classification: dict
     message_id: str
+
+
+class AttachEvidenceRequest(BaseModel):
+    evidence_id: int
+
+
+class AttachEvidenceResponse(BaseModel):
+    file_path: str
+    original_filename: str
+    file_type: str
+    evidence_id: int
+    classification: dict
+    message_id: str

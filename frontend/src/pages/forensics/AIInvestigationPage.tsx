@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Brain, Upload, Send, FileImage, FileAudio, FileText, AlertTriangle,
@@ -122,7 +123,18 @@ function getToolMeta(toolKey: string) {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
+interface CaseEvidence {
+  id: number
+  original_filename: string
+  file_type: string
+  file_size: number
+  description: string | null
+  created_at: string
+}
+
 export default function AIInvestigationPage() {
+  const { casePublicId } = useParams<{ casePublicId?: string }>()
+  const isCaseBound = !!casePublicId
   const { accessToken } = useAuthStore()
   const [sessions, setSessions] = useState<Session[]>([])
   const [activeSession, setActiveSession] = useState<string | null>(null)
@@ -151,6 +163,12 @@ export default function AIInvestigationPage() {
   const [hypotheses, setHypotheses] = useState<any[]>([])
   const [contradictionsData, setContradictionsData] = useState<any>(null)
   const [confidenceDashboard, setConfidenceDashboard] = useState<any>(null)
+  // Case-bound mode state
+  const [caseBoundCase, setCaseBoundCase] = useState<any>(null)
+  const [caseEvidence, setCaseEvidence] = useState<CaseEvidence[]>([])
+  const [selectedEvidence, setSelectedEvidence] = useState<Set<number>>(new Set())
+  const [showEvidencePicker, setShowEvidencePicker] = useState(false)
+  const [loadingCaseData, setLoadingCaseData] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const filePreviewRef = useRef<string | null>(null)
@@ -160,6 +178,156 @@ export default function AIInvestigationPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, toolProgress])
+
+  useEffect(() => {
+    if (casePublicId) {
+      loadCaseAndEvidence(casePublicId)
+    }
+  }, [casePublicId])
+
+  const loadCaseAndEvidence = async (publicId: string) => {
+    setLoadingCaseData(true)
+    try {
+      const [caseRes, evidenceRes] = await Promise.all([
+        api.get(`/api/cases/${publicId}`),
+        api.get(`/api/evidence/case/${publicId}`),
+      ])
+      setCaseBoundCase(caseRes.data)
+      setCaseEvidence(evidenceRes.data.evidence || [])
+      setShowEvidencePicker(true)
+    } catch (e) {
+      console.error('Failed to load case data', e)
+    } finally {
+      setLoadingCaseData(false)
+    }
+  }
+
+  const toggleEvidenceSelection = (evidenceId: number) => {
+    setSelectedEvidence(prev => {
+      const next = new Set(prev)
+      if (next.has(evidenceId)) next.delete(evidenceId)
+      else next.add(evidenceId)
+      return next
+    })
+  }
+
+  const startCaseBoundInvestigation = async () => {
+    if (selectedEvidence.size === 0) return
+
+    let sessionId = activeSession
+    if (!sessionId) {
+      try {
+        const res = await api.post('/api/ai-investigation/sessions', {
+          title: `Investigation: ${caseBoundCase?.fir_number || 'Case'}`,
+          case_id: caseBoundCase?.id,
+        })
+        setSessions(prev => [res.data, ...prev])
+        sessionId = res.data.session_id
+        setActiveSession(sessionId)
+        setMessages([])
+      } catch (e) {
+        console.error('Failed to create session', e)
+        return
+      }
+    }
+
+    const evidenceItems = caseEvidence.filter(e => selectedEvidence.has(e.id))
+    let lastEvidenceId: number | null = null
+
+    for (const evidence of evidenceItems) {
+      try {
+        const attachRes = await api.post(
+          `/api/ai-investigation/sessions/${sessionId}/attach-evidence`,
+          { evidence_id: evidence.id }
+        )
+        lastEvidenceId = evidence.id
+        setMessages(prev => [...prev, {
+          message_id: attachRes.data.message_id,
+          role: 'user' as const,
+          content: `Attached case evidence: ${attachRes.data.original_filename}`,
+          attachments: [attachRes.data],
+          created_at: new Date().toISOString(),
+        }])
+        setUploadedFile({
+          name: attachRes.data.original_filename,
+          classification: attachRes.data.classification,
+          message_id: attachRes.data.message_id,
+        })
+      } catch (e) {
+        console.error('Failed to attach evidence', e)
+      }
+    }
+
+    setShowEvidencePicker(false)
+    if (sessionId && lastEvidenceId) {
+      startInvestigationWithEvidence(sessionId, lastEvidenceId)
+    }
+  }
+
+  const startInvestigationWithEvidence = async (sessionId: string, evidenceId: number) => {
+    setIsInvestigating(true)
+    setToolProgress([])
+    setCriminalMatches([])
+    setChecklist(null)
+    setCompleteness(null)
+    setCorrelations([])
+    setPassResults([])
+    setAiPlanReasoning('')
+    setMemoryCount(0)
+    setHypotheses([])
+    setContradictionsData(null)
+    setConfidenceDashboard(null)
+    setShowTimeline(true)
+
+    const formData = new FormData()
+    formData.append('message', inputMessage || '')
+    formData.append('evidence_id', String(evidenceId))
+
+    try {
+      const response = await fetch(`/api/ai-investigation/sessions/${sessionId}/investigate`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${accessToken}` },
+        body: formData,
+      })
+
+      if (!response.ok) throw new Error('Investigation failed')
+
+      const reader = response.body?.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (reader) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        buffer += decoder.decode(value, { stream: true })
+        const parts = buffer.split('\n\n')
+        buffer = parts.pop() || ''
+
+        for (const part of parts) {
+          const lines = part.split('\n')
+          let eventName = 'message'
+          let dataStr = ''
+          for (const line of lines) {
+            if (line.startsWith('event: ')) eventName = line.slice(7).trim()
+            else if (line.startsWith('data: ')) dataStr = line.slice(6)
+          }
+          if (dataStr) {
+            try {
+              const data = JSON.parse(dataStr)
+              handleSSEEvent(eventName, data)
+            } catch {}
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Investigation error', e)
+    } finally {
+      setIsInvestigating(false)
+      setInputMessage('')
+      loadSessions()
+    }
+  }
 
   const filteredSessions = useMemo(() => {
     if (!searchQuery) return sessions
@@ -594,7 +762,7 @@ export default function AIInvestigationPage() {
       </AnimatePresence>
 
       {/* ─── Main Chat Area ──────────────────────────────────────────────── */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 relative">
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-3 border-b border-dark-700/50 bg-dark-900/90 backdrop-blur-sm">
           <button
@@ -632,7 +800,113 @@ export default function AIInvestigationPage() {
           </button>
         </div>
 
+        {/* Case-bound header */}
+        {isCaseBound && caseBoundCase && (
+          <div className="flex items-center gap-3 px-5 py-2.5 bg-primary-500/5 border-b border-primary-500/20">
+            <Shield className="w-4 h-4 text-primary-400" />
+            <span className="text-sm text-dark-200">
+              Case-Bound: <strong className="text-white">{caseBoundCase.fir_number}</strong> — {caseBoundCase.title || caseBoundCase.complainant_name || 'Investigation'}
+            </span>
+            <button
+              onClick={() => setShowEvidencePicker(true)}
+              className="ml-auto text-xs px-3 py-1 rounded-lg bg-primary-500/10 text-primary-400 hover:bg-primary-500/20 transition-colors"
+            >
+              Select Evidence
+            </button>
+          </div>
+        )}
+
         <div className="flex-1 flex overflow-hidden">
+          {/* ─── Evidence Picker (Case-Bound Mode) ──────────────────────── */}
+          {isCaseBound && showEvidencePicker && (
+            <div className="absolute inset-0 z-50 bg-dark-900/95 backdrop-blur-sm flex flex-col">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-dark-700">
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Select Evidence to Investigate</h2>
+                  <p className="text-sm text-dark-400 mt-0.5">
+                    {caseBoundCase?.fir_number} — Choose evidence items for AI analysis
+                  </p>
+                </div>
+                <button onClick={() => setShowEvidencePicker(false)} className="p-2 rounded-lg hover:bg-dark-800 text-dark-400">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {loadingCaseData ? (
+                <div className="flex-1 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 text-primary-400 animate-spin" />
+                </div>
+              ) : caseEvidence.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-dark-400">
+                  <FileSearch className="w-12 h-12 mb-3 opacity-50" />
+                  <p className="text-sm">No evidence uploaded to this case yet.</p>
+                  <p className="text-xs mt-1">Upload evidence from the Case Detail page first.</p>
+                </div>
+              ) : (
+                <div className="flex-1 overflow-y-auto p-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {caseEvidence.map(ev => {
+                      const isSelected = selectedEvidence.has(ev.id)
+                      const isImage = ev.file_type?.startsWith('image')
+                      const isAudio = ev.file_type?.startsWith('audio')
+                      const isPdf = ev.file_type?.includes('pdf')
+                      const Icon = isImage ? FileImage : isAudio ? FileAudio : isPdf ? FileText : File
+                      return (
+                        <button
+                          key={ev.id}
+                          onClick={() => toggleEvidenceSelection(ev.id)}
+                          className={`relative flex items-start gap-3 p-4 rounded-xl border text-left transition-all ${
+                            isSelected
+                              ? 'border-primary-500 bg-primary-500/10 ring-1 ring-primary-500/30'
+                              : 'border-dark-700 bg-dark-800/50 hover:border-dark-600 hover:bg-dark-800'
+                          }`}
+                        >
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                            isSelected ? 'bg-primary-500/20' : 'bg-dark-700'
+                          }`}>
+                            <Icon className={`w-5 h-5 ${isSelected ? 'text-primary-400' : 'text-dark-400'}`} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm font-medium truncate ${isSelected ? 'text-white' : 'text-dark-200'}`}>
+                              {ev.original_filename}
+                            </p>
+                            <p className="text-xs text-dark-500 mt-0.5">
+                              {ev.file_type} • {(ev.file_size / 1024).toFixed(0)} KB
+                            </p>
+                            {ev.description && (
+                              <p className="text-xs text-dark-400 mt-1 line-clamp-2">{ev.description}</p>
+                            )}
+                          </div>
+                          {isSelected && (
+                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary-500 flex items-center justify-center">
+                              <CheckCircle className="w-3.5 h-3.5 text-white" />
+                            </div>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {caseEvidence.length > 0 && (
+                <div className="px-6 py-4 border-t border-dark-700 flex items-center justify-between">
+                  <span className="text-sm text-dark-400">
+                    {selectedEvidence.size} of {caseEvidence.length} selected
+                  </span>
+                  <button
+                    onClick={startCaseBoundInvestigation}
+                    disabled={selectedEvidence.size === 0}
+                    className="px-5 py-2.5 rounded-lg bg-primary-500 text-white font-medium text-sm hover:bg-primary-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+                  >
+                    <Brain className="w-4 h-4" />
+                    Start Investigation ({selectedEvidence.size})
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ─── Messages Area ───────────────────────────────────────────── */}
           <div className="flex-1 flex flex-col min-w-0">
             <div className="flex-1 overflow-y-auto">

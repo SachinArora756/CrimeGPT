@@ -397,8 +397,8 @@ export default function CaseDetailPage() {
             <Link to={`${basePath}/report/${id}`} className="btn-secondary flex items-center gap-1.5 text-xs px-3 py-2">
               <FileText className="w-3.5 h-3.5" /> Forensic Report
             </Link>
-            <Link to={`${basePath}/investigation/${id}`} className="btn-primary flex items-center gap-1.5 text-xs px-3 py-2">
-              <Brain className="w-3.5 h-3.5" /> Investigate
+            <Link to={`/forensics/ai-investigate/${id}`} className="btn-primary flex items-center gap-1.5 text-xs px-3 py-2">
+              <Brain className="w-3.5 h-3.5" /> AI Investigate
             </Link>
           </div>
         </div>
