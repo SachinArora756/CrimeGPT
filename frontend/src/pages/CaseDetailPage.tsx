@@ -344,7 +344,7 @@ export default function CaseDetailPage() {
   return (
     <div className="space-y-6">
       {/* Case Header */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="relative overflow-hidden rounded-2xl bg-dark-900/80 border border-dark-700 p-6">
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="relative rounded-2xl bg-dark-900/80 border border-dark-700 p-6">
         <div className="absolute inset-0 bg-gradient-to-r from-primary-600/5 via-transparent to-transparent" />
         <div className="relative flex items-start justify-between">
           <div>
