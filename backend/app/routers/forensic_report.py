@@ -1,7 +1,7 @@
 """Forensic Investigation Report — API Router.
 
 Endpoints for checking readiness, generating, listing, and downloading
-TRACE-format forensic investigation reports.
+PRISM-format forensic investigation reports.
 """
 
 import os
@@ -54,7 +54,7 @@ async def generate_report(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Generate a TRACE forensic investigation report for the case."""
+    """Generate a PRISM forensic investigation report for the case."""
     case = await authorize_case_access(db, case_id, current_user)
 
     try:
@@ -132,7 +132,7 @@ async def download_report(
             detail="Report file not found on disk",
         )
 
-    filename = f"TRACE_Forensic_Report_{case.fir_number}.{doc.output_format}"
+    filename = f"PRISM_Forensic_Report_{case.fir_number}.{doc.output_format}"
     media_type = (
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         if doc.output_format == "docx"

@@ -86,7 +86,7 @@ export const useForensicReportStore = create<ForensicReportState>((set) => ({
       const url = window.URL.createObjectURL(new Blob([res.data]))
       const link = document.createElement('a')
       link.href = url
-      link.setAttribute('download', `TRACE_Forensic_Report.pdf`)
+      link.setAttribute('download', `PRISM_Forensic_Report.pdf`)
       document.body.appendChild(link)
       link.click()
       link.remove()

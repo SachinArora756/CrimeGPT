@@ -1,5 +1,7 @@
 """
-TRACE Digital Forensic Examination Report — Generation Service.
+PRISM Digital Forensic Investigation Report — Generation Service.
+
+PRISM: Procedural Record of Investigation, Substantiation & Methodology
 
 Orchestrates the complete forensic report generation:
 1. Validates case readiness (status + completeness gating)
@@ -85,7 +87,7 @@ async def generate_forensic_report_doc(
     db: AsyncSession, case_id: int, user_id: int, output_format: str = "pdf"
 ) -> dict:
     """
-    Generate the complete TRACE forensic investigation report.
+    Generate the complete PRISM forensic investigation report.
 
     Returns dict with document metadata including file_path, file_hash, sections_generated.
     """

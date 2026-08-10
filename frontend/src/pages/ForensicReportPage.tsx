@@ -91,7 +91,7 @@ export default function ForensicReportPage() {
             Forensic Investigation Report
           </h1>
           <p className="text-gray-400 text-sm mt-1">
-            TRACE Digital Forensic Examination Report — Court-admissible format
+            PRISM Digital Forensic Investigation Report — Court-admissible format
           </p>
         </div>
       </div>
@@ -202,7 +202,7 @@ export default function ForensicReportPage() {
                 ) : (
                   <>
                     <FileText className="w-4 h-4" />
-                    Generate TRACE Forensic Report
+                    Generate PRISM Forensic Report
                   </>
                 )}
               </button>
@@ -243,7 +243,7 @@ export default function ForensicReportPage() {
                   </div>
                   <div>
                     <div className="text-white font-medium text-sm">
-                      TRACE Forensic Investigation Report
+                      PRISM Forensic Investigation Report
                     </div>
                     <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
                       <span className="flex items-center gap-1">
@@ -292,19 +292,16 @@ export default function ForensicReportPage() {
         transition={{ delay: 0.2 }}
         className="bg-gray-800/50 border border-gray-700/50 rounded-xl p-6"
       >
-        <h3 className="text-sm font-semibold text-gray-300 mb-3">About TRACE Reports</h3>
+        <h3 className="text-sm font-semibold text-gray-300 mb-3">About PRISM Reports</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-gray-500">
           <div>
-            <p className="font-medium text-gray-400 mb-1">Report Sections Include:</p>
+            <p className="font-medium text-gray-400 mb-1">Report Structure (5 Parts):</p>
             <ul className="space-y-0.5">
-              <li>Document Control & Executive Summary</li>
-              <li>Evidence Integrity Ledger</li>
-              <li>Methodology & Examination Environment</li>
-              <li>Detailed Findings with Evidence Tiers</li>
-              <li>Consolidated Timeline</li>
-              <li>Risk Score Matrix & Legal Framework</li>
-              <li>Expert Opinions & Statement of Truth</li>
-              <li>Appendices (Evidence Register, Tool Log, Glossary)</li>
+              <li>Part I: Provenance — Mandate, Authority, Credentials</li>
+              <li>Part II: Reconstruction — Synopsis, Evidence, Findings, Timeline</li>
+              <li>Part III: Interpretation — Conclusions, Threat Assessment, Strength</li>
+              <li>Part IV: Substantiation — Legal Framework, Constraints, Hypotheses</li>
+              <li>Part V: Memorandum — Expert Opinion, Attestation, Annexures</li>
             </ul>
           </div>
           <div>
@@ -316,8 +313,8 @@ export default function ForensicReportPage() {
               <li>FIR document generated</li>
               <li>Case diary entries recorded</li>
             </ul>
-            <p className="font-medium text-gray-400 mt-3 mb-1">Format:</p>
-            <p>Court-admissible TRACE framework (Terms, Record integrity, Analysis, Claims, Exhibits)</p>
+            <p className="font-medium text-gray-400 mt-3 mb-1">Framework:</p>
+            <p>PRISM — Procedural Record of Investigation, Substantiation & Methodology</p>
           </div>
         </div>
       </motion.div>

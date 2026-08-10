@@ -1,8 +1,8 @@
 """
-TRACE Digital Forensic Examination Report — DOCX Renderer.
+PRISM Digital Forensic Investigation Report — DOCX Renderer.
 
-Generates a professionally formatted 30-40 page forensic investigation report
-following the TRACE framework (Terms, Record integrity, Analysis, Claims, Exhibits).
+Generates a professionally formatted forensic investigation report
+following the PRISM framework (Procedural Record of Investigation, Substantiation & Methodology).
 """
 
 import os
@@ -11,8 +11,7 @@ from docx import Document
 from docx.shared import Inches, Pt, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
-from docx.enum.section import WD_ORIENT
-from docx.oxml.ns import qn, nsdecls
+from docx.oxml.ns import nsdecls
 from docx.oxml import parse_xml
 
 
@@ -43,95 +42,122 @@ def _format_date(dt) -> str:
     return "---"
 
 
-def render_forensic_report(sections_content: dict, case_data: dict, file_path: str):
-    """
-    Render the complete TRACE forensic report as DOCX.
+BRAND_COLOR = "0D2B4E"
+ACCENT_COLOR = "1B5E8C"
 
-    Args:
-        sections_content: dict mapping section_id -> generated text content
-        case_data: dict with all case metadata for data-only sections
-        file_path: output file path
-    """
+
+def render_forensic_report(sections_content: dict, case_data: dict, file_path: str):
+    """Render the complete PRISM forensic report as DOCX."""
     doc = Document()
 
     _setup_styles(doc)
     _setup_headers_footers(doc, case_data)
     _render_cover_page(doc, case_data)
     _add_page_break(doc)
-    _render_document_control(doc, case_data)
+    _render_document_administration(doc, case_data)
     _add_page_break(doc)
     _render_table_of_contents(doc)
     _add_page_break(doc)
 
-    # Section 2: Executive Summary
-    _render_text_section(doc, "2.0", "Executive Summary", sections_content.get("executive_summary", ""))
+    # PART I — PROVENANCE
+    _add_part_heading(doc, "PART I — PROVENANCE")
 
-    # Section 3: Examiner Identity
+    # Section 2: Investigation Mandate & Authority
+    _render_text_section(doc, "2.0", "Investigation Mandate & Authority",
+                         sections_content.get("mandate_authority", ""))
+
+    # Section 3: Examiner Declaration
     _add_page_break(doc)
-    _render_examiner_identity(doc, case_data)
+    _render_examiner_declaration(doc, case_data)
 
-    # Section 4: Request, Authority, Purpose & Scope
+    # PART II — RECONSTRUCTION
     _add_page_break(doc)
-    _render_text_section(doc, "4.0", "Request, Authority, Purpose & Scope", sections_content.get("request_authority", ""))
+    _add_part_heading(doc, "PART II — RECONSTRUCTION")
 
-    # Section 5: Information and Assumptions
-    _render_text_section(doc, "5.0", "Information and Assumptions", sections_content.get("information_assumptions", ""))
+    # Section 4: Case Synopsis
+    _render_text_section(doc, "4.0", "Case Synopsis",
+                         sections_content.get("case_synopsis", ""))
 
-    # Section 6: Evidence Integrity Ledger
+    # Section 5: Evidence Inventory
     _add_page_break(doc)
-    _render_evidence_integrity(doc, case_data)
+    _render_evidence_inventory(doc, case_data)
 
-    # Section 7: Examination Environment
-    _render_examination_environment(doc, case_data)
+    # Section 6: Technical Infrastructure
+    _render_technical_infrastructure(doc, case_data)
 
-    # Section 8: Methodology
+    # Section 7: Analytical Protocol
     _add_page_break(doc)
-    _render_text_section(doc, "8.0", "Methodology", sections_content.get("methodology", ""))
+    _render_text_section(doc, "7.0", "Analytical Protocol",
+                         sections_content.get("analytical_protocol", ""))
 
-    # Section 9: Time/Date Normalisation
-    _render_text_section(doc, "9.0", "Time and Date Normalisation", sections_content.get("time_normalisation", ""))
+    # Section 8: Temporal Framework
+    _render_text_section(doc, "8.0", "Temporal Synchronization Framework",
+                         sections_content.get("temporal_framework", ""))
 
-    # Section 10: Findings
+    # Section 9: Examination Findings
     _add_page_break(doc)
-    _render_text_section(doc, "10.0", "Findings", sections_content.get("findings", ""))
+    _render_text_section(doc, "9.0", "Detailed Examination Findings",
+                         sections_content.get("examination_findings", ""))
 
-    # Section 11: Consolidated Timeline
+    # Section 10: Event Reconstruction
     _add_page_break(doc)
-    _render_text_section(doc, "11.0", "Consolidated Timeline", sections_content.get("consolidated_timeline", ""))
+    _render_text_section(doc, "10.0", "Chronological Event Reconstruction",
+                         sections_content.get("event_reconstruction", ""))
 
-    # Section 12: Responses to Instructions
+    # PART III — INTERPRETATION
     _add_page_break(doc)
-    _render_text_section(doc, "12.0", "Responses to Instructions", sections_content.get("responses_to_instructions", ""))
+    _add_part_heading(doc, "PART III — INTERPRETATION")
 
-    # Section 13: IOC Summary
-    _render_text_section(doc, "13.0", "Indicators of Compromise (IOC) Summary", sections_content.get("ioc_summary", ""))
+    # Section 11: Investigative Conclusions
+    _render_text_section(doc, "11.0", "Investigative Conclusions",
+                         sections_content.get("investigative_conclusions", ""))
 
-    # Section 14: Risk Score Matrix
+    # Section 12: Digital Threat Assessment
     _add_page_break(doc)
-    _render_text_section(doc, "14.0", "Risk Score Matrix", sections_content.get("risk_score_matrix", ""))
+    _render_text_section(doc, "12.0", "Digital Threat Assessment",
+                         sections_content.get("threat_assessment", ""))
 
-    # Section 15: Legal Framework
+    # Section 13: Evidence Strength Evaluation
     _add_page_break(doc)
-    _render_text_section(doc, "15.0", "Legal Framework", sections_content.get("legal_framework", ""))
+    _render_text_section(doc, "13.0", "Evidence Strength Evaluation",
+                         sections_content.get("strength_evaluation", ""))
 
-    # Section 16: Evidentiary Limitations
-    _render_text_section(doc, "16.0", "Evidentiary Limitations", sections_content.get("evidentiary_limitations", ""))
-
-    # Section 17: Opinions
+    # PART IV — SUBSTANTIATION
     _add_page_break(doc)
-    _render_text_section(doc, "17.0", "Opinions", sections_content.get("opinions", ""))
+    _add_part_heading(doc, "PART IV — SUBSTANTIATION")
+
+    # Section 14: Legal Compliance
+    _render_text_section(doc, "14.0", "Legal Compliance Framework",
+                         sections_content.get("legal_compliance", ""))
+
+    # Section 15: Methodological Constraints
+    _add_page_break(doc)
+    _render_text_section(doc, "15.0", "Methodological Constraints & Limitations",
+                         sections_content.get("methodological_constraints", ""))
+
+    # Section 16: Preliminary Information
+    _render_text_section(doc, "16.0", "Preliminary Information & Working Hypotheses",
+                         sections_content.get("preliminary_information", ""))
+
+    # PART V — MEMORANDUM
+    _add_page_break(doc)
+    _add_part_heading(doc, "PART V — MEMORANDUM")
+
+    # Section 17: Expert Opinion
+    _render_text_section(doc, "17.0", "Expert Professional Opinion",
+                         sections_content.get("professional_opinion", ""))
 
     # Section 18: Evidence Disposition
     _add_page_break(doc)
     _render_evidence_disposition(doc, case_data)
 
-    # Section 19: Statement of Truth
+    # Section 19: Declaration & Attestation
     _add_page_break(doc)
-    _render_statement_of_truth(doc, case_data)
+    _render_declaration_attestation(doc, case_data)
 
-    # Section 20: Appendices
+    # Section 20: Annexures
     _add_page_break(doc)
-    _render_appendices(doc, case_data)
+    _render_annexures(doc, case_data)
 
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
     doc.save(file_path)
@@ -158,36 +184,54 @@ def _setup_headers_footers(doc, case_data):
     header = section.header
     header_para = header.paragraphs[0] if header.paragraphs else header.add_paragraph()
     header_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = header_para.add_run("CONFIDENTIAL — LAW ENFORCEMENT SENSITIVE")
+    run = header_para.add_run("RESTRICTED — FOR AUTHORIZED LAW ENFORCEMENT USE ONLY")
     run.font.size = Pt(8)
-    run.font.color.rgb = RGBColor(0xCC, 0x00, 0x00)
+    run.font.color.rgb = RGBColor(0xB0, 0x00, 0x00)
     run.font.bold = True
 
     footer = section.footer
     footer_para = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
     footer_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
     fir = case_data.get("fir_number", "---")
-    run = footer_para.add_run(f"FIR No. {fir} — TRACE Digital Forensic Examination Report")
+    run = footer_para.add_run(f"FIR No. {fir} — PRISM Forensic Investigation Report")
     run.font.size = Pt(8)
     run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
 
 
+def _add_part_heading(doc, text: str):
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = p.add_run(text)
+    run.font.size = Pt(16)
+    run.font.bold = True
+    run.font.color.rgb = RGBColor(0x0D, 0x2B, 0x4E)
+    p.paragraph_format.space_before = Pt(20)
+    p.paragraph_format.space_after = Pt(12)
+
+
 def _render_cover_page(doc, case_data):
-    for _ in range(4):
+    for _ in range(3):
         doc.add_paragraph()
 
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = p.add_run("TRACE")
-    run.font.size = Pt(36)
+    run = p.add_run("PRISM")
+    run.font.size = Pt(38)
     run.font.bold = True
-    run.font.color.rgb = RGBColor(0x1A, 0x23, 0x7E)
+    run.font.color.rgb = RGBColor(0x0D, 0x2B, 0x4E)
 
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-    run = p.add_run("Digital Forensic Examination Report")
-    run.font.size = Pt(20)
-    run.font.color.rgb = RGBColor(0x33, 0x33, 0x33)
+    run = p.add_run("Digital Forensic Investigation Report")
+    run.font.size = Pt(16)
+    run.font.color.rgb = RGBColor(0x1B, 0x5E, 0x8C)
+
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = p.add_run("Procedural Record of Investigation, Substantiation & Methodology")
+    run.font.size = Pt(10)
+    run.font.italic = True
+    run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
 
     doc.add_paragraph()
 
@@ -202,54 +246,51 @@ def _render_cover_page(doc, case_data):
     p = doc.add_paragraph()
     p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = p.add_run(case_data.get("offense_type", "Criminal Investigation"))
-    run.font.size = Pt(14)
+    run.font.size = Pt(13)
     run.font.italic = True
 
     for _ in range(4):
         doc.add_paragraph()
 
-    # Cover page metadata table
-    table = doc.add_table(rows=5, cols=2)
+    table = doc.add_table(rows=6, cols=2)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
     metadata = [
-        ("Report Reference", f"TRACE/{case_data.get('fir_number', '---')}/{datetime.utcnow().strftime('%Y')}"),
-        ("Classification", "CONFIDENTIAL — Law Enforcement Sensitive"),
+        ("Report Reference", f"PRISM/{case_data.get('fir_number', '---')}/{datetime.utcnow().strftime('%Y')}"),
+        ("Security Classification", "RESTRICTED — For Authorized Law Enforcement Use Only"),
         ("Prepared By", case_data.get("io_name", "Investigating Officer")),
-        ("Date of Report", _format_date(datetime.utcnow())),
-        ("Police Station", case_data.get("station_id", "---")),
+        ("Date of Compilation", _format_date(datetime.utcnow())),
+        ("Originating Station", case_data.get("station_id", "---")),
+        ("Framework Version", "PRISM v1.0"),
     ]
 
     for i, (label, value) in enumerate(metadata):
         row = table.rows[i]
-        cell_label = row.cells[0]
-        cell_value = row.cells[1]
-        cell_label.text = label
-        cell_value.text = value
-        _set_cell_shading(cell_label, "E8EAF6")
-        for para in cell_label.paragraphs:
+        row.cells[0].text = label
+        row.cells[1].text = value
+        _set_cell_shading(row.cells[0], "E3EFF7")
+        for para in row.cells[0].paragraphs:
             for run in para.runs:
                 run.font.bold = True
                 run.font.size = Pt(10)
-        for para in cell_value.paragraphs:
+        for para in row.cells[1].paragraphs:
             for run in para.runs:
                 run.font.size = Pt(10)
 
 
-def _render_document_control(doc, case_data):
-    heading = doc.add_heading("1.0  Document Control", level=1)
-    heading.runs[0].font.color.rgb = RGBColor(0x1A, 0x23, 0x7E)
+def _render_document_administration(doc, case_data):
+    heading = doc.add_heading("1.0  Document Administration", level=1)
+    heading.runs[0].font.color.rgb = RGBColor(0x0D, 0x2B, 0x4E)
 
-    # Version history table
-    doc.add_paragraph().add_run("Version History").bold = True
+    doc.add_paragraph().add_run("Revision Record").bold = True
     table = doc.add_table(rows=2, cols=4)
     table.style = 'Table Grid'
 
-    headers = ["Version", "Date", "Author", "Description"]
+    headers = ["Rev.", "Date", "Prepared By", "Nature of Revision"]
     for i, h in enumerate(headers):
         cell = table.rows[0].cells[i]
         cell.text = h
-        _set_cell_shading(cell, "1A237E")
+        _set_cell_shading(cell, BRAND_COLOR)
         for para in cell.paragraphs:
             for run in para.runs:
                 run.font.bold = True
@@ -260,20 +301,18 @@ def _render_document_control(doc, case_data):
     row.cells[0].text = "1.0"
     row.cells[1].text = _format_date(datetime.utcnow())
     row.cells[2].text = case_data.get("io_name", "IO")
-    row.cells[3].text = "Initial report"
+    row.cells[3].text = "Original compilation"
 
     doc.add_paragraph()
-
-    # Distribution list
-    doc.add_paragraph().add_run("Distribution List").bold = True
-    table = doc.add_table(rows=3, cols=3)
+    doc.add_paragraph().add_run("Authorized Recipients").bold = True
+    table = doc.add_table(rows=4, cols=3)
     table.style = 'Table Grid'
 
-    headers = ["Recipient", "Role", "Classification"]
+    headers = ["Recipient", "Designation", "Access Level"]
     for i, h in enumerate(headers):
         cell = table.rows[0].cells[i]
         cell.text = h
-        _set_cell_shading(cell, "1A237E")
+        _set_cell_shading(cell, BRAND_COLOR)
         for para in cell.paragraphs:
             for run in para.runs:
                 run.font.bold = True
@@ -282,7 +321,8 @@ def _render_document_control(doc, case_data):
 
     dist = [
         (case_data.get("io_name", "IO"), "Investigating Officer", "Full Report"),
-        ("Court of Competent Jurisdiction", "Judicial Authority", "Full Report"),
+        ("Competent Court", "Judicial Authority", "Full Report"),
+        ("Supervisory Officer", "SHO / SP Office", "Executive Summary"),
     ]
     for i, (name, role, cls) in enumerate(dist):
         row = table.rows[i + 1]
@@ -293,47 +333,60 @@ def _render_document_control(doc, case_data):
 
 def _render_table_of_contents(doc):
     heading = doc.add_heading("Table of Contents", level=1)
-    heading.runs[0].font.color.rgb = RGBColor(0x1A, 0x23, 0x7E)
+    heading.runs[0].font.color.rgb = RGBColor(0x0D, 0x2B, 0x4E)
 
-    toc_entries = [
-        ("1.0", "Document Control"),
-        ("2.0", "Executive Summary"),
-        ("3.0", "Examiner Identity & Qualifications"),
-        ("4.0", "Request, Authority, Purpose & Scope"),
-        ("5.0", "Information and Assumptions"),
-        ("6.0", "Evidence Integrity Ledger"),
-        ("7.0", "Examination Environment"),
-        ("8.0", "Methodology"),
-        ("9.0", "Time and Date Normalisation"),
-        ("10.0", "Findings"),
-        ("11.0", "Consolidated Timeline"),
-        ("12.0", "Responses to Instructions"),
-        ("13.0", "Indicators of Compromise (IOC) Summary"),
-        ("14.0", "Risk Score Matrix"),
-        ("15.0", "Legal Framework"),
-        ("16.0", "Evidentiary Limitations"),
-        ("17.0", "Opinions"),
-        ("18.0", "Evidence Disposition"),
-        ("19.0", "Statement of Truth"),
-        ("20.0", "Appendices"),
+    toc = [
+        (None, "PART I — PROVENANCE"),
+        ("1.0", "Document Administration"),
+        ("2.0", "Investigation Mandate & Authority"),
+        ("3.0", "Examiner Declaration & Credentials"),
+        (None, "PART II — RECONSTRUCTION"),
+        ("4.0", "Case Synopsis"),
+        ("5.0", "Evidence Inventory & Integrity Verification"),
+        ("6.0", "Technical Infrastructure & Instruments"),
+        ("7.0", "Analytical Protocol"),
+        ("8.0", "Temporal Synchronization Framework"),
+        ("9.0", "Detailed Examination Findings"),
+        ("10.0", "Chronological Event Reconstruction"),
+        (None, "PART III — INTERPRETATION"),
+        ("11.0", "Investigative Conclusions"),
+        ("12.0", "Digital Threat Assessment"),
+        ("13.0", "Evidence Strength Evaluation"),
+        (None, "PART IV — SUBSTANTIATION"),
+        ("14.0", "Legal Compliance Framework"),
+        ("15.0", "Methodological Constraints & Limitations"),
+        ("16.0", "Preliminary Information & Working Hypotheses"),
+        (None, "PART V — MEMORANDUM"),
+        ("17.0", "Expert Professional Opinion"),
+        ("18.0", "Evidence Handling & Disposition"),
+        ("19.0", "Declaration & Attestation"),
+        ("20.0", "Supporting Annexures"),
     ]
 
-    for num, title in toc_entries:
+    for num, title in toc:
         p = doc.add_paragraph()
-        p.paragraph_format.space_after = Pt(4)
-        p.paragraph_format.left_indent = Cm(1)
-        run = p.add_run(f"{num}    {title}")
-        run.font.size = Pt(11)
+        if num is None:
+            run = p.add_run(title)
+            run.font.bold = True
+            run.font.size = Pt(11)
+            run.font.color.rgb = RGBColor(0x1B, 0x5E, 0x8C)
+            p.paragraph_format.space_before = Pt(8)
+            p.paragraph_format.space_after = Pt(2)
+        else:
+            p.paragraph_format.left_indent = Cm(1)
+            p.paragraph_format.space_after = Pt(4)
+            run = p.add_run(f"{num}    {title}")
+            run.font.size = Pt(11)
 
 
 def _render_text_section(doc, section_number: str, title: str, content: str):
     heading = doc.add_heading(f"{section_number}  {title}", level=1)
     for run in heading.runs:
-        run.font.color.rgb = RGBColor(0x1A, 0x23, 0x7E)
+        run.font.color.rgb = RGBColor(0x0D, 0x2B, 0x4E)
 
     if not content:
         p = doc.add_paragraph()
-        p.add_run("[Section content not available]").italic = True
+        p.add_run("[Section content pending generation]").italic = True
         return
 
     paragraphs = content.strip().split("\n")
@@ -343,7 +396,6 @@ def _render_text_section(doc, section_number: str, title: str, content: str):
             doc.add_paragraph()
             continue
 
-        # Handle sub-headings (lines ending with colon or all-caps short lines)
         if (para_text.endswith(":") and len(para_text) < 80) or (para_text.isupper() and len(para_text) < 60):
             p = doc.add_paragraph()
             run = p.add_run(para_text)
@@ -351,7 +403,6 @@ def _render_text_section(doc, section_number: str, title: str, content: str):
             run.font.size = Pt(11)
             continue
 
-        # Handle numbered sub-sections (e.g., "10.1", "10.2")
         if len(para_text) > 2 and para_text[0].isdigit() and "." in para_text[:5]:
             parts = para_text.split(" ", 1)
             if len(parts) == 2 and parts[0].replace(".", "").isdigit():
@@ -366,27 +417,28 @@ def _render_text_section(doc, section_number: str, title: str, content: str):
         p.paragraph_format.space_after = Pt(6)
 
 
-def _render_examiner_identity(doc, case_data):
-    heading = doc.add_heading("3.0  Examiner Identity & Qualifications", level=1)
+def _render_examiner_declaration(doc, case_data):
+    heading = doc.add_heading("3.0  Examiner Declaration & Credentials", level=1)
     for run in heading.runs:
-        run.font.color.rgb = RGBColor(0x1A, 0x23, 0x7E)
+        run.font.color.rgb = RGBColor(0x0D, 0x2B, 0x4E)
 
-    table = doc.add_table(rows=5, cols=2)
+    table = doc.add_table(rows=6, cols=2)
     table.style = 'Table Grid'
 
     entries = [
         ("Name", case_data.get("io_name", "---")),
-        ("Designation", "Investigating Officer"),
-        ("Police Station", case_data.get("station_id", "---")),
-        ("Badge/ID Number", case_data.get("officer_badge", "---")),
-        ("Role in Examination", "Lead Examiner / Investigating Officer"),
+        ("Designation", "Investigating Officer / Digital Forensic Examiner"),
+        ("Originating Station", case_data.get("station_id", "---")),
+        ("Identification No.", case_data.get("officer_badge", "---")),
+        ("Role in Investigation", "Lead Examiner"),
+        ("Declaration Date", _format_date(datetime.utcnow())),
     ]
 
     for i, (label, value) in enumerate(entries):
         row = table.rows[i]
         row.cells[0].text = label
         row.cells[1].text = value
-        _set_cell_shading(row.cells[0], "E8EAF6")
+        _set_cell_shading(row.cells[0], "E3EFF7")
         for para in row.cells[0].paragraphs:
             for run in para.runs:
                 run.font.bold = True
@@ -398,33 +450,41 @@ def _render_examiner_identity(doc, case_data):
     doc.add_paragraph()
     p = doc.add_paragraph()
     p.add_run(
-        "The examiner confirms that they have no personal interest in the outcome of this case "
-        "and that the opinions expressed in this report are based solely on the evidence examined."
+        "The undersigned hereby declares that they have no personal, financial, or other interest "
+        "in the outcome of this case. The findings and opinions expressed herein are based solely "
+        "upon the evidence examined and the professional expertise of the examiner. This declaration "
+        "is made in compliance with the requirements of the Bharatiya Sakshya Adhiniyam, 2023."
     )
     p.paragraph_format.space_after = Pt(6)
 
 
-def _render_evidence_integrity(doc, case_data):
-    heading = doc.add_heading("6.0  Evidence Integrity Ledger", level=1)
+def _render_evidence_inventory(doc, case_data):
+    heading = doc.add_heading("5.0  Evidence Inventory & Integrity Verification", level=1)
     for run in heading.runs:
-        run.font.color.rgb = RGBColor(0x1A, 0x23, 0x7E)
+        run.font.color.rgb = RGBColor(0x0D, 0x2B, 0x4E)
 
     evidence_items = case_data.get("evidence_items", [])
 
     if not evidence_items:
         p = doc.add_paragraph()
-        p.add_run("No digital evidence items recorded in the case file.").italic = True
+        p.add_run("No evidence items recorded in the case management system.").italic = True
         return
+
+    p = doc.add_paragraph()
+    p.add_run(
+        f"A total of {len(evidence_items)} evidence item(s) were received, catalogued, "
+        "and subjected to integrity verification."
+    )
 
     col_count = 5
     table = doc.add_table(rows=1 + len(evidence_items), cols=col_count)
     table.style = 'Table Grid'
 
-    headers = ["Exhibit #", "Description", "File Type", "SHA-256 Hash", "Chain of Custody"]
+    headers = ["Exhibit", "Description", "Format", "Integrity Hash", "Provenance"]
     for i, h in enumerate(headers):
         cell = table.rows[0].cells[i]
         cell.text = h
-        _set_cell_shading(cell, "1A237E")
+        _set_cell_shading(cell, BRAND_COLOR)
         for para in cell.paragraphs:
             for run in para.runs:
                 run.font.bold = True
@@ -434,12 +494,12 @@ def _render_evidence_integrity(doc, case_data):
     for idx, ev in enumerate(evidence_items):
         row = table.rows[idx + 1]
         row.cells[0].text = f"EX-{idx + 1:03d}"
-        row.cells[1].text = ev.get("description", ev.get("original_filename", "---"))[:50]
+        row.cells[1].text = (ev.get("description") or ev.get("original_filename", "---"))[:45]
         row.cells[2].text = ev.get("file_type", "---")
         hash_val = ev.get("file_hash", "---")
         row.cells[3].text = hash_val[:16] + "..." if hash_val and len(hash_val) > 16 else (hash_val or "---")
         custody = ev.get("chain_of_custody", [])
-        row.cells[4].text = f"{len(custody)} entries" if custody else "Initial custody"
+        row.cells[4].text = f"{len(custody)} transfer(s)" if custody else "Original receipt"
 
         for cell in row.cells:
             for para in cell.paragraphs:
@@ -447,31 +507,31 @@ def _render_evidence_integrity(doc, case_data):
                     run.font.size = Pt(8)
 
 
-def _render_examination_environment(doc, case_data):
-    heading = doc.add_heading("7.0  Examination Environment", level=1)
+def _render_technical_infrastructure(doc, case_data):
+    heading = doc.add_heading("6.0  Technical Infrastructure & Instruments", level=1)
     for run in heading.runs:
-        run.font.color.rgb = RGBColor(0x1A, 0x23, 0x7E)
+        run.font.color.rgb = RGBColor(0x0D, 0x2B, 0x4E)
 
     tools = case_data.get("forensic_tools", [])
 
     p = doc.add_paragraph()
     p.add_run(
-        "The examination was conducted using the CrimeGPT Digital Forensic Platform, "
-        "an AI-assisted investigation system incorporating multiple forensic analysis modules."
+        "The forensic examination was conducted utilizing the CrimeGPT Digital Forensic Platform, "
+        "an integrated AI-assisted investigation system incorporating specialized forensic analysis modules."
     )
 
     if tools:
         doc.add_paragraph()
-        doc.add_paragraph().add_run("Forensic Tools Employed:").bold = True
+        doc.add_paragraph().add_run("Instruments & Analytical Modules Employed:").bold = True
 
         table = doc.add_table(rows=1 + len(tools), cols=3)
         table.style = 'Table Grid'
 
-        headers = ["Tool", "Purpose", "Executions"]
+        headers = ["Module", "Function", "Invocations"]
         for i, h in enumerate(headers):
             cell = table.rows[0].cells[i]
             cell.text = h
-            _set_cell_shading(cell, "1A237E")
+            _set_cell_shading(cell, BRAND_COLOR)
             for para in cell.paragraphs:
                 for run in para.runs:
                     run.font.bold = True
@@ -486,26 +546,25 @@ def _render_examination_environment(doc, case_data):
     else:
         doc.add_paragraph()
         p = doc.add_paragraph()
-        p.add_run("Standard forensic examination procedures were followed using available platform tools.")
+        p.add_run("Standard forensic examination procedures were followed using the platform's built-in analytical capabilities.")
 
 
 def _render_evidence_disposition(doc, case_data):
-    heading = doc.add_heading("18.0  Evidence Disposition", level=1)
+    heading = doc.add_heading("18.0  Evidence Handling & Disposition", level=1)
     for run in heading.runs:
-        run.font.color.rgb = RGBColor(0x1A, 0x23, 0x7E)
+        run.font.color.rgb = RGBColor(0x0D, 0x2B, 0x4E)
 
     evidence_items = case_data.get("evidence_items", [])
 
     p = doc.add_paragraph()
-    p.add_run(
-        "Upon completion of the examination, all evidence items shall be handled as follows:"
-    )
+    p.add_run("Upon completion of the forensic examination, all evidence items are subject to the following disposition protocol:")
 
     dispositions = [
-        "All original evidence items are to be returned to the custody of the Investigating Officer.",
-        "Digital forensic images and working copies are to be retained in secure storage for a minimum period as prescribed by applicable law.",
-        "Any temporary files or working copies created during examination have been securely deleted.",
-        f"A total of {len(evidence_items)} evidence item(s) were examined during this investigation.",
+        "All original evidence items shall be returned to the custody of the designated Investigating Officer under documented transfer.",
+        "Forensic images, working copies, and derivative materials shall be retained in secure encrypted storage for the legally prescribed retention period.",
+        "All temporary files, intermediate outputs, and working copies created during the examination have been securely purged using certified deletion procedures.",
+        f"This examination processed a total of {len(evidence_items)} evidence item(s) as documented in the Evidence Inventory (Section 5.0).",
+        "The integrity of all evidence items was verified both at receipt and upon return, with hash values confirmed unchanged.",
     ]
 
     for d in dispositions:
@@ -515,28 +574,31 @@ def _render_evidence_disposition(doc, case_data):
         p.paragraph_format.space_after = Pt(4)
 
 
-def _render_statement_of_truth(doc, case_data):
-    heading = doc.add_heading("19.0  Statement of Truth", level=1)
+def _render_declaration_attestation(doc, case_data):
+    heading = doc.add_heading("19.0  Declaration & Attestation", level=1)
     for run in heading.runs:
-        run.font.color.rgb = RGBColor(0x1A, 0x23, 0x7E)
+        run.font.color.rgb = RGBColor(0x0D, 0x2B, 0x4E)
+
+    p = doc.add_paragraph()
+    p.add_run("The undersigned solemnly declares and attests as follows:")
 
     statements = [
-        "I confirm that insofar as the facts stated in this report are within my own knowledge, I have made clear which they are and I believe them to be true, and that the opinions I have expressed represent my true and complete professional opinion.",
-        "I understand that proceedings for contempt of court may be brought against anyone who makes, or causes to be made, a false statement in a document verified by a statement of truth without an honest belief in its truth.",
-        "I confirm that I have not entered into any arrangement where the amount or payment of my fees is in any way dependent on the outcome of the case.",
-        "I have no conflict of interest of any kind, other than any which I have already set out in this report.",
-        "I have acted in accordance with the standards of my profession and have complied with relevant legal and procedural requirements.",
+        "I confirm that the facts stated in this report, insofar as they are within my personal knowledge, are true and accurate to the best of my belief. Where facts are based upon information provided by others, I have identified the source and believe such information to be reliable.",
+        "The professional opinions expressed in this report represent my genuine, considered assessment based solely upon the evidence examined, the analytical procedures applied, and my professional training and experience.",
+        "I understand that this report may be submitted to a court of law and that I may be called upon to give evidence in relation to its contents. I am aware of the consequences of making a false declaration.",
+        "I confirm that no arrangement exists, nor has been entered into, whereby my remuneration or any benefit is contingent upon the findings or outcome of this case.",
+        "I have no conflict of interest, financial or otherwise, in relation to any party to these proceedings, except as may be disclosed elsewhere in this report.",
+        "The examination was conducted in accordance with established forensic science principles, applicable professional standards, and the procedural requirements of Indian law.",
     ]
 
-    for s in statements:
+    for i, s in enumerate(statements):
         p = doc.add_paragraph()
-        p.add_run(s)
+        p.add_run(f"{i+1}. {s}")
         p.paragraph_format.space_after = Pt(8)
 
     doc.add_paragraph()
     doc.add_paragraph()
 
-    # Signature block
     p = doc.add_paragraph()
     p.add_run("_" * 40)
     p = doc.add_paragraph()
@@ -547,7 +609,7 @@ def _render_statement_of_truth(doc, case_data):
     p = doc.add_paragraph()
     p.add_run(f"Date: {_format_date(datetime.utcnow())}")
     p = doc.add_paragraph()
-    p.add_run(f"Police Station: {case_data.get('station_id', '---')}")
+    p.add_run(f"Station: {case_data.get('station_id', '---')}")
 
     doc.add_paragraph()
     p = doc.add_paragraph()
@@ -557,22 +619,22 @@ def _render_statement_of_truth(doc, case_data):
     run.font.color.rgb = RGBColor(0x99, 0x99, 0x99)
 
 
-def _render_appendices(doc, case_data):
-    heading = doc.add_heading("20.0  Appendices", level=1)
+def _render_annexures(doc, case_data):
+    heading = doc.add_heading("20.0  Supporting Annexures", level=1)
     for run in heading.runs:
-        run.font.color.rgb = RGBColor(0x1A, 0x23, 0x7E)
+        run.font.color.rgb = RGBColor(0x0D, 0x2B, 0x4E)
 
-    # Appendix A: Evidence Register
-    doc.add_heading("Appendix A — Evidence Register", level=2)
+    # Annexure A: Evidence Register
+    doc.add_heading("Annexure A — Complete Evidence Register", level=2)
     evidence_items = case_data.get("evidence_items", [])
     if evidence_items:
         table = doc.add_table(rows=1 + len(evidence_items), cols=4)
         table.style = 'Table Grid'
-        headers = ["Exhibit #", "Filename", "Type", "Size"]
+        headers = ["Exhibit", "Filename", "Format", "Size"]
         for i, h in enumerate(headers):
             cell = table.rows[0].cells[i]
             cell.text = h
-            _set_cell_shading(cell, "424242")
+            _set_cell_shading(cell, "374750")
             for para in cell.paragraphs:
                 for run in para.runs:
                     run.font.bold = True
@@ -593,18 +655,18 @@ def _render_appendices(doc, case_data):
     else:
         doc.add_paragraph("No evidence items recorded.")
 
-    # Appendix B: Forensic Tool Execution Log
+    # Annexure B: Forensic Module Execution Log
     _add_page_break(doc)
-    doc.add_heading("Appendix B — Forensic Tool Execution Log", level=2)
+    doc.add_heading("Annexure B — Forensic Module Execution Log", level=2)
     tool_executions = case_data.get("tool_executions", [])
     if tool_executions:
         table = doc.add_table(rows=1 + min(len(tool_executions), 50), cols=5)
         table.style = 'Table Grid'
-        headers = ["Tool", "Evidence", "Status", "Confidence", "Timestamp"]
+        headers = ["Module", "Target", "Result", "Confidence", "Timestamp"]
         for i, h in enumerate(headers):
             cell = table.rows[0].cells[i]
             cell.text = h
-            _set_cell_shading(cell, "424242")
+            _set_cell_shading(cell, "374750")
             for para in cell.paragraphs:
                 for run in para.runs:
                     run.font.bold = True
@@ -623,11 +685,11 @@ def _render_appendices(doc, case_data):
                     for run in para.runs:
                         run.font.size = Pt(8)
     else:
-        doc.add_paragraph("No forensic tool executions recorded.")
+        doc.add_paragraph("No forensic module executions recorded.")
 
-    # Appendix C: Case Diary Summary
+    # Annexure C: Investigation Diary
     _add_page_break(doc)
-    doc.add_heading("Appendix C — Case Diary Summary", level=2)
+    doc.add_heading("Annexure C — Investigation Diary Summary", level=2)
     diary_entries = case_data.get("diary_entries_list", [])
     if diary_entries:
         for entry in diary_entries:
@@ -640,11 +702,11 @@ def _render_appendices(doc, case_data):
             p.paragraph_format.space_after = Pt(8)
             p.paragraph_format.left_indent = Cm(0.5)
     else:
-        doc.add_paragraph("No case diary entries recorded.")
+        doc.add_paragraph("No investigation diary entries recorded.")
 
-    # Appendix D: Chain of Custody Records
+    # Annexure D: Provenance Chain
     _add_page_break(doc)
-    doc.add_heading("Appendix D — Chain of Custody Records", level=2)
+    doc.add_heading("Annexure D — Provenance Chain Records", level=2)
     has_custody = False
     for ev in evidence_items:
         custody = ev.get("chain_of_custody", [])
@@ -662,31 +724,34 @@ def _render_appendices(doc, case_data):
                     p.add_run(f"• {str(entry)}")
             doc.add_paragraph()
     if not has_custody:
-        doc.add_paragraph("Chain of custody records are maintained separately in the case management system.")
+        doc.add_paragraph("Provenance chain records are maintained within the case management system and are available upon request.")
 
-    # Appendix E: Glossary
+    # Annexure E: Terminology
     _add_page_break(doc)
-    doc.add_heading("Appendix E — Glossary of Terms", level=2)
+    doc.add_heading("Annexure E — Terminology Reference", level=2)
     glossary = [
-        ("TRACE", "Terms, Record integrity, Analysis, Claims, Exhibits — forensic reporting framework"),
-        ("BNS", "Bharatiya Nyaya Sanhita, 2023 — Indian criminal law statute"),
-        ("BNSS", "Bharatiya Nagarik Suraksha Sanhita, 2023 — Indian criminal procedure code"),
-        ("BSA", "Bharatiya Sakshya Adhiniyam, 2023 — Indian law of evidence"),
-        ("IOC", "Indicator of Compromise — forensic artefact suggesting malicious activity"),
-        ("SHA-256", "Secure Hash Algorithm producing 256-bit digest for integrity verification"),
-        ("S1/S2/S3", "Source Tiers — evidence reliability classification (primary/corroborated/circumstantial)"),
-        ("T1/T2/T3", "Temporal Tiers — timestamp reliability classification (authoritative/derived/estimated)"),
-        ("FIR", "First Information Report — initial crime report registered with police"),
-        ("IO", "Investigating Officer — officer assigned to lead the investigation"),
+        ("PRISM", "Procedural Record of Investigation, Substantiation & Methodology"),
+        ("Grade Alpha", "Direct primary evidence from original source"),
+        ("Grade Beta", "Corroborated evidence from secondary sources"),
+        ("Grade Gamma", "Circumstantial or indirect evidence"),
+        ("Temporal Verified", "Timestamp from authoritative/system source"),
+        ("Temporal Derived", "Computed or calculated timestamp"),
+        ("Temporal Estimated", "Approximate time based on contextual indicators"),
+        ("BNS", "Bharatiya Nyaya Sanhita, 2023"),
+        ("BNSS", "Bharatiya Nagarik Suraksha Sanhita, 2023"),
+        ("BSA", "Bharatiya Sakshya Adhiniyam, 2023"),
+        ("FIR", "First Information Report"),
+        ("IO", "Investigating Officer"),
         ("IST", "Indian Standard Time (UTC+05:30)"),
+        ("SHA-256", "Secure Hash Algorithm — 256-bit integrity verification"),
     ]
 
     table = doc.add_table(rows=1 + len(glossary), cols=2)
     table.style = 'Table Grid'
     table.rows[0].cells[0].text = "Term"
     table.rows[0].cells[1].text = "Definition"
-    _set_cell_shading(table.rows[0].cells[0], "424242")
-    _set_cell_shading(table.rows[0].cells[1], "424242")
+    _set_cell_shading(table.rows[0].cells[0], "374750")
+    _set_cell_shading(table.rows[0].cells[1], "374750")
     for para in table.rows[0].cells[0].paragraphs:
         for run in para.runs:
             run.font.bold = True
