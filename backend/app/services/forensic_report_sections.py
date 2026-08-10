@@ -227,7 +227,7 @@ State: "All temporal references in this report are expressed in Indian Standard 
         title="Detailed Examination Findings",
         section_number="9.0",
         is_llm_generated=True,
-        max_tokens=4000,
+        max_tokens=3000,
         prompt_template=PRISM_PREAMBLE + """
 Write the "Detailed Examination Findings" section of a forensic investigation report.
 
@@ -267,7 +267,7 @@ Do NOT speculate on intent, motive, or culpability — only state what the evide
         title="Chronological Event Reconstruction",
         section_number="10.0",
         is_llm_generated=True,
-        max_tokens=2000,
+        max_tokens=1500,
         prompt_template=PRISM_PREAMBLE + """
 Write the "Chronological Event Reconstruction" section of a forensic investigation report.
 

@@ -62,7 +62,9 @@ export const useForensicReportStore = create<ForensicReportState>((set) => ({
   generateReport: async (caseId: string, outputFormat = 'pdf') => {
     set({ generating: true, error: null })
     try {
-      await api.post(`/api/report/${caseId}/generate`, { output_format: outputFormat })
+      await api.post(`/api/report/${caseId}/generate`, { output_format: outputFormat }, {
+        timeout: 600000,
+      })
       set({ generating: false })
       const res = await api.get(`/api/report/${caseId}/list`)
       set({ reports: Array.isArray(res.data) ? res.data : [] })

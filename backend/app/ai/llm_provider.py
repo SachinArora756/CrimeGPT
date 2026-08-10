@@ -119,17 +119,29 @@ def generate_text(prompt: str, temperature: float = 0.3, max_tokens: int = 2048)
             api_key=settings.openrouter_api_key,
             base_url=OPENROUTER_BASE_URL,
         )
-        response = client.chat.completions.create(
-            model=OPENROUTER_TEXT_MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=temperature,
-            max_tokens=max_tokens,
-            extra_headers={
-                "HTTP-Referer": "https://crimegpt.app",
-                "X-Title": "CrimeGPT",
-            },
-        )
-        return response.choices[0].message.content
+        effective_max_tokens = max_tokens
+        for attempt in range(3):
+            try:
+                response = client.chat.completions.create(
+                    model=OPENROUTER_TEXT_MODEL,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=temperature,
+                    max_tokens=effective_max_tokens,
+                    extra_headers={
+                        "HTTP-Referer": "https://crimegpt.app",
+                        "X-Title": "CrimeGPT",
+                    },
+                )
+                return response.choices[0].message.content
+            except Exception as e:
+                error_str = str(e)
+                if "402" in error_str or "credits" in error_str.lower():
+                    effective_max_tokens = max(512, effective_max_tokens // 2)
+                    logger.warning(f"OpenRouter credits low, retrying with max_tokens={effective_max_tokens}")
+                    if attempt == 2:
+                        raise
+                else:
+                    raise
 
     raise RuntimeError(
         "No LLM API key configured. Set either GEMINI_API_KEY or OPENROUTER_API_KEY in .env"
