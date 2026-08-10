@@ -18,6 +18,12 @@ class DocType(str, enum.Enum):
     SEARCH_MEMO = "search_memo"
     NOTICE = "notice"
     FORENSIC_REPORT = "forensic_report"
+    MEDICAL_TREATMENT_LETTER = "medical_treatment_letter"
+    REMAND_REQUEST = "remand_request"
+    SEIZURE_RECEIPT = "seizure_receipt"
+    COURT_CUSTODY = "court_custody"
+    ACCUSED_PANCHANAMA = "accused_panchanama"
+    FACE_IDENTIFICATION = "face_identification"
 
 
 class Document(Base):

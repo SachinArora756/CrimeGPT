@@ -131,6 +131,23 @@ async def bind_template_data(
         "occupant_name": "---",
         "occupant_present": "---",
 
+        # New document type fields
+        "custody_type": "Police Custody",
+        "custody_days_requested": "---",
+        "patient_condition": "---",
+        "injuries_description": "---",
+        "accused_height": "---",
+        "accused_build": "---",
+        "accused_complexion": "---",
+        "accused_clothing": "---",
+        "id_marks_description": "---",
+        "parade_date": _format_date(now),
+        "parade_time": "---",
+        "parade_place": case.station_id or "---",
+        "magistrate_name": "---",
+        "person_from_whom_seized": case.accused_name or "---",
+        "articles_condition": "Articles seized as is where is basis. Condition noted at time of seizure.",
+
         # Body text content keys
         "action_taken_text": f"FIR registered. Investigation taken up. Case assigned to investigating officer.",
         "grounds_of_arrest": f"The accused is reasonably suspected of having committed the offence of {case.offense_type or 'the registered offence'} punishable under Sections {', '.join(case.sections_applied) if case.sections_applied else '---'} of BNS 2023, based on the complaint and evidence collected during investigation.",
@@ -152,6 +169,17 @@ async def bind_template_data(
         "investigation_result": f"Investigation reveals that the accused committed the offence of {case.offense_type or '---'} punishable under Sections {', '.join(case.sections_applied) if case.sections_applied else '---'} of BNS 2023. Sufficient evidence has been collected to establish the case.",
         "diary_content": additional_context or "Investigation proceedings for the day.",
         "observations": "---",
+        "treatment_addressee_text": "The Medical Superintendent / Duty Medical Officer,\nDistrict Hospital / Government Hospital\n---",
+        "treatment_request_text": f"Sir/Madam,\n\nYou are requested to kindly provide necessary medical treatment to the person named below, who has sustained injuries in connection with FIR No. {case.fir_number} registered at this police station under Sections {', '.join(case.sections_applied) if case.sections_applied else '---'} of BNS 2023.\n\nKindly admit the patient if required and furnish the medical report at the earliest.",
+        "remand_grounds": f"Respectfully submitted that the accused has been arrested in connection with FIR No. {case.fir_number} under Sections {', '.join(case.sections_applied) if case.sections_applied else '---'} of BNS 2023. The investigation is at a crucial stage and the remand of the accused is necessary for the following reasons:\n\n1. Recovery of weapon/property used in the commission of the offence is yet to be effected.\n2. Identification of co-accused persons and their role is under investigation.\n3. The accused may tamper with evidence or influence witnesses if released.\n4. Further forensic examination and confrontation with witnesses is required.",
+        "investigation_progress": f"Investigation of FIR No. {case.fir_number} is in progress. Evidence has been collected and statements of witnesses have been recorded. Further investigation is required to establish the complete chain of events.",
+        "remand_prayer_text": "It is therefore most humbly prayed that the Hon'ble Court may kindly grant police custody remand of the accused for the period requested to facilitate further investigation in the interest of justice.",
+        "custody_grounds": f"Respectfully submitted that the accused arrested in FIR No. {case.fir_number} needs to be remanded to judicial custody as the initial investigation has been completed but the trial is yet to commence. The accused may flee from justice or tamper with evidence if released. It is in the interest of justice that the accused be remanded to judicial custody.",
+        "custody_prayer_text": "It is therefore most humbly prayed that the Hon'ble Court may kindly remand the accused to judicial custody for the period deemed appropriate in the interest of justice.",
+        "seizure_receipt_acknowledgment": f"This is to acknowledge that the above-mentioned articles have been seized from the undersigned person in connection with FIR No. {case.fir_number} by the Investigating Officer in the presence of independent witnesses. A copy of this receipt has been provided to the person from whom the property has been seized.",
+        "panchanama_body_text": f"Today on {_format_date(now)} at the Police Station {case.station_id or '---'}, the personal search of the accused was conducted in the presence of two independent witnesses as per the provisions of Section 53 BNSS. The accused was informed of the grounds of search and the search was conducted with due regard to decency. All articles found on the person of the accused have been duly noted and sealed where required.",
+        "identification_result": "---",
+        "parade_observations": "The identification parade was conducted in a fair and impartial manner under the supervision of the Presiding Magistrate. The accused was given full liberty to choose a position among the panel members. All precautions were taken to ensure that the identifying witness had no opportunity to see the accused prior to the parade.",
 
         # List content keys
         "accused_list": _format_list(case.accused_persons) or [f"1. {case.accused_name or 'Unknown'}"],
@@ -168,6 +196,18 @@ async def bind_template_data(
         ],
         "enclosure_list": _build_enclosures(case, evidence_list),
         "next_steps_list": ["Continue investigation as per case requirements"],
+        "treatment_required_list": [
+            "Emergency medical treatment as required",
+            "Documentation and treatment of injuries",
+            "X-ray / CT scan if required",
+            "Medico-legal certificate (MLC)",
+            "Opinion on nature, duration and cause of injuries",
+        ],
+        "articles_on_person": ["(To be listed by the investigating officer during personal search)"],
+        "identification_panel": [
+            "1. Accused (position to be chosen by accused)",
+            "2-10. Panel members of similar age, build, and appearance (minimum 9 persons)",
+        ],
     }
 
     if case.accused_persons:

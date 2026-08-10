@@ -14,9 +14,14 @@ const DOC_TYPES = [
   { value: 'court_letter', label: 'Court Submission Letter', icon: '🏛️', description: 'Official court correspondence' },
   { value: 'arrest_memo', label: 'Arrest Memo', icon: '🚔', description: 'Record of arrest details' },
   { value: 'witness_statement', label: 'Witness Statement', icon: '👤', description: 'Recorded witness testimony' },
-  { value: 'notice', label: 'Notice u/s 41A CrPC', icon: '📜', description: 'Appearance notice to accused' },
-  { value: 'summons', label: 'Summons', icon: '📨', description: 'Court summons document' },
+  { value: 'notice', label: 'Notice u/s 35 BNSS', icon: '📜', description: 'Appearance notice to accused' },
   { value: 'case_diary', label: 'Case Diary Entry', icon: '📖', description: 'Daily investigation record' },
+  { value: 'medical_treatment_letter', label: 'Medical Treatment Letter', icon: '💊', description: 'Request for medical treatment of accused/victim' },
+  { value: 'remand_request', label: 'Remand Request', icon: '⏰', description: 'Application for police/judicial custody remand' },
+  { value: 'seizure_receipt', label: 'Seizure Receipt', icon: '🧾', description: 'Receipt acknowledging seized property' },
+  { value: 'court_custody', label: 'Court Custody Application', icon: '🔐', description: 'Application for judicial custody of accused' },
+  { value: 'accused_panchanama', label: 'Accused Panchanama', icon: '👁️', description: 'Personal search record of accused person' },
+  { value: 'face_identification', label: 'Face Identification Form', icon: '🪪', description: 'Test identification parade record' },
 ]
 
 export default function DocumentsPage() {

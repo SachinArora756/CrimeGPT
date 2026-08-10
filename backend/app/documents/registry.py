@@ -61,3 +61,5 @@ def get_template(doc_type: str) -> TemplateDefinition | None:
 from app.documents.templates import fir, chargesheet, arrest_memo, seizure_memo  # noqa: E402, F401
 from app.documents.templates import search_memo, witness_statement, notice  # noqa: E402, F401
 from app.documents.templates import medical_letter, court_letter, case_diary  # noqa: E402, F401
+from app.documents.templates import medical_treatment_letter, remand_request, seizure_receipt  # noqa: E402, F401
+from app.documents.templates import court_custody, accused_panchanama, face_identification  # noqa: E402, F401
