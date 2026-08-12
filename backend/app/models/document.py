@@ -24,6 +24,20 @@ class DocType(str, enum.Enum):
     COURT_CUSTODY = "court_custody"
     ACCUSED_PANCHANAMA = "accused_panchanama"
     FACE_IDENTIFICATION = "face_identification"
+    PRODUCTION_ORDER = "production_order"
+    CONTENT_REMOVAL = "content_removal"
+    DATA_PRESERVATION = "data_preservation"
+    CONTENT_BLOCKING = "content_blocking"
+    PLATFORM_DATA_REQ = "platform_data_req"
+    CDR_IPDR_REQUEST = "cdr_ipdr_request"
+    BANKING_DATA_REQ = "banking_data_req"
+    FSL_FORWARDING = "fsl_forwarding"
+    BSA_63_CERTIFICATE = "bsa_63_certificate"
+    CLOSURE_REPORT = "closure_report"
+    SPOT_PANCHNAMA = "spot_panchnama"
+    INQUEST_REPORT = "inquest_report"
+    MISSING_PERSON = "missing_person"
+    PROPERTY_RELEASE = "property_release"
 
 
 class Document(Base):

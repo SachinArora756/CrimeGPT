@@ -63,3 +63,8 @@ from app.documents.templates import search_memo, witness_statement, notice  # no
 from app.documents.templates import medical_letter, court_letter, case_diary  # noqa: E402, F401
 from app.documents.templates import medical_treatment_letter, remand_request, seizure_receipt  # noqa: E402, F401
 from app.documents.templates import court_custody, accused_panchanama, face_identification  # noqa: E402, F401
+from app.documents.templates import production_order, content_removal, data_preservation  # noqa: E402, F401
+from app.documents.templates import content_blocking, platform_data_req, cdr_ipdr_request  # noqa: E402, F401
+from app.documents.templates import banking_data_req, fsl_forwarding, bsa_63_certificate  # noqa: E402, F401
+from app.documents.templates import closure_report, spot_panchnama, inquest_report  # noqa: E402, F401
+from app.documents.templates import missing_person, property_release  # noqa: E402, F401

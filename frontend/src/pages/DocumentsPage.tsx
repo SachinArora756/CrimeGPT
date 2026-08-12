@@ -7,21 +7,44 @@ import api from '../api/client'
 import { useEvidenceDocStore, DocumentItem } from '../store/evidenceDocStore'
 
 const DOC_TYPES = [
-  { value: 'fir', label: 'First Information Report (FIR)', icon: '📋', description: 'Official police complaint document' },
-  { value: 'chargesheet', label: 'Charge Sheet', icon: '⚖️', description: 'Court submission with evidence summary' },
-  { value: 'seizure_memo', label: 'Seizure Memo', icon: '🔒', description: 'Record of seized property/evidence' },
-  { value: 'medical_letter', label: 'Medical Examination Letter', icon: '🏥', description: 'Request for medical examination' },
-  { value: 'court_letter', label: 'Court Submission Letter', icon: '🏛️', description: 'Official court correspondence' },
-  { value: 'arrest_memo', label: 'Arrest Memo', icon: '🚔', description: 'Record of arrest details' },
-  { value: 'witness_statement', label: 'Witness Statement', icon: '👤', description: 'Recorded witness testimony' },
-  { value: 'notice', label: 'Notice u/s 35 BNSS', icon: '📜', description: 'Appearance notice to accused' },
-  { value: 'case_diary', label: 'Case Diary Entry', icon: '📖', description: 'Daily investigation record' },
-  { value: 'medical_treatment_letter', label: 'Medical Treatment Letter', icon: '💊', description: 'Request for medical treatment of accused/victim' },
-  { value: 'remand_request', label: 'Remand Request', icon: '⏰', description: 'Application for police/judicial custody remand' },
-  { value: 'seizure_receipt', label: 'Seizure Receipt', icon: '🧾', description: 'Receipt acknowledging seized property' },
-  { value: 'court_custody', label: 'Court Custody Application', icon: '🔐', description: 'Application for judicial custody of accused' },
-  { value: 'accused_panchanama', label: 'Accused Panchanama', icon: '👁️', description: 'Personal search record of accused person' },
-  { value: 'face_identification', label: 'Face Identification Form', icon: '🪪', description: 'Test identification parade record' },
+  // --- Core Investigation Documents ---
+  { value: 'fir', label: 'First Information Report (FIR)', icon: '📋', description: 'Section 173 BNSS — Official police complaint' },
+  { value: 'case_diary', label: 'Case Diary Entry', icon: '📖', description: 'Section 192 BNSS — Daily investigation record' },
+  { value: 'spot_panchnama', label: 'Spot / Scene Panchnama', icon: '🗺️', description: 'Section 176 BNSS — Scene of crime inspection' },
+  { value: 'witness_statement', label: 'Witness Statement', icon: '👤', description: 'Section 180/181 BNSS — Recorded testimony' },
+  { value: 'chargesheet', label: 'Charge Sheet', icon: '⚖️', description: 'Section 193 BNSS — Final report to court' },
+  { value: 'closure_report', label: 'Closure / Untraced Report', icon: '📕', description: 'Section 193 BNSS — Case closure final report' },
+  // --- Arrest & Custody ---
+  { value: 'arrest_memo', label: 'Arrest Memo', icon: '🚔', description: 'Section 36 BNSS — Record of arrest' },
+  { value: 'notice', label: 'Notice u/s 35 BNSS', icon: '📜', description: 'Section 35(3) BNSS — Appearance notice' },
+  { value: 'remand_request', label: 'Remand Request', icon: '⏰', description: 'Section 187 BNSS — Police custody remand' },
+  { value: 'court_custody', label: 'Court Custody Application', icon: '🔐', description: 'Section 187(2)-(3) BNSS — Judicial custody' },
+  // --- Search & Seizure ---
+  { value: 'search_memo', label: 'Search Memo / Panchnama', icon: '🔍', description: 'Section 185-190 BNSS — Search proceedings' },
+  { value: 'seizure_memo', label: 'Seizure Memo', icon: '🔒', description: 'Section 185-186 BNSS — Seizure of property' },
+  { value: 'seizure_receipt', label: 'Seizure Receipt', icon: '🧾', description: 'Section 185-186 BNSS — Acknowledgment receipt' },
+  { value: 'accused_panchanama', label: 'Accused Panchanama', icon: '👁️', description: 'Section 53 BNSS — Personal search of accused' },
+  { value: 'property_release', label: 'Property Release Order', icon: '📦', description: 'Section 451/457 BNSS — Release seized property' },
+  // --- Production & Data Requests (Section 94 BNSS) ---
+  { value: 'production_order', label: 'Production Order (§94 BNSS)', icon: '📑', description: 'Section 94 BNSS — Summons to produce documents/things' },
+  { value: 'cdr_ipdr_request', label: 'CDR / IPDR Request', icon: '📡', description: 'Section 94 BNSS — Telecom call/internet records' },
+  { value: 'platform_data_req', label: 'Platform Data Request', icon: '🌐', description: 'Section 94 BNSS r/w IT Act — Social media/ISP data' },
+  { value: 'banking_data_req', label: 'Banking Data Request', icon: '🏦', description: 'Section 94 BNSS — Bank/UPI transaction records' },
+  // --- IT Act & Cyber Documents ---
+  { value: 'content_removal', label: 'Content Removal Notice', icon: '🚫', description: 'Section 79(3)(b) IT Act — Notice to intermediary' },
+  { value: 'data_preservation', label: 'Data Preservation Request', icon: '💾', description: 'Section 67C IT Act — Preserve electronic records' },
+  { value: 'content_blocking', label: 'Content Blocking Request', icon: '🛑', description: 'Section 69A IT Act — Block public access' },
+  // --- Evidence & Forensics ---
+  { value: 'bsa_63_certificate', label: 'Electronic Evidence Certificate', icon: '🔏', description: 'Section 63 BSA 2023 — Certificate for e-records' },
+  { value: 'fsl_forwarding', label: 'FSL Forwarding Letter', icon: '🔬', description: 'Section 176/349 BNSS — Forward exhibits to FSL' },
+  { value: 'face_identification', label: 'Face Identification (TIP)', icon: '🪪', description: 'Section 9 BSA — Test identification parade' },
+  // --- Medical & Court ---
+  { value: 'medical_letter', label: 'Medical Examination Letter', icon: '🏥', description: 'Section 53/54 BNSS — Request for examination' },
+  { value: 'medical_treatment_letter', label: 'Medical Treatment Letter', icon: '💊', description: 'Section 36 BNSS — Treatment for accused/victim' },
+  { value: 'court_letter', label: 'Court Submission Letter', icon: '🏛️', description: 'Section 193/194 BNSS — Forwarding to court' },
+  // --- Special Reports ---
+  { value: 'inquest_report', label: 'Inquest Report', icon: '⚰️', description: 'Section 194 BNSS — Unnatural death documentation' },
+  { value: 'missing_person', label: 'Missing Person Report', icon: '🔎', description: 'Section 175 BNSS — Missing person documentation' },
 ]
 
 export default function DocumentsPage() {
@@ -31,6 +54,7 @@ export default function DocumentsPage() {
   const [generating, setGenerating] = useState(false)
   const [selectedType, setSelectedType] = useState('fir')
   const [loading, setLoading] = useState(true)
+  const [docFilter, setDocFilter] = useState('')
 
   useEffect(() => { loadDocuments() }, [caseId])
 
@@ -110,8 +134,15 @@ export default function DocumentsPage() {
           <Stamp className="w-4 h-4 text-primary-400" />
           Generate Official Document
         </h2>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-4">
-          {DOC_TYPES.map((dt) => (
+        <input
+          type="text"
+          placeholder="Search documents... (e.g. CDR, seizure, IT Act, §94)"
+          value={docFilter}
+          onChange={(e) => setDocFilter(e.target.value)}
+          className="w-full mb-3 px-3 py-2 bg-dark-900/60 border border-dark-700 rounded-lg text-sm text-white placeholder-dark-500 focus:outline-none focus:border-primary-500/50"
+        />
+        <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-6 gap-2 mb-4 max-h-[400px] overflow-y-auto">
+          {DOC_TYPES.filter((dt) => !docFilter || dt.label.toLowerCase().includes(docFilter.toLowerCase()) || dt.description.toLowerCase().includes(docFilter.toLowerCase())).map((dt) => (
             <button
               key={dt.value}
               onClick={() => setSelectedType(dt.value)}
