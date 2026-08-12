@@ -47,7 +47,12 @@ class CaseDiaryResponse(BaseModel):
     content: str
     entry_type: str
     officer_id: int
+    is_auto: bool = False
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+class DiarySummaryRequest(BaseModel):
+    target_date: date | None = None

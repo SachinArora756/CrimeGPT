@@ -1,6 +1,6 @@
 import enum
 from datetime import datetime, date
-from sqlalchemy import String, DateTime, Date, Text, ForeignKey, JSON, Enum as SAEnum
+from sqlalchemy import String, DateTime, Date, Text, ForeignKey, JSON, Boolean, Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -65,6 +65,7 @@ class CaseDiary(Base):
     content: Mapped[str] = mapped_column(Text)
     entry_type: Mapped[str] = mapped_column(String(50), default="investigation")
     officer_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    is_auto: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

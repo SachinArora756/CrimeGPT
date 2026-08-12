@@ -15,6 +15,7 @@ from app.schemas.document import (
     DocumentResponse,
     CaseDiaryCreate,
     CaseDiaryResponse,
+    DiarySummaryRequest,
 )
 from app.services.auth_service import get_current_user
 from app.services.authorization import authorize_case_access, filter_cases_for_user
@@ -127,6 +128,13 @@ async def generate_document(
 
     from app.services.notification_service import notify_document_generated
     await notify_document_generated(db, case, current_user.id, doc_request.doc_type.value)
+
+    from app.services.diary_service import auto_diary_entry
+    await auto_diary_entry(
+        db, case.id, "investigation_step",
+        f"Document generated: {doc_request.doc_type.value} ({doc_request.output_format})",
+        current_user.id,
+    )
 
     return DocumentResponse.model_validate(doc)
 
@@ -245,6 +253,33 @@ async def get_diary_entries(
     )
     entries = result.scalars().all()
     return [CaseDiaryResponse.model_validate(e) for e in entries]
+
+
+@router.post("/diary/{case_id}/summary", response_model=CaseDiaryResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")
+async def generate_diary_summary(
+    request: Request,
+    *,
+    case_id: str = Path(),
+    body: DiarySummaryRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from datetime import date as date_type
+    from app.services.diary_service import generate_daily_summary
+
+    case = await authorize_case_access(db, case_id, current_user)
+    target_date = body.target_date or date_type.today()
+
+    diary = await generate_daily_summary(
+        db, case.id, target_date, current_user.id, case_fir_number=case.fir_number or ""
+    )
+    if not diary:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No diary entries found for {target_date.isoformat()}",
+        )
+    return CaseDiaryResponse.model_validate(diary)
 
 
 @router.post("/recompute-hashes")

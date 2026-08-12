@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { BookOpen, Plus, Calendar, Clock, FileText, Loader2, User } from 'lucide-react'
+import { BookOpen, Plus, Calendar, Clock, FileText, Loader2, User, Bot, Sparkles } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
 
@@ -12,6 +12,7 @@ interface DiaryEntry {
   content: string
   entry_type: string
   officer_id: number
+  is_auto: boolean
   created_at: string
 }
 
@@ -31,6 +32,7 @@ export default function CaseDiaryPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+  const [generatingSummary, setGeneratingSummary] = useState(false)
   const [form, setForm] = useState({
     content: '',
     entry_type: 'investigation_step',
@@ -61,6 +63,22 @@ export default function CaseDiaryPage() {
       toast.error('Failed to add diary entry')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const generateSummary = async () => {
+    setGeneratingSummary(true)
+    try {
+      const res = await api.post(`/api/documents/diary/${caseId}/summary`, {
+        target_date: new Date().toISOString().split('T')[0],
+      })
+      setEntries(prev => [res.data, ...prev])
+      toast.success('AI summary generated')
+    } catch (err: any) {
+      const detail = err?.response?.data?.detail || 'Failed to generate summary'
+      toast.error(detail)
+    } finally {
+      setGeneratingSummary(false)
     }
   }
 
@@ -96,6 +114,14 @@ export default function CaseDiaryPage() {
         </div>
         <div className="flex gap-2">
           <Link to={`/cases/${caseId}`} className="btn-secondary text-sm">← Back to Case</Link>
+          <button
+            onClick={generateSummary}
+            disabled={generatingSummary}
+            className="flex items-center gap-2 text-sm px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 rounded-lg border border-amber-600/30 transition-colors disabled:opacity-50"
+          >
+            {generatingSummary ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            {generatingSummary ? 'Generating...' : 'AI Summary'}
+          </button>
           <button onClick={() => setShowForm(!showForm)} className="btn-primary flex items-center gap-2 text-sm">
             <Plus className="w-4 h-4" />
             New Entry
@@ -182,6 +208,11 @@ export default function CaseDiaryPage() {
                       <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${typeInfo.color}`}>
                         {typeInfo.label}
                       </span>
+                      {entry.is_auto && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-medium text-cyan-400 bg-cyan-500/10 flex items-center gap-0.5">
+                          <Bot className="w-2.5 h-2.5" /> AUTO
+                        </span>
+                      )}
                       <span className="text-dark-500 text-xs flex items-center gap-1">
                         <Calendar className="w-3 h-3" /> {entry.entry_date}
                       </span>

@@ -159,6 +159,13 @@ async def upload_evidence(
         exclude_user_id=current_user.id,
     )
 
+    from app.services.diary_service import auto_diary_entry
+    await auto_diary_entry(
+        db, case.id, "evidence_collected",
+        f"Evidence uploaded: {file.filename} ({file_type}, {file_size} bytes)",
+        current_user.id,
+    )
+
     return EvidenceResponse.model_validate(evidence)
 
 

@@ -93,6 +93,13 @@ async def update_existing_case(
             exclude_user_id=current_user.id,
         )
 
+        from app.services.diary_service import auto_diary_entry
+        await auto_diary_entry(
+            db, case.id, "investigation_step",
+            f"Case status changed from '{old_status.value}' to '{case_data.status.value}'",
+            current_user.id,
+        )
+
     return CaseResponse.model_validate(updated)
 
 
