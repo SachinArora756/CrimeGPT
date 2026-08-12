@@ -1,50 +1,98 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { FileText, Download, Plus, Loader2, Scale, Stamp, Clock, Hash, Trash2 } from 'lucide-react'
+import { FileText, Download, Plus, Loader2, Scale, Clock, Hash, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
 import { useEvidenceDocStore, DocumentItem } from '../store/evidenceDocStore'
 
-const DOC_TYPES = [
-  // --- Core Investigation Documents ---
-  { value: 'fir', label: 'First Information Report (FIR)', icon: '📋', description: 'Section 173 BNSS — Official police complaint' },
-  { value: 'case_diary', label: 'Case Diary Entry', icon: '📖', description: 'Section 192 BNSS — Daily investigation record' },
-  { value: 'spot_panchnama', label: 'Spot / Scene Panchnama', icon: '🗺️', description: 'Section 176 BNSS — Scene of crime inspection' },
-  { value: 'witness_statement', label: 'Witness Statement', icon: '👤', description: 'Section 180/181 BNSS — Recorded testimony' },
-  { value: 'chargesheet', label: 'Charge Sheet', icon: '⚖️', description: 'Section 193 BNSS — Final report to court' },
-  { value: 'closure_report', label: 'Closure / Untraced Report', icon: '📕', description: 'Section 193 BNSS — Case closure final report' },
-  // --- Arrest & Custody ---
-  { value: 'arrest_memo', label: 'Arrest Memo', icon: '🚔', description: 'Section 36 BNSS — Record of arrest' },
-  { value: 'notice', label: 'Notice u/s 35 BNSS', icon: '📜', description: 'Section 35(3) BNSS — Appearance notice' },
-  { value: 'remand_request', label: 'Remand Request', icon: '⏰', description: 'Section 187 BNSS — Police custody remand' },
-  { value: 'court_custody', label: 'Court Custody Application', icon: '🔐', description: 'Section 187(2)-(3) BNSS — Judicial custody' },
-  // --- Search & Seizure ---
-  { value: 'search_memo', label: 'Search Memo / Panchnama', icon: '🔍', description: 'Section 185-190 BNSS — Search proceedings' },
-  { value: 'seizure_memo', label: 'Seizure Memo', icon: '🔒', description: 'Section 185-186 BNSS — Seizure of property' },
-  { value: 'seizure_receipt', label: 'Seizure Receipt', icon: '🧾', description: 'Section 185-186 BNSS — Acknowledgment receipt' },
-  { value: 'accused_panchanama', label: 'Accused Panchanama', icon: '👁️', description: 'Section 53 BNSS — Personal search of accused' },
-  { value: 'property_release', label: 'Property Release Order', icon: '📦', description: 'Section 451/457 BNSS — Release seized property' },
-  // --- Production & Data Requests (Section 94 BNSS) ---
-  { value: 'production_order', label: 'Production Order (§94 BNSS)', icon: '📑', description: 'Section 94 BNSS — Summons to produce documents/things' },
-  { value: 'cdr_ipdr_request', label: 'CDR / IPDR Request', icon: '📡', description: 'Section 94 BNSS — Telecom call/internet records' },
-  { value: 'platform_data_req', label: 'Platform Data Request', icon: '🌐', description: 'Section 94 BNSS r/w IT Act — Social media/ISP data' },
-  { value: 'banking_data_req', label: 'Banking Data Request', icon: '🏦', description: 'Section 94 BNSS — Bank/UPI transaction records' },
-  // --- IT Act & Cyber Documents ---
-  { value: 'content_removal', label: 'Content Removal Notice', icon: '🚫', description: 'Section 79(3)(b) IT Act — Notice to intermediary' },
-  { value: 'data_preservation', label: 'Data Preservation Request', icon: '💾', description: 'Section 67C IT Act — Preserve electronic records' },
-  { value: 'content_blocking', label: 'Content Blocking Request', icon: '🛑', description: 'Section 69A IT Act — Block public access' },
-  // --- Evidence & Forensics ---
-  { value: 'bsa_63_certificate', label: 'Electronic Evidence Certificate', icon: '🔏', description: 'Section 63 BSA 2023 — Certificate for e-records' },
-  { value: 'fsl_forwarding', label: 'FSL Forwarding Letter', icon: '🔬', description: 'Section 176/349 BNSS — Forward exhibits to FSL' },
-  { value: 'face_identification', label: 'Face Identification (TIP)', icon: '🪪', description: 'Section 9 BSA — Test identification parade' },
-  // --- Medical & Court ---
-  { value: 'medical_letter', label: 'Medical Examination Letter', icon: '🏥', description: 'Section 53/54 BNSS — Request for examination' },
-  { value: 'medical_treatment_letter', label: 'Medical Treatment Letter', icon: '💊', description: 'Section 36 BNSS — Treatment for accused/victim' },
-  { value: 'court_letter', label: 'Court Submission Letter', icon: '🏛️', description: 'Section 193/194 BNSS — Forwarding to court' },
-  // --- Special Reports ---
-  { value: 'inquest_report', label: 'Inquest Report', icon: '⚰️', description: 'Section 194 BNSS — Unnatural death documentation' },
-  { value: 'missing_person', label: 'Missing Person Report', icon: '🔎', description: 'Section 175 BNSS — Missing person documentation' },
+const DOC_SECTIONS = [
+  {
+    id: 'investigation',
+    label: 'Core Investigation',
+    icon: '📋',
+    docs: [
+      { value: 'fir', label: 'First Information Report (FIR)', description: 'Section 173 BNSS — Official police complaint' },
+      { value: 'case_diary', label: 'Case Diary Entry', description: 'Section 192 BNSS — Daily investigation record' },
+      { value: 'spot_panchnama', label: 'Spot / Scene Panchnama', description: 'Section 176 BNSS — Scene of crime inspection' },
+      { value: 'witness_statement', label: 'Witness Statement', description: 'Section 180/181 BNSS — Recorded testimony' },
+      { value: 'chargesheet', label: 'Charge Sheet', description: 'Section 193 BNSS — Final report to court' },
+      { value: 'closure_report', label: 'Closure / Untraced Report', description: 'Section 193 BNSS — Case closure final report' },
+    ],
+  },
+  {
+    id: 'arrest',
+    label: 'Arrest & Custody',
+    icon: '🚔',
+    docs: [
+      { value: 'arrest_memo', label: 'Arrest Memo', description: 'Section 36 BNSS — Record of arrest' },
+      { value: 'notice', label: 'Notice u/s 35 BNSS', description: 'Section 35(3) BNSS — Appearance notice' },
+      { value: 'remand_request', label: 'Remand Request', description: 'Section 187 BNSS — Police custody remand' },
+      { value: 'court_custody', label: 'Court Custody Application', description: 'Section 187(2)-(3) BNSS — Judicial custody' },
+    ],
+  },
+  {
+    id: 'search',
+    label: 'Search & Seizure',
+    icon: '🔍',
+    docs: [
+      { value: 'search_memo', label: 'Search Memo / Panchnama', description: 'Section 185-190 BNSS — Search proceedings' },
+      { value: 'seizure_memo', label: 'Seizure Memo', description: 'Section 185-186 BNSS — Seizure of property' },
+      { value: 'seizure_receipt', label: 'Seizure Receipt', description: 'Section 185-186 BNSS — Acknowledgment receipt' },
+      { value: 'accused_panchanama', label: 'Accused Panchanama', description: 'Section 53 BNSS — Personal search of accused' },
+      { value: 'property_release', label: 'Property Release Order', description: 'Section 451/457 BNSS — Release seized property' },
+    ],
+  },
+  {
+    id: 'production',
+    label: 'Production & Data Requests',
+    icon: '📡',
+    docs: [
+      { value: 'production_order', label: 'Production Order (§94 BNSS)', description: 'Section 94 BNSS — Summons to produce documents/things' },
+      { value: 'cdr_ipdr_request', label: 'CDR / IPDR Request', description: 'Section 94 BNSS — Telecom call/internet records' },
+      { value: 'platform_data_req', label: 'Platform Data Request', description: 'Section 94 BNSS r/w IT Act — Social media/ISP data' },
+      { value: 'banking_data_req', label: 'Banking Data Request', description: 'Section 94 BNSS — Bank/UPI transaction records' },
+    ],
+  },
+  {
+    id: 'cyber',
+    label: 'IT Act & Cyber',
+    icon: '🌐',
+    docs: [
+      { value: 'content_removal', label: 'Content Removal Notice', description: 'Section 79(3)(b) IT Act — Notice to intermediary' },
+      { value: 'data_preservation', label: 'Data Preservation Request', description: 'Section 67C IT Act — Preserve electronic records' },
+      { value: 'content_blocking', label: 'Content Blocking Request', description: 'Section 69A IT Act — Block public access' },
+    ],
+  },
+  {
+    id: 'evidence',
+    label: 'Evidence & Forensics',
+    icon: '🔬',
+    docs: [
+      { value: 'bsa_63_certificate', label: 'Electronic Evidence Certificate', description: 'Section 63 BSA 2023 — Certificate for e-records' },
+      { value: 'fsl_forwarding', label: 'FSL Forwarding Letter', description: 'Section 176/349 BNSS — Forward exhibits to FSL' },
+      { value: 'face_identification', label: 'Face Identification (TIP)', description: 'Section 9 BSA — Test identification parade' },
+    ],
+  },
+  {
+    id: 'medical',
+    label: 'Medical & Court',
+    icon: '🏥',
+    docs: [
+      { value: 'medical_letter', label: 'Medical Examination Letter', description: 'Section 53/54 BNSS — Request for examination' },
+      { value: 'medical_treatment_letter', label: 'Medical Treatment Letter', description: 'Section 36 BNSS — Treatment for accused/victim' },
+      { value: 'court_letter', label: 'Court Submission Letter', description: 'Section 193/194 BNSS — Forwarding to court' },
+    ],
+  },
+  {
+    id: 'special',
+    label: 'Special Reports',
+    icon: '📑',
+    docs: [
+      { value: 'inquest_report', label: 'Inquest Report', description: 'Section 194 BNSS — Unnatural death documentation' },
+      { value: 'missing_person', label: 'Missing Person Report', description: 'Section 175 BNSS — Missing person documentation' },
+    ],
+  },
 ]
 
 export default function DocumentsPage() {
@@ -53,8 +101,8 @@ export default function DocumentsPage() {
   const [documents, setDocuments] = useState<DocumentItem[]>([])
   const [generating, setGenerating] = useState(false)
   const [selectedType, setSelectedType] = useState('fir')
+  const [activeSection, setActiveSection] = useState('investigation')
   const [loading, setLoading] = useState(true)
-  const [docFilter, setDocFilter] = useState('')
 
   useEffect(() => { loadDocuments() }, [caseId])
 
@@ -111,7 +159,9 @@ export default function DocumentsPage() {
     }
   }
 
-  const getDocInfo = (type: string) => DOC_TYPES.find((d) => d.value === type)
+  const currentSection = DOC_SECTIONS.find(s => s.id === activeSection)!
+  const allDocs = DOC_SECTIONS.flatMap(s => s.docs)
+  const getDocInfo = (type: string) => allDocs.find((d) => d.value === type)
 
   return (
     <div className="space-y-6">
@@ -130,19 +180,29 @@ export default function DocumentsPage() {
 
       {/* Generate Section */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="card">
-        <h2 className="text-base font-semibold text-white mb-4 flex items-center gap-2">
-          <Stamp className="w-4 h-4 text-primary-400" />
-          Generate Official Document
-        </h2>
-        <input
-          type="text"
-          placeholder="Search documents... (e.g. CDR, seizure, IT Act, §94)"
-          value={docFilter}
-          onChange={(e) => setDocFilter(e.target.value)}
-          className="w-full mb-3 px-3 py-2 bg-dark-900/60 border border-dark-700 rounded-lg text-sm text-white placeholder-dark-500 focus:outline-none focus:border-primary-500/50"
-        />
-        <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-6 gap-2 mb-4 max-h-[400px] overflow-y-auto">
-          {DOC_TYPES.filter((dt) => !docFilter || dt.label.toLowerCase().includes(docFilter.toLowerCase()) || dt.description.toLowerCase().includes(docFilter.toLowerCase())).map((dt) => (
+        <h2 className="text-base font-semibold text-white mb-4">Generate Official Document</h2>
+
+        {/* Section Tabs */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {DOC_SECTIONS.map((section) => (
+            <button
+              key={section.id}
+              onClick={() => { setActiveSection(section.id); setSelectedType(section.docs[0].value) }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
+                activeSection === section.id
+                  ? 'bg-primary-600/15 border-primary-600/40 text-primary-400'
+                  : 'bg-dark-900/60 border-dark-700 text-dark-400 hover:border-dark-600 hover:text-dark-300'
+              }`}
+            >
+              <span>{section.icon}</span>
+              {section.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Documents in Active Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
+          {currentSection.docs.map((dt) => (
             <button
               key={dt.value}
               onClick={() => setSelectedType(dt.value)}
@@ -152,13 +212,15 @@ export default function DocumentsPage() {
                   : 'bg-dark-900/60 border-dark-700 hover:border-dark-600'
               }`}
             >
-              <span className="text-lg">{dt.icon}</span>
-              <p className={`text-xs font-medium mt-1 ${selectedType === dt.value ? 'text-primary-400' : 'text-dark-300'}`}>
-                {dt.label.split('(')[0].trim()}
+              <p className={`text-sm font-medium ${selectedType === dt.value ? 'text-primary-400' : 'text-dark-300'}`}>
+                {dt.label}
               </p>
+              <p className="text-dark-500 text-[11px] mt-1 leading-tight">{dt.description}</p>
             </button>
           ))}
         </div>
+
+        {/* Generate Button */}
         <div className="flex items-center justify-between bg-dark-900/40 rounded-xl p-3">
           <div>
             <p className="text-white text-sm font-medium">{getDocInfo(selectedType)?.label}</p>
@@ -189,7 +251,7 @@ export default function DocumentsPage() {
           <div className="text-center py-12 bg-dark-900/40 rounded-xl border border-dark-700/50">
             <FileText className="w-12 h-12 text-dark-600 mx-auto mb-3" />
             <p className="text-dark-400">No documents generated yet</p>
-            <p className="text-dark-500 text-xs mt-1">Select a document type above and click Generate</p>
+            <p className="text-dark-500 text-xs mt-1">Select a section above, pick a document type, and click Generate</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -204,7 +266,9 @@ export default function DocumentsPage() {
                   className="flex items-center justify-between p-4 bg-dark-900/60 rounded-xl border border-dark-700/50 hover:border-dark-600 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-xl">{info?.icon || '📄'}</span>
+                    <div className="w-8 h-8 bg-dark-800 rounded-lg flex items-center justify-center">
+                      <FileText className="w-4 h-4 text-primary-400" />
+                    </div>
                     <div>
                       <p className="text-white text-sm font-medium">{info?.label || doc.doc_type}</p>
                       <p className="text-dark-400 text-xs flex items-center gap-1 mt-0.5">
