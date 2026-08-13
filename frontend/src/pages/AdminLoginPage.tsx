@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ShieldCheck, Eye, EyeOff, Lock, AlertCircle, Fingerprint, Loader2, Wifi, Server } from 'lucide-react'
+import { Eye, EyeOff, Lock, AlertCircle, Fingerprint, Loader2, Wifi, Server } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
+import CrimeGPTLogo from '../components/CrimeGPTLogo'
 
 function MatrixBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -192,49 +193,8 @@ export default function AdminLoginPage() {
         </motion.div>
 
         {/* Logo */}
-        <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0, rotate: -90 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.6, delay: 0.2, type: 'spring', stiffness: 120 }}
-            className="relative inline-flex"
-          >
-            {/* Animated ring */}
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
-              className="absolute -inset-2 rounded-2xl border border-dashed border-red-500/20"
-            />
-            <motion.div
-              animate={{ rotate: -360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-              className="absolute -inset-3 rounded-2xl border border-dotted border-red-500/10"
-            />
-            <div className="w-[72px] h-[72px] bg-gradient-to-br from-red-900/90 to-slate-950 rounded-2xl flex items-center justify-center border border-red-500/20 shadow-xl shadow-red-900/20 relative">
-              <ShieldCheck className="w-9 h-9 text-red-400" />
-              {/* Glow */}
-              <div className="absolute inset-0 rounded-2xl bg-red-500/5 animate-pulse" />
-            </div>
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="text-2xl font-bold text-white mt-6 tracking-tight"
-          >
-            System Administration
-          </motion.h1>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="flex items-center justify-center gap-2 mt-2"
-          >
-            <div className="h-px w-8 bg-gradient-to-r from-transparent to-red-500/30" />
-            <p className="text-red-400/60 text-[10px] font-bold uppercase tracking-[0.2em]">Restricted Access</p>
-            <div className="h-px w-8 bg-gradient-to-l from-transparent to-red-500/30" />
-          </motion.div>
+        <div className="mb-8">
+          <CrimeGPTLogo size="lg" subtitle="System Administration" />
         </div>
 
         {/* Login Card */}

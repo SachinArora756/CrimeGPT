@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Shield, Eye, EyeOff, AlertCircle, Lock, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle, Lock, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '../store/authStore'
+import CrimeGPTLogo from '../components/CrimeGPTLogo'
 
 interface Particle {
   id: number
@@ -193,40 +194,8 @@ export default function OfficerLoginPage() {
         className="w-full max-w-[420px] relative z-10"
       >
         {/* Logo */}
-        <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.6, delay: 0.2, type: 'spring', stiffness: 150 }}
-            className="relative inline-flex"
-          >
-            <div className="w-[72px] h-[72px] bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/30">
-              <Shield className="w-9 h-9 text-white" />
-            </div>
-            {/* Pulse ring */}
-            <motion.div
-              animate={{ scale: [1, 1.3, 1], opacity: [0.5, 0, 0.5] }}
-              transition={{ duration: 2.5, repeat: Infinity }}
-              className="absolute inset-0 rounded-2xl border-2 border-blue-400/30"
-            />
-          </motion.div>
-
-          <motion.h1
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
-            className="text-[28px] font-bold text-white mt-5 tracking-tight"
-          >
-            CrimeGPT
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="text-blue-300/60 mt-1.5 text-sm font-medium"
-          >
-            AI-Powered Investigation Management System
-          </motion.p>
+        <div className="mb-8">
+          <CrimeGPTLogo size="lg" subtitle="AI-Powered Investigation Management System" />
         </div>
 
         {/* Login Card — Glassmorphism */}

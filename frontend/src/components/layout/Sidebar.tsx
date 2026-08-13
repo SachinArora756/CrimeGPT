@@ -31,6 +31,7 @@ import {
   Box,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
+import CrimeGPTLogo from '../CrimeGPTLogo'
 
 const officerNavItems = [
   { path: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -99,12 +100,8 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
       {/* Brand */}
       <div className="p-4 border-b border-dark-700/50 flex items-center justify-between min-h-[64px]">
         <div className="flex items-center gap-3 overflow-hidden">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-lg shrink-0 ${
-            isAdminUser
-              ? 'bg-gradient-to-br from-red-600 to-red-800 shadow-red-500/20'
-              : 'bg-gradient-to-br from-primary-600 to-primary-800 shadow-primary-500/20'
-          }`}>
-            <Shield className="w-5 h-5 text-white" />
+          <div className="shrink-0">
+            <CrimeGPTLogo size="sm" animate={false} showText={false} />
           </div>
           <AnimatePresence>
             {!collapsed && (
@@ -115,7 +112,10 @@ export default function Sidebar({ collapsed, onToggle }: SidebarProps) {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden whitespace-nowrap"
               >
-                <h1 className="text-base font-bold text-white tracking-tight">CrimeGPT</h1>
+                <h1 className="text-base font-bold tracking-tight">
+                  <span className="bg-gradient-to-r from-white via-blue-100 to-cyan-200 bg-clip-text text-transparent">Crime</span>
+                  <span className="bg-gradient-to-r from-cyan-300 to-indigo-300 bg-clip-text text-transparent">GPT</span>
+                </h1>
                 <p className="text-[10px] text-dark-400 uppercase tracking-wider">
                   {isAdminUser ? 'Admin Console' : 'Investigation OS'}
                 </p>
