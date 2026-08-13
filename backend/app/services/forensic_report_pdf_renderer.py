@@ -64,71 +64,71 @@ def _get_styles():
 
     styles.add(ParagraphStyle(
         name="CoverTitle", parent=styles["Title"],
-        fontSize=38, fontName="Helvetica-Bold",
-        textColor=BRAND_PRIMARY, alignment=TA_CENTER, spaceAfter=4,
+        fontSize=30, fontName="Helvetica-Bold",
+        textColor=BRAND_PRIMARY, alignment=TA_CENTER, spaceAfter=3,
     ))
     styles.add(ParagraphStyle(
         name="CoverSubtitle", parent=styles["Normal"],
-        fontSize=16, fontName="Helvetica", alignment=TA_CENTER,
-        textColor=BRAND_ACCENT, spaceAfter=6,
+        fontSize=13, fontName="Helvetica", alignment=TA_CENTER,
+        textColor=BRAND_ACCENT, spaceAfter=4,
     ))
     styles.add(ParagraphStyle(
         name="CoverFramework", parent=styles["Normal"],
-        fontSize=10, fontName="Helvetica-Oblique", alignment=TA_CENTER,
-        textColor=colors.Color(0.4, 0.4, 0.4), spaceAfter=14,
+        fontSize=9, fontName="Helvetica-Oblique", alignment=TA_CENTER,
+        textColor=colors.Color(0.4, 0.4, 0.4), spaceAfter=10,
     ))
     styles.add(ParagraphStyle(
         name="CoverFIR", parent=styles["Normal"],
-        fontSize=14, fontName="Helvetica-Bold", alignment=TA_CENTER, spaceAfter=12,
+        fontSize=12, fontName="Helvetica-Bold", alignment=TA_CENTER, spaceAfter=8,
     ))
     styles.add(ParagraphStyle(
         name="CoverOffense", parent=styles["Normal"],
-        fontSize=13, fontName="Helvetica-Oblique", alignment=TA_CENTER, spaceAfter=12,
+        fontSize=11, fontName="Helvetica-Oblique", alignment=TA_CENTER, spaceAfter=8,
     ))
     styles.add(ParagraphStyle(
         name="PartHeading", parent=styles["Heading1"],
-        fontSize=16, fontName="Helvetica-Bold",
-        textColor=BRAND_PRIMARY, spaceBefore=20, spaceAfter=10,
+        fontSize=14, fontName="Helvetica-Bold",
+        textColor=BRAND_PRIMARY, spaceBefore=14, spaceAfter=6,
         alignment=TA_CENTER,
     ))
     styles.add(ParagraphStyle(
         name="SectionHeading", parent=styles["Heading1"],
-        fontSize=13, fontName="Helvetica-Bold",
-        textColor=BRAND_PRIMARY, spaceBefore=14, spaceAfter=8,
+        fontSize=11, fontName="Helvetica-Bold",
+        textColor=BRAND_PRIMARY, spaceBefore=10, spaceAfter=5,
     ))
     styles.add(ParagraphStyle(
         name="SubHeading", parent=styles["Heading2"],
-        fontSize=11, fontName="Helvetica-Bold",
-        spaceBefore=10, spaceAfter=4,
+        fontSize=10, fontName="Helvetica-Bold",
+        spaceBefore=8, spaceAfter=3,
     ))
     styles.add(ParagraphStyle(
         name="Body", parent=styles["Normal"],
-        fontSize=10, fontName="Times-Roman", leading=14, spaceAfter=6,
-    ))
-    styles.add(ParagraphStyle(
-        name="BodyBold", parent=styles["Normal"],
-        fontSize=10, fontName="Times-Bold", leading=14, spaceAfter=6,
-    ))
-    styles.add(ParagraphStyle(
-        name="TOCEntry", parent=styles["Normal"],
-        fontSize=11, fontName="Times-Roman", leftIndent=1 * cm, spaceAfter=3,
-    ))
-    styles.add(ParagraphStyle(
-        name="TOCPart", parent=styles["Normal"],
-        fontSize=11, fontName="Helvetica-Bold", leftIndent=0.3 * cm,
-        spaceAfter=2, spaceBefore=8, textColor=BRAND_ACCENT,
-    ))
-    styles.add(ParagraphStyle(
-        name="SmallBody", parent=styles["Normal"],
         fontSize=9, fontName="Times-Roman", leading=12, spaceAfter=4,
     ))
     styles.add(ParagraphStyle(
+        name="BodyBold", parent=styles["Normal"],
+        fontSize=9, fontName="Times-Bold", leading=12, spaceAfter=4,
+    ))
+    styles.add(ParagraphStyle(
+        name="TOCEntry", parent=styles["Normal"],
+        fontSize=10, fontName="Times-Roman", leftIndent=1 * cm, spaceAfter=2,
+    ))
+    styles.add(ParagraphStyle(
+        name="TOCPart", parent=styles["Normal"],
+        fontSize=10, fontName="Helvetica-Bold", leftIndent=0.3 * cm,
+        spaceAfter=2, spaceBefore=6, textColor=BRAND_ACCENT,
+    ))
+    styles.add(ParagraphStyle(
+        name="SmallBody", parent=styles["Normal"],
+        fontSize=8, fontName="Times-Roman", leading=10, spaceAfter=3,
+    ))
+    styles.add(ParagraphStyle(
         name="ItalicNote", parent=styles["Normal"],
-        fontSize=10, fontName="Times-Italic", spaceAfter=6,
+        fontSize=9, fontName="Times-Italic", spaceAfter=4,
     ))
     styles.add(ParagraphStyle(
         name="Footer", parent=styles["Normal"],
-        fontSize=8, fontName="Times-Italic",
+        fontSize=7, fontName="Times-Italic",
         textColor=colors.Color(0.4, 0.4, 0.4), alignment=TA_CENTER,
     ))
 
@@ -144,30 +144,30 @@ def render_forensic_report_pdf(sections_content: dict, case_data: dict, file_pat
 
     def header_footer(canvas, doc):
         canvas.saveState()
-        canvas.setFont("Helvetica-Bold", 8)
+        canvas.setFont("Helvetica-Bold", 7)
         canvas.setFillColor(colors.Color(0.7, 0, 0))
-        canvas.drawCentredString(PAGE_WIDTH / 2, PAGE_HEIGHT - 1.2 * cm,
+        canvas.drawCentredString(PAGE_WIDTH / 2, PAGE_HEIGHT - 1.0 * cm,
                                  "RESTRICTED — FOR AUTHORIZED LAW ENFORCEMENT USE ONLY")
-        canvas.setFont("Times-Italic", 8)
+        canvas.setFont("Times-Italic", 7)
         canvas.setFillColor(colors.Color(0.4, 0.4, 0.4))
-        canvas.drawCentredString(PAGE_WIDTH / 2, 1.2 * cm,
+        canvas.drawCentredString(PAGE_WIDTH / 2, 1.0 * cm,
                                  f"FIR No. {fir} — PRISM Forensic Investigation Report")
-        canvas.drawRightString(PAGE_WIDTH - 2.5 * cm, 1.2 * cm, f"Page {doc.page}")
+        canvas.drawRightString(PAGE_WIDTH - 2.0 * cm, 1.0 * cm, f"Page {doc.page}")
         canvas.restoreState()
 
     def first_page(canvas, doc):
         pass
 
-    frame = Frame(2.5 * cm, 2.5 * cm, PAGE_WIDTH - 5 * cm, PAGE_HEIGHT - 5 * cm,
+    frame = Frame(2.0 * cm, 2.0 * cm, PAGE_WIDTH - 4 * cm, PAGE_HEIGHT - 4 * cm,
                   id="normal")
 
     doc = BaseDocTemplate(
         file_path,
         pagesize=A4,
-        topMargin=2.5 * cm,
-        bottomMargin=2.5 * cm,
-        leftMargin=2.5 * cm,
-        rightMargin=2.5 * cm,
+        topMargin=2.0 * cm,
+        bottomMargin=2.0 * cm,
+        leftMargin=2.0 * cm,
+        rightMargin=2.0 * cm,
     )
     doc.addPageTemplates([
         PageTemplate(id="First", frames=frame, onPage=first_page),
@@ -191,34 +191,31 @@ def render_forensic_report_pdf(sections_content: dict, case_data: dict, file_pat
 
     # ─── PART I: PROVENANCE ───────────────────────────
     story.append(Paragraph("PART I — PROVENANCE", styles["PartHeading"]))
-    story.append(Spacer(1, 0.3 * cm))
+    story.append(Spacer(1, 0.2 * cm))
 
     # Section 2: Investigation Mandate & Authority
     _render_text_section(story, "2.0", "Investigation Mandate &amp; Authority",
                          sections_content.get("mandate_authority", ""), styles)
 
     # Section 3: Examiner Declaration
-    story.append(PageBreak())
     _render_examiner_declaration(story, case_data, styles)
 
     # ─── PART II: RECONSTRUCTION ──────────────────────
     story.append(PageBreak())
     story.append(Paragraph("PART II — RECONSTRUCTION", styles["PartHeading"]))
-    story.append(Spacer(1, 0.3 * cm))
+    story.append(Spacer(1, 0.2 * cm))
 
     # Section 4: Case Synopsis
     _render_text_section(story, "4.0", "Case Synopsis",
                          sections_content.get("case_synopsis", ""), styles)
 
     # Section 5: Evidence Inventory
-    story.append(PageBreak())
     _render_evidence_inventory(story, case_data, styles)
 
     # Section 6: Technical Infrastructure
     _render_technical_infrastructure(story, case_data, styles)
 
     # Section 7: Analytical Protocol
-    story.append(PageBreak())
     _render_text_section(story, "7.0", "Analytical Protocol",
                          sections_content.get("analytical_protocol", ""), styles)
 
@@ -239,33 +236,30 @@ def render_forensic_report_pdf(sections_content: dict, case_data: dict, file_pat
     # ─── PART III: INTERPRETATION ─────────────────────
     story.append(PageBreak())
     story.append(Paragraph("PART III — INTERPRETATION", styles["PartHeading"]))
-    story.append(Spacer(1, 0.3 * cm))
+    story.append(Spacer(1, 0.2 * cm))
 
     # Section 11: Investigative Conclusions
     _render_text_section(story, "11.0", "Investigative Conclusions",
                          sections_content.get("investigative_conclusions", ""), styles)
 
     # Section 12: Digital Threat Assessment
-    story.append(PageBreak())
     _render_text_section(story, "12.0", "Digital Threat Assessment",
                          sections_content.get("threat_assessment", ""), styles)
 
     # Section 13: Evidence Strength Evaluation
-    story.append(PageBreak())
     _render_text_section(story, "13.0", "Evidence Strength Evaluation",
                          sections_content.get("strength_evaluation", ""), styles)
 
     # ─── PART IV: SUBSTANTIATION ──────────────────────
     story.append(PageBreak())
     story.append(Paragraph("PART IV — SUBSTANTIATION", styles["PartHeading"]))
-    story.append(Spacer(1, 0.3 * cm))
+    story.append(Spacer(1, 0.2 * cm))
 
     # Section 14: Legal Compliance
     _render_text_section(story, "14.0", "Legal Compliance Framework",
                          sections_content.get("legal_compliance", ""), styles)
 
     # Section 15: Methodological Constraints
-    story.append(PageBreak())
     _render_text_section(story, "15.0", "Methodological Constraints &amp; Limitations",
                          sections_content.get("methodological_constraints", ""), styles)
 
@@ -276,7 +270,7 @@ def render_forensic_report_pdf(sections_content: dict, case_data: dict, file_pat
     # ─── PART V: MEMORANDUM ───────────────────────────
     story.append(PageBreak())
     story.append(Paragraph("PART V — MEMORANDUM", styles["PartHeading"]))
-    story.append(Spacer(1, 0.3 * cm))
+    story.append(Spacer(1, 0.2 * cm))
 
     # Section 17: Expert Opinion
     _render_text_section(story, "17.0", "Expert Professional Opinion",
@@ -313,19 +307,19 @@ class _UseLaterTemplate(_Flowable):
 
 
 def _render_cover_page(story, case_data, styles):
-    story.append(Spacer(1, 3.5 * cm))
+    story.append(Spacer(1, 2.5 * cm))
     story.append(Paragraph("PRISM", styles["CoverTitle"]))
     story.append(Paragraph("Digital Forensic Investigation Report", styles["CoverSubtitle"]))
-    story.append(Spacer(1, 0.3 * cm))
+    story.append(Spacer(1, 0.2 * cm))
     story.append(Paragraph(
         "Procedural Record of Investigation, Substantiation &amp; Methodology",
         styles["CoverFramework"]
     ))
-    story.append(Spacer(1, 1.2 * cm))
+    story.append(Spacer(1, 0.8 * cm))
     story.append(Paragraph(f"FIR No. {_safe(case_data.get('fir_number', '---'))}", styles["CoverFIR"]))
-    story.append(Spacer(1, 0.4 * cm))
+    story.append(Spacer(1, 0.2 * cm))
     story.append(Paragraph(_safe(case_data.get("offense_type", "Criminal Investigation")), styles["CoverOffense"]))
-    story.append(Spacer(1, 3 * cm))
+    story.append(Spacer(1, 2 * cm))
 
     metadata = [
         ("Report Reference", f"PRISM/{case_data.get('fir_number', '---')}/{datetime.utcnow().strftime('%Y')}"),
@@ -342,14 +336,14 @@ def _render_cover_page(story, case_data, styles):
         for label, value in metadata
     ]
 
-    t = Table(table_data, colWidths=[5 * cm, 9 * cm])
+    t = Table(table_data, colWidths=[5 * cm, 10 * cm])
     t.setStyle(TableStyle([
-        ("GRID", (0, 0), (-1, -1), 0.5, colors.Color(0.6, 0.6, 0.6)),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.Color(0.6, 0.6, 0.6)),
         ("BACKGROUND", (0, 0), (0, -1), LIGHT_BG),
         ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING", (0, 0), (-1, -1), 5),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
-        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
     ]))
     story.append(t)
 
@@ -523,7 +517,7 @@ def _render_evidence_inventory(story, case_data, styles):
         "and subjected to integrity verification. The following register documents each item:",
         styles["Body"]
     ))
-    story.append(Spacer(1, 0.3 * cm))
+    story.append(Spacer(1, 0.2 * cm))
 
     headers = ["Exhibit", "Description", "Format", "Integrity Hash (SHA-256)", "Provenance"]
     header_row = [Paragraph(f"<b>{h}</b>", styles["SmallBody"]) for h in headers]
@@ -567,7 +561,7 @@ def _render_technical_infrastructure(story, case_data, styles):
 
     tools = case_data.get("forensic_tools", [])
     if tools:
-        story.append(Spacer(1, 0.3 * cm))
+        story.append(Spacer(1, 0.2 * cm))
         story.append(Paragraph("<b>Instruments &amp; Analytical Modules Employed:</b>", styles["Body"]))
 
         headers = ["Module", "Function", "Invocations"]
@@ -625,7 +619,7 @@ def _render_declaration_attestation(story, case_data, styles):
         "The undersigned solemnly declares and attests as follows:",
         styles["Body"]
     ))
-    story.append(Spacer(1, 0.3 * cm))
+    story.append(Spacer(1, 0.2 * cm))
 
     statements = [
         "I confirm that the facts stated in this report, insofar as they are within my personal knowledge, are true and accurate to the best of my belief. Where facts are based upon information provided by others, I have identified the source and believe such information to be reliable.",
@@ -639,7 +633,7 @@ def _render_declaration_attestation(story, case_data, styles):
         story.append(Paragraph(f"{i+1}. {_safe(s)}", styles["Body"]))
         story.append(Spacer(1, 0.15 * cm))
 
-    story.append(Spacer(1, 1.5 * cm))
+    story.append(Spacer(1, 1.0 * cm))
     story.append(HRFlowable(width="40%", thickness=1, color=colors.black))
     story.append(Paragraph(f"<b>{_safe(case_data.get('io_name', 'Investigating Officer'))}</b>", styles["Body"]))
     story.append(Paragraph("Investigating Officer / Digital Forensic Examiner", styles["Body"]))
@@ -747,7 +741,7 @@ def _render_annexures(story, case_data, styles):
                 else:
                     text = f"&bull; {_safe(str(entry))}"
                 story.append(Paragraph(text, styles["SmallBody"]))
-            story.append(Spacer(1, 0.3 * cm))
+            story.append(Spacer(1, 0.2 * cm))
     if not has_custody:
         story.append(Paragraph(
             "Provenance chain records are maintained within the case management system and are available upon request.",
