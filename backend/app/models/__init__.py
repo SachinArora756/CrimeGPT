@@ -17,3 +17,4 @@ from app.models.investigation_memory import InvestigationMemory, EvidenceCorrela
 from app.models.forensic_photography import (
     ForensicPhoto, PhotoAnnotation, SceneCoverageZone, PhotoEnhancementHistory,
 )
+from app.models.scene_reconstruction import SceneReconstruction

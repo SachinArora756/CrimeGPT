@@ -28,6 +28,7 @@ import {
   Lightbulb,
   UserPlus,
   Camera,
+  Box,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 
@@ -62,6 +63,7 @@ const forensicsItems = [
   { path: '/forensics/ieae', icon: Shield, label: 'IEAE Engine' },
   { path: '/forensics/iidse', icon: Lightbulb, label: 'IIDSE Intelligence' },
   { path: '/forensics/photography', icon: Camera, label: 'Forensic Photography' },
+  { path: '/forensics/3d-reconstruction', icon: Box, label: '3D Reconstruction' },
   { path: '/forensics/tools', icon: Wrench, label: 'Tool Launcher' },
   { path: '/forensics/history', icon: Clock, label: 'Execution History' },
   { path: '/forensics/saved', icon: Bookmark, label: 'Saved Results' },
