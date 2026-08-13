@@ -223,3 +223,28 @@ async def list_reconstructions(
             for r in recs
         ]
     }
+
+
+@router.delete("/{reconstruction_id}")
+async def delete_reconstruction(
+    reconstruction_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Delete a reconstruction."""
+    stmt = select(SceneReconstruction).where(
+        SceneReconstruction.reconstruction_id == reconstruction_id
+    )
+    result = await db.execute(stmt)
+    rec = result.scalar_one_or_none()
+    if not rec:
+        raise HTTPException(404, "Reconstruction not found")
+
+    if rec.export_html_path and os.path.exists(rec.export_html_path):
+        os.remove(rec.export_html_path)
+    if rec.export_video_path and os.path.exists(rec.export_video_path):
+        os.remove(rec.export_video_path)
+
+    await db.delete(rec)
+    await db.commit()
+    return {"message": "Reconstruction deleted"}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { Box, Loader2, AlertCircle, FileVideo, FileCode, RotateCcw, Maximize2, Plus, Clock, CheckCircle2, XCircle, ChevronRight } from 'lucide-react'
+import { Box, Loader2, AlertCircle, FileVideo, FileCode, RotateCcw, Maximize2, Plus, Clock, CheckCircle2, XCircle, Trash2 } from 'lucide-react'
 import { useSceneReconstructionStore } from '../../store/sceneReconstructionStore'
 import SceneViewer from '../../components/scene-3d/SceneViewer'
 import TimelinePlayer from '../../components/scene-3d/TimelinePlayer'
@@ -24,6 +24,7 @@ export default function SceneReconstructionPage() {
     error,
     fetchReconstruction,
     fetchReconstructionList,
+    deleteReconstruction,
     generateReconstruction,
     fetchSceneData,
     exportScene,
@@ -104,6 +105,12 @@ export default function SceneReconstructionPage() {
 
   const handleLoadReconstruction = async (reconstructionId: string) => {
     await fetchSceneData(reconstructionId)
+  }
+
+  const handleDelete = async (e: React.MouseEvent, reconstructionId: string) => {
+    e.stopPropagation()
+    if (!confirm('Delete this reconstruction? This cannot be undone.')) return
+    await deleteReconstruction(reconstructionId)
   }
 
   const handleViewScene = async () => {
@@ -235,14 +242,13 @@ export default function SceneReconstructionPage() {
                   ) : (
                     <div className="divide-y divide-gray-800">
                       {reconstructions.map((rec) => (
-                        <button
+                        <div
                           key={rec.reconstruction_id}
                           onClick={() => rec.status === 'completed' && handleLoadReconstruction(rec.reconstruction_id)}
-                          disabled={rec.status !== 'completed'}
-                          className={`w-full p-3 text-left transition-colors flex items-center gap-3 ${
+                          className={`w-full p-3 text-left transition-colors flex items-center gap-3 group ${
                             rec.status === 'completed'
                               ? 'hover:bg-gray-800/60 cursor-pointer'
-                              : 'opacity-50 cursor-not-allowed'
+                              : 'opacity-60'
                           }`}
                         >
                           <div className="flex-shrink-0">
@@ -263,10 +269,14 @@ export default function SceneReconstructionPage() {
                               {formatDate(rec.created_at)}
                             </p>
                           </div>
-                          {rec.status === 'completed' && (
-                            <ChevronRight size={14} className="text-gray-600" />
-                          )}
-                        </button>
+                          <button
+                            onClick={(e) => handleDelete(e, rec.reconstruction_id)}
+                            className="flex-shrink-0 p-1 rounded hover:bg-red-900/30 text-gray-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                            title="Delete"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       ))}
                     </div>
                   )}

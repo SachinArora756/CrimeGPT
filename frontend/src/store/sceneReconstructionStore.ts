@@ -80,6 +80,7 @@ interface SceneReconstructionStore {
 
   fetchReconstruction: (caseId: number) => Promise<void>
   fetchReconstructionList: (caseId: number) => Promise<void>
+  deleteReconstruction: (reconstructionId: string) => Promise<boolean>
   generateReconstruction: (caseId: number) => Promise<string | null>
   pollStatus: (reconstructionId: string) => void
   fetchSceneData: (reconstructionId: string) => Promise<void>
@@ -103,6 +104,20 @@ export const useSceneReconstructionStore = create<SceneReconstructionStore>()(
         set({ reconstructions: res.data.reconstructions || [] })
       } catch {
         set({ reconstructions: [] })
+      }
+    },
+
+    deleteReconstruction: async (reconstructionId) => {
+      try {
+        await api.delete(`/api/scene-reconstruction/${reconstructionId}`)
+        set(state => ({
+          reconstructions: state.reconstructions.filter(r => r.reconstruction_id !== reconstructionId),
+          reconstruction: state.reconstruction?.reconstruction_id === reconstructionId ? null : state.reconstruction,
+          sceneData: state.sceneData?.reconstruction_id === reconstructionId ? null : state.sceneData,
+        }))
+        return true
+      } catch {
+        return false
       }
     },
 
