@@ -190,10 +190,10 @@ export default function MyDocumentsPage() {
                         {new Date(doc.generated_at.endsWith('Z') ? doc.generated_at : doc.generated_at + 'Z').toLocaleDateString()}
                       </span>
                     )}
-                    <span className="flex items-start gap-1 font-mono text-xs break-all">
-                      <Hash className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span className="flex items-center gap-1 text-[10px]">
+                      <Hash className="w-3 h-3 text-green-500 flex-shrink-0" />
                       {doc.file_hash ? (
-                        <span className="text-dark-200">{doc.file_hash}</span>
+                        <span className="font-mono text-dark-200 truncate max-w-[180px] sm:max-w-xs" title={doc.file_hash}>{doc.file_hash}</span>
                       ) : (
                         <span className="text-dark-500 italic">Hash not computed</span>
                       )}

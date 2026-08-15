@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { FileText, Download, Plus, Loader2, Scale, Clock, Hash, Trash2 } from 'lucide-react'
+import { FileText, Download, Plus, Loader2, Scale, Clock, Hash, Trash2, CheckCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import api from '../api/client'
 import { useEvidenceDocStore, DocumentItem } from '../store/evidenceDocStore'
@@ -263,7 +263,7 @@ export default function DocumentsPage() {
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.05 }}
-                  className="flex items-center justify-between p-4 bg-dark-900/60 rounded-xl border border-dark-700/50 hover:border-dark-600 transition-colors"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-dark-900/60 rounded-xl border border-dark-700/50 hover:border-dark-600 transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-dark-800 rounded-lg flex items-center justify-center">
@@ -275,10 +275,13 @@ export default function DocumentsPage() {
                         <Clock className="w-3 h-3" />
                         {new Date(doc.generated_at.endsWith('Z') ? doc.generated_at : doc.generated_at + 'Z').toLocaleString()}
                       </p>
-                      <p className="text-xs flex items-start gap-1 mt-0.5 font-mono break-all">
-                        <Hash className="w-3 h-3 text-green-500 flex-shrink-0 mt-0.5" />
+                      <p className="flex items-center gap-1 mt-0.5 text-[10px]">
+                        <Hash className="w-3 h-3 text-green-500 flex-shrink-0" />
                         {doc.file_hash ? (
-                          <span className="text-dark-200">{doc.file_hash}</span>
+                          <>
+                            <span className="font-mono text-dark-200 truncate max-w-[180px] sm:max-w-xs" title={doc.file_hash}>{doc.file_hash}</span>
+                            <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" />
+                          </>
                         ) : (
                           <span className="text-dark-500 italic">Hash not computed</span>
                         )}

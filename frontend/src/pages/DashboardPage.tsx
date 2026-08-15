@@ -151,7 +151,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Cases Per Day - Area Chart */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -166,9 +166,9 @@ export default function DashboardPage() {
             </h2>
             <span className="text-xs text-dark-400">Last 30 days</span>
           </div>
-          <div className="h-52">
+          <div className="h-44 sm:h-52 -mx-2 sm:mx-0">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats?.cases_per_day || []}>
+              <AreaChart data={stats?.cases_per_day || []} margin={{ left: -10, right: 5, top: 5, bottom: 0 }}>
                 <defs>
                   <linearGradient id="caseGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
@@ -176,8 +176,8 @@ export default function DashboardPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(v) => v.slice(5)} />
-                <YAxis tick={{ fontSize: 10, fill: '#64748b' }} allowDecimals={false} />
+                <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#64748b' }} tickFormatter={(v) => v.slice(5)} interval="preserveStartEnd" />
+                <YAxis tick={{ fontSize: 9, fill: '#64748b' }} allowDecimals={false} width={30} />
                 <Tooltip
                   contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }}
                   labelStyle={{ color: '#94a3b8' }}
@@ -200,7 +200,7 @@ export default function DashboardPage() {
             <Shield className="w-4 h-4 text-purple-400" />
             Crime Category Distribution
           </h2>
-          <div className="h-52 flex items-center">
+          <div className="h-44 sm:h-52 flex items-center">
             {stats?.crime_categories && stats.crime_categories.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -209,9 +209,9 @@ export default function DashboardPage() {
                     dataKey="count"
                     nameKey="category"
                     cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    innerRadius={40}
+                    cy="45%"
+                    outerRadius={60}
+                    innerRadius={30}
                     paddingAngle={2}
                   >
                     {stats.crime_categories.map((_, index) => (
@@ -223,7 +223,7 @@ export default function DashboardPage() {
                     labelStyle={{ color: '#94a3b8' }}
                   />
                   <Legend
-                    wrapperStyle={{ fontSize: '11px' }}
+                    wrapperStyle={{ fontSize: '10px' }}
                     formatter={(value) => <span className="text-dark-300">{value}</span>}
                   />
                 </PieChart>
@@ -236,7 +236,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Second Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {/* Investigation Status - Pie */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -248,17 +248,17 @@ export default function DashboardPage() {
             <Clock className="w-4 h-4 text-yellow-400" />
             Investigation Status
           </h2>
-          <div className="h-52">
+          <div className="h-44 sm:h-52">
             {statusPieData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={statusPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} innerRadius={35}>
+                  <Pie data={statusPieData} dataKey="value" nameKey="name" cx="50%" cy="45%" outerRadius={60} innerRadius={28}>
                     {statusPieData.map((entry, index) => (
                       <Cell key={index} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }} />
-                  <Legend wrapperStyle={{ fontSize: '11px' }} formatter={(value) => <span className="text-dark-300">{value}</span>} />
+                  <Legend wrapperStyle={{ fontSize: '10px' }} formatter={(value) => <span className="text-dark-300">{value}</span>} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
@@ -278,13 +278,13 @@ export default function DashboardPage() {
             <Activity className="w-4 h-4 text-green-400" />
             Officer Workload
           </h2>
-          <div className="h-52">
+          <div className="h-44 sm:h-52 -mx-2 sm:mx-0">
             {stats?.officer_workload && stats.officer_workload.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={stats.officer_workload} layout="vertical" margin={{ left: 20 }}>
+                <BarChart data={stats.officer_workload} layout="vertical" margin={{ left: 0, right: 5, top: 5, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                  <XAxis type="number" tick={{ fontSize: 10, fill: '#64748b' }} allowDecimals={false} />
-                  <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} width={100} />
+                  <XAxis type="number" tick={{ fontSize: 9, fill: '#64748b' }} allowDecimals={false} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 9, fill: '#94a3b8' }} width={70} />
                   <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }} />
                   <Bar dataKey="cases" fill="#3b82f6" radius={[0, 4, 4, 0]} />
                 </BarChart>
@@ -303,16 +303,16 @@ export default function DashboardPage() {
         transition={{ delay: 0.7 }}
         className="card"
       >
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-white flex items-center gap-2">
-            <FileCheck className="w-4 h-4 text-green-400" />
+        <div className="flex items-center justify-between mb-4 gap-2">
+          <h2 className="text-sm sm:text-base font-semibold text-white flex items-center gap-2">
+            <FileCheck className="w-4 h-4 text-green-400 shrink-0" />
             Case Completion Trend
           </h2>
-          <span className="text-xs text-dark-400">Cases closed per day (30 days)</span>
+          <span className="text-xs text-dark-400 hidden sm:inline">Cases closed per day (30 days)</span>
         </div>
-        <div className="h-44">
+        <div className="h-36 sm:h-44 -mx-2 sm:mx-0">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={stats?.completion_trend || []}>
+            <AreaChart data={stats?.completion_trend || []} margin={{ left: -10, right: 5, top: 5, bottom: 0 }}>
               <defs>
                 <linearGradient id="completionGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
@@ -320,8 +320,8 @@ export default function DashboardPage() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#64748b' }} tickFormatter={(v) => v.slice(5)} />
-              <YAxis tick={{ fontSize: 10, fill: '#64748b' }} allowDecimals={false} />
+              <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#64748b' }} tickFormatter={(v) => v.slice(5)} interval="preserveStartEnd" />
+              <YAxis tick={{ fontSize: 9, fill: '#64748b' }} allowDecimals={false} width={30} />
               <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '8px' }} />
               <Area type="monotone" dataKey="count" stroke="#10b981" fill="url(#completionGradient)" strokeWidth={2} />
             </AreaChart>
