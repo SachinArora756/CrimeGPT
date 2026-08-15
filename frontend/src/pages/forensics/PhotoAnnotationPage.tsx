@@ -312,7 +312,7 @@ export default function PhotoAnnotationPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)]">
+    <div className="flex flex-col h-[calc(100vh-7rem)] lg:h-[calc(100vh-4rem)]">
       {/* Top Bar */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-dark-700/50 bg-dark-800/50 flex-shrink-0">
         <div className="flex items-center gap-3">

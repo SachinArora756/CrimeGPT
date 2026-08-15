@@ -84,17 +84,17 @@ export default function DashboardPage() {
         className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-primary-600/20 via-primary-700/10 to-dark-900 border border-primary-600/20 p-6"
       >
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary-500/5 via-transparent to-transparent" />
-        <div className="relative flex items-center justify-between">
+        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg shadow-primary-500/20">
-              <span className="text-2xl font-bold text-white">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg shadow-primary-500/20 shrink-0">
+              <span className="text-xl sm:text-2xl font-bold text-white">
                 {user?.full_name?.charAt(0) || 'O'}
               </span>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-dark-400 text-sm">Welcome back,</p>
-              <h1 className="text-2xl font-bold text-white">{user?.full_name || 'Officer'}</h1>
-              <div className="flex items-center gap-3 mt-1">
+              <h1 className="text-lg sm:text-2xl font-bold text-white truncate">{user?.full_name || 'Officer'}</h1>
+              <div className="flex items-center gap-2 sm:gap-3 mt-1 flex-wrap">
                 <span className="inline-flex items-center gap-1 text-xs text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded-full border border-primary-500/20">
                   <Shield className="w-3 h-3" /> {roleLabel}
                 </span>
@@ -110,7 +110,7 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-          <Link to="/cases/new" className="btn-primary flex items-center gap-2 shadow-lg shadow-primary-500/20">
+          <Link to="/cases/new" className="btn-primary flex items-center gap-2 shadow-lg shadow-primary-500/20 self-start sm:self-auto whitespace-nowrap">
             <PlusCircle className="w-4 h-4" />
             New Case
           </Link>

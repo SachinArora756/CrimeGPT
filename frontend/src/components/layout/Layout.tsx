@@ -36,7 +36,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           <span className="text-white font-bold text-sm">CrimeGPT</span>
         </div>
         <Header />
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 bg-dark-950 forensic-grid">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-6 bg-dark-950 forensic-grid">
           {children}
         </main>
       </div>

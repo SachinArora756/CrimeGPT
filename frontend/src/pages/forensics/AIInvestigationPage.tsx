@@ -147,7 +147,7 @@ export default function AIInvestigationPage() {
   const [uploadedFile, setUploadedFile] = useState<{ name: string; classification?: Classification; message_id?: string; url?: string } | null>(null)
   const [toolProgress, setToolProgress] = useState<ToolProgress[]>([])
   const [criminalMatches, setCriminalMatches] = useState<any[]>([])
-  const [showSidebar, setShowSidebar] = useState(true)
+  const [showSidebar, setShowSidebar] = useState(window.innerWidth >= 1024)
   const [showTimeline, setShowTimeline] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedTools, setExpandedTools] = useState<Set<string>>(new Set())
@@ -675,13 +675,13 @@ export default function AIInvestigationPage() {
   // ─── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-dark-900">
+    <div className="flex h-[calc(100vh-7rem)] lg:h-[calc(100vh-4rem)] overflow-hidden bg-dark-900">
       {/* ─── Left Sidebar: Sessions ──────────────────────────────────────── */}
       <AnimatePresence>
         {showSidebar && (
           <motion.div
             initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 300, opacity: 1 }}
+            animate={{ width: window.innerWidth < 640 ? 260 : 300, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="border-r border-dark-700/50 flex flex-col bg-dark-900/80 backdrop-blur-sm"

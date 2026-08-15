@@ -310,7 +310,7 @@ export default function CaseDetailPage() {
   if (loading) return (
     <div className="space-y-4">
       <div className="card animate-pulse h-32 bg-dark-800/50" />
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[1,2,3,4].map(i => <div key={i} className="card animate-pulse h-20 bg-dark-800/50" />)}
       </div>
     </div>
@@ -346,9 +346,9 @@ export default function CaseDetailPage() {
       {/* Case Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="relative rounded-2xl bg-dark-900/80 border border-dark-700 p-6">
         <div className="absolute inset-0 bg-gradient-to-r from-primary-600/5 via-transparent to-transparent" />
-        <div className="relative flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
+        <div className="relative flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-3 mb-2 flex-wrap">
               {editingTitle ? (
                 <div className="flex items-center gap-2">
                   <input
@@ -418,12 +418,12 @@ export default function CaseDetailPage() {
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-4 text-sm text-dark-400">
+            <div className="flex items-center gap-2 sm:gap-4 text-sm text-dark-400 flex-wrap">
               <span>FIR: {caseData.fir_number}</span>
               {caseData.offense_type && <span>• {caseData.offense_type}</span>}
               {caseData.station_id && <span>• Station: {caseData.station_id}</span>}
             </div>
-            <div className="flex items-center gap-4 mt-2 text-xs text-dark-500">
+            <div className="flex items-center gap-2 sm:gap-4 mt-2 text-xs text-dark-500 flex-wrap">
               <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> Created: {new Date(caseData.created_at).toLocaleDateString()}</span>
               <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Updated: {new Date(caseData.updated_at).toLocaleDateString()}</span>
             </div>

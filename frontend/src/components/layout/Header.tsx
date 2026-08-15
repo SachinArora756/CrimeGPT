@@ -177,7 +177,7 @@ export default function Header() {
   ) : null
 
   return (
-    <header className="h-14 bg-dark-900/80 backdrop-blur-md border-b border-dark-700/50 flex items-center justify-between px-6 relative z-30">
+    <header className="h-14 bg-dark-900/80 backdrop-blur-md border-b border-dark-700/50 flex items-center justify-between px-3 sm:px-6 relative z-30">
       {/* Search */}
       <div className="flex items-center gap-4 flex-1" ref={searchRef}>
         <div className="relative max-w-md flex-1">

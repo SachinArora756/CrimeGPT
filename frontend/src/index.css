@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-dark-950 text-gray-100 antialiased;
+    @apply bg-dark-950 text-gray-100 antialiased overflow-x-hidden;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
@@ -47,11 +47,11 @@
   }
 
   .card {
-    @apply bg-dark-900/80 backdrop-blur-sm border border-dark-700/50 rounded-2xl p-6 shadow-xl shadow-black/10;
+    @apply bg-dark-900/80 backdrop-blur-sm border border-dark-700/50 rounded-2xl p-4 sm:p-6 shadow-xl shadow-black/10;
   }
 
   .card-glass {
-    @apply bg-dark-800/40 backdrop-blur-xl border border-dark-700/30 rounded-2xl p-6 shadow-xl;
+    @apply bg-dark-800/40 backdrop-blur-xl border border-dark-700/30 rounded-2xl p-4 sm:p-6 shadow-xl;
   }
 
   .card-hover {

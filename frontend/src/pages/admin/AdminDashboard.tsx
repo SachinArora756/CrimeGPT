@@ -191,8 +191,8 @@ export default function AdminDashboard() {
           <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-purple-400" /> Case Distribution
           </h3>
-          <div className="flex items-center gap-6">
-            <div className="w-40 h-40">
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+            <div className="w-32 h-32 sm:w-40 sm:h-40 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={statusPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={65} innerRadius={35}>

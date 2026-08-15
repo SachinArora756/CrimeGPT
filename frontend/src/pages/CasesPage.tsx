@@ -63,19 +63,20 @@ export default function CasesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white">Cases</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Cases</h1>
           <p className="text-dark-400 text-sm mt-1">{total} total cases</p>
         </div>
-        <Link to="/cases/new" className="btn-primary flex items-center gap-2">
+        <Link to="/cases/new" className="btn-primary flex items-center gap-2 whitespace-nowrap">
           <PlusCircle className="w-4 h-4" />
-          New Case
+          <span className="hidden sm:inline">New Case</span>
+          <span className="sm:hidden">New</span>
         </Link>
       </div>
 
       {/* Search & Filter */}
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-3">
         <form onSubmit={handleSearch} className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400" />
           <input
@@ -89,7 +90,7 @@ export default function CasesPage() {
         <div className="relative">
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dark-400" />
           <select
-            className="input pl-10 w-48"
+            className="input pl-10 w-full sm:w-48"
             value={statusFilter}
             onChange={(e) => { setStoreStatusFilter(e.target.value); setStorePage(1) }}
           >
