@@ -166,20 +166,20 @@ export default function MyDocumentsPage() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
-              className="card flex items-center justify-between gap-4 hover:border-dark-600 transition-all"
+              className="card flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-dark-600 transition-all"
             >
               <div className="flex items-center gap-4 min-w-0 flex-1">
                 <div className="w-10 h-10 bg-dark-800 rounded-lg flex items-center justify-center flex-shrink-0">
                   <FileText className="w-5 h-5 text-cyan-400" />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${DOC_TYPE_COLORS[doc.doc_type] || 'bg-dark-700 text-dark-300'}`}>
                       {DOC_TYPE_LABELS[doc.doc_type] || doc.doc_type}
                     </span>
                     <span className="text-dark-500 text-xs uppercase">{doc.output_format}</span>
                   </div>
-                  <div className="flex items-center gap-2 mt-1 text-sm">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-sm">
                     <Link to={`/cases/${doc.case_public_id}`} className="text-primary-400 hover:text-primary-300 flex items-center gap-1">
                       <FolderOpen className="w-3 h-3" />
                       {doc.fir_number}
@@ -190,14 +190,14 @@ export default function MyDocumentsPage() {
                         {new Date(doc.generated_at.endsWith('Z') ? doc.generated_at : doc.generated_at + 'Z').toLocaleDateString()}
                       </span>
                     )}
-                    <span className="flex items-center gap-1 text-[10px]">
-                      <Hash className="w-3 h-3 text-green-500 flex-shrink-0" />
-                      {doc.file_hash ? (
-                        <span className="font-mono text-dark-200 truncate max-w-[180px] sm:max-w-xs" title={doc.file_hash}>{doc.file_hash}</span>
-                      ) : (
-                        <span className="text-dark-500 italic">Hash not computed</span>
-                      )}
-                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 mt-1 text-[10px] overflow-hidden">
+                    <Hash className="w-3 h-3 text-green-500 shrink-0" />
+                    {doc.file_hash ? (
+                      <span className="font-mono text-dark-200 truncate" title={doc.file_hash}>{doc.file_hash}</span>
+                    ) : (
+                      <span className="text-dark-500 italic">Hash not computed</span>
+                    )}
                   </div>
                 </div>
               </div>
